@@ -305,14 +305,11 @@ const RoomContent = () => {
           });
       }
       
-      // Remove the automatic progression - let the continue button handle it
-      // The continue button will appear after the correct answer due to the
-      // setTimeout in the GameContext.tsx submitAnswer function
       console.log("Answer is correct, showContinueButton should appear soon");
       
-      // Explicitly set the continue button to appear
-      // This ensures it shows up regardless of the GameContext setTimeout
-      setShowContinueButton(true);
+      setTimeout(() => {
+        setShowContinueButton(true);
+      }, 1500);
     }
   };
 
@@ -486,15 +483,11 @@ const RoomContent = () => {
                   <div className="mt-6 text-center">
                     <Button 
                       onClick={() => {
-                        // First call goToNextDoor to trigger the state change
-                        // but keep the question screen visible for a moment
                         goToNextDoor();
                         
-                        // Add a delay before hiding the question screen
-                        // This ensures Calisy stays visible during the transition
                         setTimeout(() => {
                           setShowQuestion(false);
-                        }, 500); // 500ms delay gives time to see Calisy
+                        }, 500);
                       }}
                       className="bg-dragon-gold hover:bg-dragon-gold/80 font-medieval"
                       size="lg"
