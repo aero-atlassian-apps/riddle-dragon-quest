@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -51,11 +52,8 @@ const AdminDashboard = () => {
     };
     
     setCurrentSession(updatedSession);
-    setSessions((prev) =>
-      prev.map((session) =>
-        session.id === currentSession.id ? updatedSession : session
-      )
-    );
+    // Remove the reference to setSessions since it doesn't exist
+    // We're using the useQuery hook to manage sessions data
     
     // Show success message or redirect
   };

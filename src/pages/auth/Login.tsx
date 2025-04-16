@@ -22,12 +22,34 @@ const Login = () => {
 
     try {
       if (email === TEMP_EMAIL && password === TEMP_PASSWORD) {
-        const { error } = await supabase.auth.signUp({
+        // Use signIn instead of signUp since we're logging in with credentials
+        const { data, error } = await supabase.auth.signInWithPassword({
           email: TEMP_EMAIL,
           password: TEMP_PASSWORD,
         });
 
-        if (error) throw error;
+        if (error) {
+          // If the user doesn't exist yet, try to sign them up first
+          if (error.message.includes("Invalid login credentials")) {
+            // Create the user first
+            const { error: signUpError } = await supabase.auth.signUp({
+              email: TEMP_EMAIL,
+              password: TEMP_PASSWORD,
+            });
+            
+            if (signUpError) throw signUpError;
+            
+            // Now try to sign in again
+            const { error: signInError } = await supabase.auth.signInWithPassword({
+              email: TEMP_EMAIL,
+              password: TEMP_PASSWORD,
+            });
+            
+            if (signInError) throw signInError;
+          } else {
+            throw error;
+          }
+        }
 
         // Add admin role
         const { error: roleError } = await supabase
@@ -38,6 +60,11 @@ const Login = () => {
           }]);
 
         if (roleError) throw roleError;
+
+        toast({
+          title: "Login successful",
+          description: "You have been logged in as an admin",
+        });
 
         navigate('/admin');
       } else {
@@ -51,7 +78,7 @@ const Login = () => {
       console.error('Error:', error);
       toast({
         title: "Error",
-        description: "An error occurred during login",
+        description: error.message || "An error occurred during login",
         variant: "destructive",
       });
     } finally {
