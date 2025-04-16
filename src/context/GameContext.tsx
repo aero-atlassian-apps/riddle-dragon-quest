@@ -9,6 +9,8 @@ interface GameContextProps {
   useToken: () => void;
   resetGame: () => void;
   goToNextDoor: () => void;
+  showContinueButton: boolean;
+  setShowContinueButton: (show: boolean) => void;
 }
 
 const initialGameState: GameState = {
@@ -24,6 +26,7 @@ const GameContext = createContext<GameContextProps | undefined>(undefined);
 
 export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [gameState, setGameState] = useState<GameState>(initialGameState);
+  const [showContinueButton, setShowContinueButton] = useState(false);
 
   const setQuestion = (question: Question) => {
     setGameState((prev) => ({
@@ -31,6 +34,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       currentQuestion: question,
       isAnswerCorrect: null,
     }));
+    setShowContinueButton(false);
   };
 
   const submitAnswer = (answer: string): boolean => {
@@ -48,6 +52,11 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         score: prev.score + pointsEarned,
         isAnswerCorrect: true,
       }));
+      
+      // Show continue button after a successful answer
+      setTimeout(() => {
+        setShowContinueButton(true);
+      }, 1500);
     } else {
       setGameState((prev) => ({
         ...prev,
@@ -69,6 +78,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const resetGame = () => {
     setGameState(initialGameState);
+    setShowContinueButton(false);
   };
 
   const goToNextDoor = () => {
@@ -87,6 +97,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isAnswerCorrect: null,
       }));
     }
+    
+    setShowContinueButton(false);
   };
 
   return (
@@ -98,6 +110,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         useToken,
         resetGame,
         goToNextDoor,
+        showContinueButton,
+        setShowContinueButton,
       }}
     >
       {children}
