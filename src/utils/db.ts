@@ -51,31 +51,42 @@ export const getRoom = async (roomId: string): Promise<Room | null> => {
     return null;
   }
   
-  const { data, error } = await supabase
-    .from('rooms')
-    .select('*, sessions(*)')
-    .eq('id', roomId)
-    .maybeSingle();
-
-  if (error) {
-    console.error('Error fetching room:', error);
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(roomId)) {
+    console.error("Invalid room ID format:", roomId);
     return null;
   }
+  
+  try {
+    const { data, error } = await supabase
+      .from('rooms')
+      .select('*, sessions(*)')
+      .eq('id', roomId)
+      .maybeSingle();
 
-  if (!data) {
-    console.log("No room found with ID:", roomId);
+    if (error) {
+      console.error('Error fetching room:', error);
+      return null;
+    }
+
+    if (!data) {
+      console.log("No room found with ID:", roomId);
+      return null;
+    }
+
+    return {
+      id: data.id,
+      sessionId: data.session_id,
+      name: data.name,
+      tokensLeft: data.tokens_left,
+      currentDoor: data.current_door,
+      score: data.score,
+      sessionStatus: data.sessions?.status
+    };
+  } catch (err) {
+    console.error('Error in getRoom function:', err);
     return null;
   }
-
-  return {
-    id: data.id,
-    sessionId: data.session_id,
-    name: data.name,
-    tokensLeft: data.tokens_left,
-    currentDoor: data.current_door,
-    score: data.score,
-    sessionStatus: data.sessions?.status
-  };
 };
 
 export const createRoom = async (sessionId: string, roomName: string, roomId?: string): Promise<Room | null> => {

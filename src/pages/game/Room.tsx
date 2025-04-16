@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -40,6 +39,7 @@ const RoomContent = () => {
     sessionStartTime?: string
   } | null>(null);
   const [roomNotFound, setRoomNotFound] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   
   const getHouseIcon = (name: string): string => {
     if (name.includes('Stark')) return '🐺';
@@ -55,6 +55,16 @@ const RoomContent = () => {
       if (!roomId) {
         console.error("No room ID in URL parameters");
         setRoomNotFound(true);
+        setErrorMessage("Missing room identifier in the URL");
+        setLoading(false);
+        return;
+      }
+      
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(roomId)) {
+        console.error("Invalid room ID format:", roomId);
+        setRoomNotFound(true);
+        setErrorMessage("Invalid room identifier format");
         setLoading(false);
         return;
       }
@@ -68,6 +78,7 @@ const RoomContent = () => {
         if (!room) {
           console.error("Room not found for ID:", roomId);
           setRoomNotFound(true);
+          setErrorMessage("This game room doesn't exist or has been removed");
           toast({
             title: "Room not found",
             description: "This game room doesn't exist or has been removed",
@@ -160,6 +171,7 @@ const RoomContent = () => {
         }
       } catch (error) {
         console.error("Error fetching room and questions:", error);
+        setErrorMessage("Failed to load room data. Please try again later.");
         toast({
           title: "Error",
           description: "Failed to load room data",
@@ -227,7 +239,7 @@ const RoomContent = () => {
       <div className="min-h-screen p-4 bg-gradient-to-b from-dragon-accent/5 to-white flex items-center justify-center">
         <div className="text-center parchment p-8 max-w-md">
           <h2 className="text-2xl font-bold font-medieval mb-4">Room Not Found</h2>
-          <p className="mb-6 font-medieval">This game room doesn't exist or has been removed.</p>
+          <p className="mb-6 font-medieval">{errorMessage || "This game room doesn't exist or has been removed."}</p>
           <Link to="/">
             <Button className="bg-dragon-primary hover:bg-dragon-secondary font-medieval">
               Return Home
