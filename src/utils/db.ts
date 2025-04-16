@@ -56,7 +56,7 @@ export const getRoom = async (roomId: string): Promise<Room | null> => {
       .from('rooms')
       .select('*')
       .eq('id', roomId)
-      .maybeSingle();
+      .single();
 
     if (error) {
       console.error('Error fetching room:', error);
@@ -109,15 +109,10 @@ export const getRoomDirectCheck = async (roomId: string): Promise<{exists: boole
       .from('rooms')
       .select('*')
       .eq('id', roomId)
-      .maybeSingle();
+      .single();
       
     if (error) {
       console.error("Direct room check error:", error);
-      return { exists: false };
-    }
-
-    if (!data) {
-      console.log(`Direct check: No room found in database with ID ${roomId}`);
       return { exists: false };
     }
     

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -65,107 +66,40 @@ const RoomContent = () => {
       
       try {
         setLoading(true);
+        setDebugInfo(prev => [...prev, `Attempting to find room: ${roomId}`]);
         console.log("[ROOM PAGE] Attempting to fetch room with ID:", roomId);
-        
-        const { data: allRoomsData, error: allRoomsError } = await supabase
-          .from('rooms')
-          .select('*');
-          
-        if (allRoomsError) {
-          console.error("Error fetching all rooms directly:", allRoomsError);
-          setDebugInfo(prev => [...prev, `Error fetching rooms: ${allRoomsError.message}`]);
-        } else {
-          setAllRooms(allRoomsData || []);
-          console.log(`Found ${allRoomsData?.length || 0} rooms directly from database`);
-          setDebugInfo(prev => [...prev, `Found ${allRoomsData?.length || 0} rooms directly from database`]);
-          
-          if (allRoomsData && allRoomsData.length > 0) {
-            const matchingRoom = allRoomsData.find(r => r.id === roomId);
-            if (matchingRoom) {
-              console.log("Room found in initial direct database query:", matchingRoom);
-              setDebugInfo(prev => [...prev, `Room found in database: ${matchingRoom.name} (ID: ${matchingRoom.id})`]);
-              
-              setRoomDetails({
-                name: matchingRoom.name,
-                sessionId: matchingRoom.session_id,
-                sigil: getHouseIcon(matchingRoom.name)
-              });
-              
-              if (matchingRoom.session_id) {
-                const { data: sessionData } = await supabase
-                  .from('sessions')
-                  .select('start_time, status')
-                  .eq('id', matchingRoom.session_id)
-                  .maybeSingle();
-                  
-                if (sessionData) {
-                  setRoomDetails(prev => ({
-                    ...prev!,
-                    sessionStartTime: sessionData.start_time
-                  }));
-                }
-                
-                const { data: questionData } = await supabase
-                  .from('questions')
-                  .select('*')
-                  .eq('session_id', matchingRoom.session_id);
-                  
-                if (questionData && questionData.length > 0) {
-                  const formattedQuestions: Question[] = questionData.map(q => ({
-                    id: q.id,
-                    text: q.text,
-                    image: q.image,
-                    answer: q.answer
-                  }));
-                  
-                  setQuestions(formattedQuestions);
-                  console.log("Questions loaded:", formattedQuestions.length);
-                } else {
-                  setDefaultQuestions();
-                }
-                
-                setLoading(false);
-                return;
-              }
-            } else {
-              console.log(`Room with ID ${roomId} not found in database`);
-              setDebugInfo(prev => [...prev, `Room with ID ${roomId} NOT found in database`]);
-              if (allRoomsData.length > 0) {
-                setDebugInfo(prev => [...prev, `Available rooms: ${allRoomsData.map(r => `${r.name} (${r.id})`).join(', ')}`]);
-              }
-            }
-          } else {
-            console.log("No rooms found in the database at all");
-            setDebugInfo(prev => [...prev, "No rooms found in the database at all"]);
-          }
-        }
-        
-        const { data: singleRoomData, error: singleRoomError } = await supabase
+
+        // First try: Direct Supabase query (no authentication required)
+        const { data: roomData, error: roomError } = await supabase
           .from('rooms')
           .select('*')
           .eq('id', roomId)
           .maybeSingle();
+
+        if (roomError) {
+          setDebugInfo(prev => [...prev, `Error with direct DB query: ${roomError.message}`]);
+          console.error("Direct room query error:", roomError);
+        } 
         
-        if (singleRoomError) {
-          console.error("Error fetching room with specific ID:", singleRoomError);
-          setDebugInfo(prev => [...prev, `Error fetching specific room: ${singleRoomError.message}`]);
-        } else if (singleRoomData) {
-          console.log("Room found via direct single query:", singleRoomData);
-          setDebugInfo(prev => [...prev, "Room found via direct single query"]);
+        if (roomData) {
+          // Found room with direct query
+          setDebugInfo(prev => [...prev, `Room found with direct DB query: ${roomData.name}`]);
+          console.log("Room found with direct query:", roomData);
           
           setRoomDetails({
-            name: singleRoomData.name,
-            sessionId: singleRoomData.session_id,
-            sigil: getHouseIcon(singleRoomData.name)
+            name: roomData.name,
+            sessionId: roomData.session_id,
+            sigil: getHouseIcon(roomData.name)
           });
           
-          if (singleRoomData.session_id) {
+          // Fetch session data if available
+          if (roomData.session_id) {
             const { data: sessionData } = await supabase
               .from('sessions')
-              .select('start_time')
-              .eq('id', singleRoomData.session_id)
+              .select('start_time, status')
+              .eq('id', roomData.session_id)
               .maybeSingle();
-            
+              
             if (sessionData) {
               setRoomDetails(prev => ({
                 ...prev!,
@@ -173,13 +107,17 @@ const RoomContent = () => {
               }));
             }
             
-            const { data: questionData } = await supabase
+            // Fetch questions for the session
+            const { data: questionsData, error: questionsError } = await supabase
               .from('questions')
               .select('*')
-              .eq('session_id', singleRoomData.session_id);
-            
-            if (questionData && questionData.length > 0) {
-              const formattedQuestions: Question[] = questionData.map(q => ({
+              .eq('session_id', roomData.session_id);
+              
+            if (questionsError) {
+              console.error("Error fetching questions:", questionsError);
+              setDefaultQuestions();
+            } else if (questionsData && questionsData.length > 0) {
+              const formattedQuestions: Question[] = questionsData.map(q => ({
                 id: q.id,
                 text: q.text,
                 image: q.image,
@@ -191,21 +129,98 @@ const RoomContent = () => {
             } else {
               setDefaultQuestions();
             }
-            
-            setLoading(false);
-            return;
+          } else {
+            setDefaultQuestions();
           }
+          
+          setLoading(false);
+          return;
         } else {
-          console.error("Room not found via any method for ID:", roomId);
-          setDebugInfo(prev => [...prev, "Room not found via any method"]);
-          setRoomNotFound(true);
-          setErrorMessage("This game room doesn't exist or has been removed");
-          toast({
-            title: "Room not found",
-            description: "This game room doesn't exist or has been removed",
-            variant: "destructive",
-          });
+          setDebugInfo(prev => [...prev, "Room not found with direct DB query"]);
         }
+        
+        // Fallback: Try to fetch all rooms to check if the room exists
+        const { data: allRoomsData, error: allRoomsError } = await supabase
+          .from('rooms')
+          .select('*');
+          
+        if (allRoomsError) {
+          console.error("Error fetching all rooms:", allRoomsError);
+          setDebugInfo(prev => [...prev, `Error fetching all rooms: ${allRoomsError.message}`]);
+        } else {
+          setAllRooms(allRoomsData || []);
+          const roomCount = allRoomsData?.length || 0;
+          console.log(`Found ${roomCount} rooms directly from database`);
+          setDebugInfo(prev => [...prev, `Found ${roomCount} rooms directly from database`]);
+          
+          if (allRoomsData && allRoomsData.length > 0) {
+            const matchingRoom = allRoomsData.find(r => r.id === roomId);
+            if (matchingRoom) {
+              console.log("Room found in all rooms list:", matchingRoom);
+              setDebugInfo(prev => [...prev, `Room found in all rooms list: ${matchingRoom.name}`]);
+              
+              // Process found room (same code as above)
+              setRoomDetails({
+                name: matchingRoom.name,
+                sessionId: matchingRoom.session_id,
+                sigil: getHouseIcon(matchingRoom.name)
+              });
+              
+              if (matchingRoom.session_id) {
+                const { data: sessionData } = await supabase
+                  .from('sessions')
+                  .select('start_time')
+                  .eq('id', matchingRoom.session_id)
+                  .maybeSingle();
+                  
+                if (sessionData) {
+                  setRoomDetails(prev => ({
+                    ...prev!,
+                    sessionStartTime: sessionData.start_time
+                  }));
+                }
+                
+                const { data: questionsData } = await supabase
+                  .from('questions')
+                  .select('*')
+                  .eq('session_id', matchingRoom.session_id);
+                  
+                if (questionsData && questionsData.length > 0) {
+                  const formattedQuestions: Question[] = questionsData.map(q => ({
+                    id: q.id,
+                    text: q.text,
+                    image: q.image,
+                    answer: q.answer
+                  }));
+                  
+                  setQuestions(formattedQuestions);
+                } else {
+                  setDefaultQuestions();
+                }
+                
+                setLoading(false);
+                return;
+              }
+            } else {
+              console.log(`Room with ID ${roomId} not found in database`);
+              setDebugInfo(prev => [...prev, `Room with ID ${roomId} NOT found in all rooms list`]);
+              if (allRoomsData.length > 0) {
+                setDebugInfo(prev => [...prev, `Available rooms: ${allRoomsData.map(r => `${r.name} (${r.id})`).join(', ')}`]);
+              }
+            }
+          }
+        }
+        
+        // If we reach here, the room was not found
+        setDebugInfo(prev => [...prev, "Room not found via any method"]);
+        setRoomNotFound(true);
+        setErrorMessage("This game room doesn't exist or has been removed");
+        toast({
+          title: "Room not found",
+          description: "This game room doesn't exist or has been removed",
+          variant: "destructive",
+        });
+        
       } catch (error) {
         console.error("Error fetching room and questions:", error);
         setErrorMessage(`Failed to load room data: ${error.message || "Unknown error"}`);
@@ -361,12 +376,6 @@ const RoomContent = () => {
             <Link to="/">
               <Button className="w-full bg-dragon-primary hover:bg-dragon-secondary font-medieval">
                 Return Home
-              </Button>
-            </Link>
-            
-            <Link to="/admin">
-              <Button variant="outline" className="w-full font-medieval">
-                Go to Admin Dashboard
               </Button>
             </Link>
           </div>
