@@ -58,54 +58,59 @@ export const getRoom = async (roomId: string): Promise<Room | null> => {
   }
   
   try {
-    console.log(`[ROOM DEBUG] Attempting to fetch room with ID: ${roomId}`);
-    
-    const { count, error: countError } = await supabase
-      .from('rooms')
-      .select('*', { count: 'exact', head: true })
-      .eq('id', roomId);
-    
-    if (countError) {
-      console.error('[ROOM DEBUG] Error checking if room exists:', countError);
-    } else {
-      console.log(`[ROOM DEBUG] Room count: ${count}`);
-      if (count === 0) {
-        console.error(`[ROOM DEBUG] Room ${roomId} definitely does not exist in the database`);
-        
-        const { data: anyRooms, error: anyRoomsError } = await supabase
-          .from('rooms')
-          .select('id')
-          .limit(5);
-          
-        if (anyRoomsError) {
-          console.error('[ROOM DEBUG] Error checking for any rooms:', anyRoomsError);
-        } else {
-          console.log(`[ROOM DEBUG] Found ${anyRooms.length} rooms in the database:`, anyRooms.map(r => r.id));
-        }
-        
-        return null;
-      }
-    }
-    
-    console.log(`[ROOM DEBUG] Room exists, fetching complete data for ${roomId}`);
-    
     const { data, error } = await supabase
       .from('rooms')
-      .select('*, sessions(*)')
+      .select('*')
       .eq('id', roomId)
-      .maybeSingle();
+      .single();
 
     if (error) {
-      console.error('[ROOM DEBUG] Error fetching room with session data:', error);
+      console.error('Error fetching room basic data:', error);
+      
+      const { count, error: countError } = await supabase
+        .from('rooms')
+        .select('id', { count: 'exact', head: true })
+        .eq('id', roomId);
+        
+      if (countError) {
+        console.error('Error checking if room exists:', countError);
+      } else if (count === 0) {
+        console.error(`Room ${roomId} does not exist in the database`);
+      } else {
+        console.log(`Room ${roomId} exists but could not fetch details`);
+      }
+      
       return null;
     }
 
     if (!data) {
-      console.error(`[ROOM DEBUG] Room with ID ${roomId} exists but returned no data when fetched with sessions`);
+      console.error(`No room found with ID ${roomId}`);
+      
+      const { data: allRooms, error: allRoomsError } = await supabase
+        .from('rooms')
+        .select('id, name')
+        .limit(5);
+        
+      if (!allRoomsError && allRooms.length > 0) {
+        console.log(`Found ${allRooms.length} other rooms in the database:`, 
+          allRooms.map(r => ({ id: r.id, name: r.name })));
+      }
+      
       return null;
     }
 
-    console.log("[ROOM DEBUG] Room found with complete data:", data);
+    let sessionStatus = null;
+    if (data.session_id) {
+      const { data: sessionData, error: sessionError } = await supabase
+        .from('sessions')
+        .select('status')
+        .eq('id', data.session_id)
+        .maybeSingle();
+        
+      if (!sessionError && sessionData) {
+        sessionStatus = sessionData.status;
+      }
+    }
     
     return {
       id: data.id,
@@ -114,10 +119,10 @@ export const getRoom = async (roomId: string): Promise<Room | null> => {
       tokensLeft: data.tokens_left,
       currentDoor: data.current_door,
       score: data.score,
-      sessionStatus: data.sessions?.status
+      sessionStatus: sessionStatus
     };
   } catch (err) {
-    console.error('[ROOM DEBUG] Unexpected error in getRoom function:', err);
+    console.error('Unexpected error in getRoom function:', err);
     return null;
   }
 };

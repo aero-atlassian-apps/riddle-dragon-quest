@@ -76,46 +76,76 @@ const RoomContent = () => {
         setLoading(true);
         console.log("[ROOM PAGE] Attempting to fetch room with ID:", roomId);
         
-        const roomDebugInfo = [];
-        
+        // First try a direct DB check to see if the room exists
         const { data: directRoomCheck, error: directCheckError } = await supabase
           .from('rooms')
           .select('id, name, session_id')
           .eq('id', roomId)
           .maybeSingle();
           
+        const roomDebugInfo = [];
+          
         if (directCheckError) {
-          console.error("[ROOM PAGE] Direct room check error:", directCheckError);
+          console.error("Direct room check error:", directCheckError);
           roomDebugInfo.push(`Direct check error: ${JSON.stringify(directCheckError)}`);
         } else if (directRoomCheck) {
-          console.log("[ROOM PAGE] Direct room check successful:", directRoomCheck);
+          console.log("Direct room check successful:", directRoomCheck);
           roomDebugInfo.push(`Room exists in DB: ${JSON.stringify(directRoomCheck)}`);
-        } else {
-          console.log("[ROOM PAGE] Direct room check: No room found");
-          roomDebugInfo.push("Direct check: No room found in database");
           
-          const { data: allRooms, error: allRoomsError } = await supabase
-            .from('rooms')
-            .select('id, name')
-            .limit(10);
-            
-          if (allRoomsError) {
-            console.error("[ROOM PAGE] Error fetching all rooms:", allRoomsError);
-            roomDebugInfo.push(`Error checking all rooms: ${JSON.stringify(allRoomsError)}`);
-          } else if (allRooms && allRooms.length > 0) {
-            console.log("[ROOM PAGE] Available rooms in database:", allRooms);
-            roomDebugInfo.push(`Available ${allRooms.length} rooms: ${allRooms.map(r => r.id).join(', ')}`);
-          } else {
-            roomDebugInfo.push("No rooms found in the database at all");
+          // If direct check works but getRoom() doesn't, use this data
+          if (!roomDetails) {
+            setRoomDetails({
+              name: directRoomCheck.name,
+              sessionId: directRoomCheck.session_id,
+              sigil: getHouseIcon(directRoomCheck.name)
+            });
           }
+        } else {
+          console.log("Direct room check: No room found");
+          roomDebugInfo.push("Direct check: No room found in database");
         }
         
         setRoomCheckResults(roomDebugInfo);
         
+        // Try using the getRoom utility function
         const room = await getRoom(roomId);
         
         if (!room) {
-          console.error("[ROOM PAGE] Room not found for ID:", roomId);
+          // If getRoom fails but direct check succeeded, it uses that data instead
+          if (directRoomCheck) {
+            console.log("Using direct database check data instead of getRoom()");
+            
+            // Get questions for the session
+            if (directRoomCheck.session_id) {
+              const { data: questionData, error: questionsError } = await supabase
+                .from('questions')
+                .select('*')
+                .eq('session_id', directRoomCheck.session_id);
+                
+              if (questionsError) {
+                console.error("Error fetching questions:", questionsError);
+              } else if (questionData && questionData.length > 0) {
+                const formattedQuestions: Question[] = questionData.map(q => ({
+                  id: q.id,
+                  text: q.text,
+                  image: q.image,
+                  answer: q.answer
+                }));
+                
+                setQuestions(formattedQuestions);
+                console.log("Questions loaded:", formattedQuestions.length);
+              } else {
+                setDefaultQuestions();
+              }
+            } else {
+              setDefaultQuestions();
+            }
+            
+            setLoading(false);
+            return;
+          }
+          
+          console.error("Room not found for ID:", roomId);
           setRoomNotFound(true);
           setErrorMessage("This game room doesn't exist or has been removed");
           toast({
@@ -127,7 +157,7 @@ const RoomContent = () => {
           return;
         }
         
-        console.log("[ROOM PAGE] Room found:", room);
+        console.log("Room found:", room);
         setDebugInfo(prev => prev + `\nRoom found: ${JSON.stringify(room)}`);
         
         const { data: sessionData, error: sessionError } = await supabase
@@ -169,44 +199,7 @@ const RoomContent = () => {
             setQuestions(formattedQuestions);
             console.log("Questions loaded:", formattedQuestions.length);
           } else {
-            console.log("No questions found, using default questions");
-            setQuestions([
-              {
-                id: 1,
-                text: "What has keys but can't open locks?",
-                answer: "piano",
-              },
-              {
-                id: 2,
-                text: "What gets wetter as it dries?",
-                answer: "towel",
-              },
-              {
-                id: 3,
-                text: "What has a head and a tail but no body?",
-                answer: "coin",
-              },
-              {
-                id: 4,
-                text: "What has one eye but cannot see?",
-                answer: "needle",
-              },
-              {
-                id: 5,
-                text: "What can travel around the world while staying in a corner?",
-                answer: "stamp",
-              },
-              {
-                id: 6,
-                text: "What has legs but doesn't walk?",
-                answer: "table",
-              },
-            ]);
-            
-            toast({
-              title: "No questions found",
-              description: "Using default questions instead",
-            });
+            setDefaultQuestions();
           }
         }
       } catch (error) {
@@ -226,6 +219,47 @@ const RoomContent = () => {
     
     fetchRoomAndQuestions();
   }, [roomId, toast]);
+  
+  const setDefaultQuestions = () => {
+    console.log("No questions found, using default questions");
+    setQuestions([
+      {
+        id: 1,
+        text: "What has keys but can't open locks?",
+        answer: "piano",
+      },
+      {
+        id: 2,
+        text: "What gets wetter as it dries?",
+        answer: "towel",
+      },
+      {
+        id: 3,
+        text: "What has a head and a tail but no body?",
+        answer: "coin",
+      },
+      {
+        id: 4,
+        text: "What has one eye but cannot see?",
+        answer: "needle",
+      },
+      {
+        id: 5,
+        text: "What can travel around the world while staying in a corner?",
+        answer: "stamp",
+      },
+      {
+        id: 6,
+        text: "What has legs but doesn't walk?",
+        answer: "table",
+      },
+    ]);
+    
+    toast({
+      title: "No questions found",
+      description: "Using default questions instead",
+    });
+  };
   
   useEffect(() => {
     if (questions.length > 0 && gameState.currentDoor <= questions.length) {
