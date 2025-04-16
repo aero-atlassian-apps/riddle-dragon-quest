@@ -62,38 +62,28 @@ export const getRoom = async (roomId: string): Promise<Room | null> => {
       .from('rooms')
       .select('*')
       .eq('id', roomId)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('Error fetching room basic data:', error);
-      
-      const { count, error: countError } = await supabase
-        .from('rooms')
-        .select('id', { count: 'exact', head: true })
-        .eq('id', roomId);
-        
-      if (countError) {
-        console.error('Error checking if room exists:', countError);
-      } else if (count === 0) {
-        console.error(`Room ${roomId} does not exist in the database`);
-      } else {
-        console.log(`Room ${roomId} exists but could not fetch details`);
-      }
-      
       return null;
     }
 
     if (!data) {
-      console.error(`No room found with ID ${roomId}`);
+      console.error(`Room ${roomId} does not exist in the database`);
       
       const { data: allRooms, error: allRoomsError } = await supabase
         .from('rooms')
         .select('id, name')
         .limit(5);
         
-      if (!allRoomsError && allRooms.length > 0) {
-        console.log(`Found ${allRooms.length} other rooms in the database:`, 
-          allRooms.map(r => ({ id: r.id, name: r.name })));
+      if (!allRoomsError) {
+        if (allRooms.length === 0) {
+          console.log("No rooms found in the database at all");
+        } else {
+          console.log(`Found ${allRooms.length} other rooms in the database:`, 
+            allRooms.map(r => ({ id: r.id, name: r.name })));
+        }
       }
       
       return null;
@@ -319,4 +309,27 @@ export const getSessionStatus = async (sessionId: string): Promise<string | null
   }
   
   return data.status;
+};
+
+export const getRoomDirectCheck = async (roomId: string): Promise<{exists: boolean, data?: any}> => {
+  try {
+    const { data, error } = await supabase
+      .from('rooms')
+      .select('id, name, session_id, tokens_left, current_door, score')
+      .eq('id', roomId)
+      .maybeSingle();
+      
+    if (error) {
+      console.error("Direct room check error:", error);
+      return { exists: false };
+    }
+    
+    return { 
+      exists: !!data, 
+      data: data 
+    };
+  } catch (err) {
+    console.error("Error in direct room check:", err);
+    return { exists: false };
+  }
 };

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import SessionTimer from "@/components/SessionTimer";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { getRoom } from "@/utils/db";
+import { getRoom, getRoomDirectCheck } from "@/utils/db";
 
 const GameRoom = () => {
   return (
@@ -76,75 +77,90 @@ const RoomContent = () => {
         setLoading(true);
         console.log("[ROOM PAGE] Attempting to fetch room with ID:", roomId);
         
-        // First try a direct DB check to see if the room exists
-        const { data: directRoomCheck, error: directCheckError } = await supabase
-          .from('rooms')
-          .select('id, name, session_id')
-          .eq('id', roomId)
-          .maybeSingle();
-          
+        // First try a direct DB check using the new function
+        const directCheck = await getRoomDirectCheck(roomId);
         const roomDebugInfo = [];
           
-        if (directCheckError) {
-          console.error("Direct room check error:", directCheckError);
-          roomDebugInfo.push(`Direct check error: ${JSON.stringify(directCheckError)}`);
-        } else if (directRoomCheck) {
-          console.log("Direct room check successful:", directRoomCheck);
-          roomDebugInfo.push(`Room exists in DB: ${JSON.stringify(directRoomCheck)}`);
+        if (!directCheck.exists) {
+          roomDebugInfo.push(`Direct check: No room found in database with ID ${roomId}`);
           
-          // If direct check works but getRoom() doesn't, use this data
-          if (!roomDetails) {
-            setRoomDetails({
-              name: directRoomCheck.name,
-              sessionId: directRoomCheck.session_id,
-              sigil: getHouseIcon(directRoomCheck.name)
-            });
+          // Try a broader check to see if there are any rooms
+          const { data: anyRooms, error: anyRoomsError } = await supabase
+            .from('rooms')
+            .select('id')
+            .limit(1);
+            
+          if (!anyRoomsError) {
+            if (anyRooms.length === 0) {
+              roomDebugInfo.push("No rooms found in the database at all");
+            } else {
+              roomDebugInfo.push(`There are rooms in the database, but not with ID ${roomId}`);
+            }
           }
         } else {
-          console.log("Direct room check: No room found");
-          roomDebugInfo.push("Direct check: No room found in database");
+          console.log("Direct room check successful:", directCheck.data);
+          roomDebugInfo.push(`Room exists in DB: ${JSON.stringify(directCheck.data)}`);
+          
+          // Use the direct check data
+          const roomData = directCheck.data;
+          setRoomDetails({
+            name: roomData.name,
+            sessionId: roomData.session_id,
+            sigil: getHouseIcon(roomData.name)
+          });
+          
+          // Get session data if available
+          if (roomData.session_id) {
+            const { data: sessionData, error: sessionError } = await supabase
+              .from('sessions')
+              .select('start_time, status')
+              .eq('id', roomData.session_id)
+              .maybeSingle();
+              
+            if (!sessionError && sessionData) {
+              setRoomDetails(prev => ({
+                ...prev!,
+                sessionStartTime: sessionData.start_time
+              }));
+            }
+            
+            // Get questions for the session
+            const { data: questionData, error: questionsError } = await supabase
+              .from('questions')
+              .select('*')
+              .eq('session_id', roomData.session_id);
+              
+            if (questionsError) {
+              console.error("Error fetching questions:", questionsError);
+              roomDebugInfo.push(`Error fetching questions: ${JSON.stringify(questionsError)}`);
+            } else if (questionData && questionData.length > 0) {
+              const formattedQuestions: Question[] = questionData.map(q => ({
+                id: q.id,
+                text: q.text,
+                image: q.image,
+                answer: q.answer
+              }));
+              
+              setQuestions(formattedQuestions);
+              console.log("Questions loaded:", formattedQuestions.length);
+              roomDebugInfo.push(`Loaded ${formattedQuestions.length} questions`);
+            } else {
+              setDefaultQuestions();
+              roomDebugInfo.push("No questions found, using default questions");
+            }
+          }
+          
+          setLoading(false);
+          setRoomCheckResults(roomDebugInfo);
+          return;
         }
         
         setRoomCheckResults(roomDebugInfo);
         
-        // Try using the getRoom utility function
+        // If direct check failed, try using the getRoom utility function as backup
         const room = await getRoom(roomId);
         
         if (!room) {
-          // If getRoom fails but direct check succeeded, it uses that data instead
-          if (directRoomCheck) {
-            console.log("Using direct database check data instead of getRoom()");
-            
-            // Get questions for the session
-            if (directRoomCheck.session_id) {
-              const { data: questionData, error: questionsError } = await supabase
-                .from('questions')
-                .select('*')
-                .eq('session_id', directRoomCheck.session_id);
-                
-              if (questionsError) {
-                console.error("Error fetching questions:", questionsError);
-              } else if (questionData && questionData.length > 0) {
-                const formattedQuestions: Question[] = questionData.map(q => ({
-                  id: q.id,
-                  text: q.text,
-                  image: q.image,
-                  answer: q.answer
-                }));
-                
-                setQuestions(formattedQuestions);
-                console.log("Questions loaded:", formattedQuestions.length);
-              } else {
-                setDefaultQuestions();
-              }
-            } else {
-              setDefaultQuestions();
-            }
-            
-            setLoading(false);
-            return;
-          }
-          
           console.error("Room not found for ID:", roomId);
           setRoomNotFound(true);
           setErrorMessage("This game room doesn't exist or has been removed");
@@ -157,7 +173,7 @@ const RoomContent = () => {
           return;
         }
         
-        console.log("Room found:", room);
+        console.log("Room found via getRoom function:", room);
         setDebugInfo(prev => prev + `\nRoom found: ${JSON.stringify(room)}`);
         
         const { data: sessionData, error: sessionError } = await supabase
