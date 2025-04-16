@@ -1,63 +1,61 @@
+
 import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
-import { ArrowLeft, Trash, Play, Pause, StopCircle } from "lucide-react";
+import { PlusCircle, Trash2, Play, Pause, RotateCcw } from "lucide-react";
 import SessionCreator from "@/components/SessionCreator";
+import QuestionUploader from "@/components/QuestionUploader";
+import QuestionManager from "@/components/QuestionManager";
 import RoomCreator from "@/components/RoomCreator";
+import { getSessions, deleteSession, updateSessionStatus } from "@/utils/db";
 import { Session, Question } from "@/types/game";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getSessions, createRoom, deleteSession, updateSessionStatus } from "@/utils/db";
-import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState("sessions");
-  const [currentSession, setCurrentSession] = useState<Session | null>(null);
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [creationStep, setCreationStep] = useState<"session" | "questions" | "images" | "rooms">("session");
   const [roomCreationSessionId, setRoomCreationSessionId] = useState<string | null>(null);
+  const [deleteSessionId, setDeleteSessionId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  const { data: sessions = [], isLoading, refetch } = useQuery({
-    queryKey: ['sessions'],
-    queryFn: getSessions
-  });
+  useEffect(() => {
+    fetchSessions();
+  }, []);
+
+  const fetchSessions = async () => {
+    setIsLoading(true);
+    const fetchedSessions = await getSessions();
+    setSessions(fetchedSessions);
+    setIsLoading(false);
+  };
 
   const handleCreateSession = (sessionId: string) => {
-    // Refetch the sessions to get the newest one
-    refetch().then(() => {
-      const session = sessions.find(s => s.id === sessionId);
-      
-      if (session) {
-        setCurrentSession(session);
-        setRoomCreationSessionId(session.id);
-        setActiveTab("rooms");
-        
-        toast({
-          title: "Session created successfully",
-          description: "Now you can create rooms for this session",
-        });
-      } else {
-        // If we can't find the session after refetching, try to use just the ID
-        setCurrentSession({
-          id: sessionId,
-          name: "New Session",
-          startTime: new Date(),
-          questions: []
-        });
-        setRoomCreationSessionId(sessionId);
-        setActiveTab("rooms");
-        
-        toast({
-          title: "Moving to room creation",
-          description: "Create rooms for your new session",
-        });
-      }
-    });
+    setRoomCreationSessionId(sessionId);
+    setCreationStep("questions");
+  };
+
+  const handleUploadQuestions = (questions: Question[]) => {
+    setCreationStep("images"); // Add new step for image management
+  };
+
+  const handleQuestionsWithImagesComplete = () => {
+    setCreationStep("rooms");
   };
 
   const handleCreateRooms = async (roomNames: string[]) => {
     // Note: Room creation is now handled directly in the RoomCreator component
-    // We keep this method for compatibility but don't need to do anything here
     
     toast({
       title: "Rooms created successfully",
@@ -65,187 +63,261 @@ const AdminDashboard = () => {
     });
   };
 
-  const handleDeleteSession = async (sessionId: string) => {
-    if (window.confirm("Are you sure you want to delete this session and all associated rooms and questions?")) {
-      const success = await deleteSession(sessionId);
-      
-      if (success) {
-        toast({
-          title: "Session deleted successfully",
-          description: "The session and all associated rooms and questions have been removed",
-        });
-        
-        // Refresh the sessions list
-        refetch();
-        
-        // Clear current session if it's the one we just deleted
-        if (currentSession && currentSession.id === sessionId) {
-          setCurrentSession(null);
-          setRoomCreationSessionId(null);
-          setActiveTab("sessions");
-        }
-      } else {
-        toast({
-          title: "Error deleting session",
-          description: "Failed to delete the session",
-          variant: "destructive",
-        });
-      }
-    }
+  const handleFinishCreation = () => {
+    setShowCreateForm(false);
+    setCreationStep("session");
+    setRoomCreationSessionId(null);
+    fetchSessions();
   };
 
-  const handleSessionStatusChange = async (sessionId: string, newStatus: 'pending' | 'active' | 'completed') => {
-    const success = await updateSessionStatus(sessionId, newStatus);
+  const handleDeleteSession = async (sessionId: string) => {
+    setDeleteSessionId(sessionId);
+  };
+
+  const confirmDeleteSession = async () => {
+    if (!deleteSessionId) return;
+
+    const success = await deleteSession(deleteSessionId);
     
     if (success) {
+      setSessions((prevSessions) => prevSessions.filter((s) => s.id !== deleteSessionId));
       toast({
-        title: "Session status updated",
-        description: `Session is now ${newStatus}`,
+        title: "Session deleted",
+        description: "The session has been successfully deleted",
       });
-      
-      // Refresh the sessions list to show the updated status
-      refetch();
     } else {
       toast({
-        title: "Error updating session status",
-        description: `Failed to update session to ${newStatus}`,
+        title: "Error",
+        description: "Failed to delete the session",
+        variant: "destructive",
+      });
+    }
+    
+    setDeleteSessionId(null);
+  };
+
+  const cancelDeleteSession = () => {
+    setDeleteSessionId(null);
+  };
+
+  const handleSessionStatusChange = async (sessionId: string, status: 'pending' | 'active' | 'completed') => {
+    const success = await updateSessionStatus(sessionId, status);
+    
+    if (success) {
+      setSessions(sessions.map(session => 
+        session.id === sessionId ? { ...session, status } : session
+      ));
+      
+      const statusMessage = status === 'active' ? 'started' : status === 'completed' ? 'ended' : 'reset';
+      
+      toast({
+        title: `Session ${statusMessage}`,
+        description: `The session has been ${statusMessage} successfully`,
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: `Failed to ${status === 'active' ? 'start' : status === 'completed' ? 'end' : 'reset'} the session`,
         variant: "destructive",
       });
     }
   };
 
-  const getStatusBadgeColor = (status: string) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'completed': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-blue-100 text-blue-800';
-    }
-  };
-
   return (
-    <div className="min-h-screen p-4 bg-gradient-to-b from-dragon-accent/5 to-white">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex items-center mb-8">
-          <Link to="/" className="mr-4">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-1" /> Back
+    <div className="container mx-auto py-8 px-4">
+      <h1 className="text-3xl font-bold mb-6 font-medieval">Dragon Master Dashboard</h1>
+
+      {showCreateForm ? (
+        <div className="mb-8">
+          <div className="mb-4 flex justify-between items-center">
+            <h2 className="text-xl font-bold font-medieval">Create New Game Session</h2>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowCreateForm(false);
+                setCreationStep("session");
+                setRoomCreationSessionId(null);
+              }}
+            >
+              Cancel
             </Button>
-          </Link>
-          
-          <h1 className="text-3xl font-bold font-medieval">Admin Dashboard</h1>
-        </div>
-        
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="w-full">
-            <TabsTrigger value="sessions" className="font-medieval">Sessions</TabsTrigger>
-            <TabsTrigger value="rooms" disabled={!roomCreationSessionId} className="font-medieval">Houses</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="sessions" className="space-y-6">
+          </div>
+
+          {creationStep === "session" && (
             <SessionCreator onCreateSession={handleCreateSession} />
-            
-            {sessions.length > 0 && (
-              <div className="mt-8">
-                <h2 className="text-xl font-bold mb-4 font-medieval">Existing Sessions</h2>
-                
-                <div className="grid gap-4">
-                  {sessions.map((session) => (
-                    <Card key={session.id} className="border-dragon-gold/30">
-                      <CardHeader className="p-4">
-                        <CardTitle className="text-lg font-medieval flex justify-between items-center">
-                          {session.name}
-                          <div className="flex space-x-2">
+          )}
+          
+          {creationStep === "questions" && roomCreationSessionId && (
+            <QuestionUploader
+              sessionId={roomCreationSessionId}
+              onUpload={handleUploadQuestions}
+            />
+          )}
+          
+          {creationStep === "images" && roomCreationSessionId && (
+            <QuestionManager
+              sessionId={roomCreationSessionId}
+              onComplete={handleQuestionsWithImagesComplete}
+            />
+          )}
+          
+          {creationStep === "rooms" && roomCreationSessionId && (
+            <RoomCreator
+              sessionId={roomCreationSessionId}
+              onCreateRooms={handleCreateRooms}
+              onContinue={handleFinishCreation}
+            />
+          )}
+        </div>
+      ) : (
+        <div className="mb-8">
+          <Button
+            className="bg-dragon-primary hover:bg-dragon-secondary font-medieval"
+            onClick={() => setShowCreateForm(true)}
+          >
+            <PlusCircle className="mr-2" size={18} />
+            Create New Session
+          </Button>
+        </div>
+      )}
+
+      {!showCreateForm && (
+        <div className="mt-8">
+          <Tabs defaultValue="active" className="w-full">
+            <TabsList className="w-full mb-6 font-medieval">
+              <TabsTrigger value="all" className="flex-1">
+                All Sessions
+              </TabsTrigger>
+              <TabsTrigger value="active" className="flex-1">
+                Active Sessions
+              </TabsTrigger>
+              <TabsTrigger value="pending" className="flex-1">
+                Pending Sessions
+              </TabsTrigger>
+              <TabsTrigger value="completed" className="flex-1">
+                Completed Sessions
+              </TabsTrigger>
+            </TabsList>
+
+            {["all", "active", "pending", "completed"].map((tab) => (
+              <TabsContent key={tab} value={tab} className="mt-0">
+                {isLoading ? (
+                  <div className="text-center py-8">Loading sessions...</div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {sessions
+                      .filter((session) => 
+                        tab === "all" || 
+                        (tab === "active" && session.status === "active") || 
+                        (tab === "pending" && session.status === "pending") || 
+                        (tab === "completed" && session.status === "completed")
+                      )
+                      .map((session) => (
+                        <div
+                          key={session.id}
+                          className="bg-white border-2 border-dragon-gold/30 rounded-lg p-4 shadow"
+                        >
+                          <div className="flex justify-between items-start mb-2">
+                            <h3 className="text-lg font-bold font-medieval text-dragon-primary">
+                              {session.name}
+                            </h3>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-gray-500 hover:text-red-500"
+                              onClick={() => handleDeleteSession(session.id)}
+                            >
+                              <Trash2 size={18} />
+                            </Button>
+                          </div>
+
+                          <div className="text-sm text-gray-500 mb-4">
+                            <div>
+                              Created: {new Date(session.startTime).toLocaleString()}
+                            </div>
+                            <div>
+                              Questions: {session.questions?.length || 0}
+                            </div>
+                            <div>
+                              Status: <span className="font-semibold capitalize">{session.status}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex space-x-2 justify-end">
                             {session.status === 'pending' && (
                               <Button 
-                                variant="outline" 
                                 size="sm" 
+                                className="bg-green-600 hover:bg-green-700"
                                 onClick={() => handleSessionStatusChange(session.id, 'active')}
-                                className="font-medieval bg-green-50 hover:bg-green-100 text-green-700"
                               >
-                                <Play className="h-4 w-4 mr-1" /> Start
+                                <Play size={16} className="mr-1" /> Start
                               </Button>
                             )}
                             
                             {session.status === 'active' && (
                               <Button 
-                                variant="outline" 
                                 size="sm" 
+                                className="bg-amber-600 hover:bg-amber-700"
                                 onClick={() => handleSessionStatusChange(session.id, 'completed')}
-                                className="font-medieval bg-gray-50 hover:bg-gray-100 text-gray-700"
                               >
-                                <StopCircle className="h-4 w-4 mr-1" /> End
+                                <Pause size={16} className="mr-1" /> End
                               </Button>
                             )}
                             
                             {session.status === 'completed' && (
                               <Button 
-                                variant="outline" 
                                 size="sm" 
-                                onClick={() => handleSessionStatusChange(session.id, 'active')}
-                                className="font-medieval bg-blue-50 hover:bg-blue-100 text-blue-700"
+                                className="bg-blue-600 hover:bg-blue-700"
+                                onClick={() => handleSessionStatusChange(session.id, 'pending')}
                               >
-                                <Play className="h-4 w-4 mr-1" /> Restart
+                                <RotateCcw size={16} className="mr-1" /> Reset
                               </Button>
                             )}
-                            
-                            <Button 
-                              variant="destructive" 
-                              size="sm" 
-                              onClick={(e) => {
-                                e.stopPropagation(); 
-                                handleDeleteSession(session.id);
-                              }}
-                              className="font-medieval"
-                            >
-                              <Trash className="h-4 w-4 mr-1" /> Delete
-                            </Button>
                           </div>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-4 pt-0">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <p className="text-sm text-gray-500">
-                              Created: {session.startTime.toLocaleDateString()}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              Questions: {session.questions.length}
-                            </p>
-                            <div className={`text-sm px-2 py-1 rounded-full inline-block mt-1 ${getStatusBadgeColor(session.status || 'pending')}`}>
-                              {session.status || 'pending'}
-                            </div>
-                          </div>
-                          <Button
-                            onClick={() => {
-                              setCurrentSession(session);
-                              setRoomCreationSessionId(session.id);
-                              setActiveTab("rooms");
-                            }}
-                            className="bg-dragon-primary hover:bg-dragon-secondary font-medieval"
-                          >
-                            Manage
-                          </Button>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="rooms">
-            {roomCreationSessionId && (
-              <RoomCreator
-                sessionId={roomCreationSessionId}
-                onCreateRooms={handleCreateRooms}
-                onContinue={() => {}}
-              />
-            )}
-          </TabsContent>
-        </Tabs>
-      </div>
+                      ))}
+
+                    {sessions.filter(
+                      (session) =>
+                        tab === "all" || 
+                        (tab === "active" && session.status === "active") || 
+                        (tab === "pending" && session.status === "pending") || 
+                        (tab === "completed" && session.status === "completed")
+                    ).length === 0 && (
+                      <div className="col-span-full py-8 text-center">
+                        <p className="text-gray-500">
+                          No {tab === "all" ? "" : tab + " "} sessions found.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </TabsContent>
+            ))}
+          </Tabs>
+        </div>
+      )}
+
+      <AlertDialog open={!!deleteSessionId} onOpenChange={() => setDeleteSessionId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the session, all associated rooms,
+              questions, and scores. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelDeleteSession}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteSession}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

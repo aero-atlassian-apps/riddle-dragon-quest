@@ -40,7 +40,6 @@ const RoomContent = () => {
   } | null>(null);
   const [roomNotFound, setRoomNotFound] = useState(false);
   
-  // Get house icon based on house name
   const getHouseIcon = (name: string): string => {
     if (name.includes('Stark')) return '🐺';
     if (name.includes('Lannister')) return '🦁';
@@ -50,7 +49,6 @@ const RoomContent = () => {
     return '🛡️';
   };
   
-  // Fetch room details and questions
   useEffect(() => {
     const fetchRoomAndQuestions = async () => {
       if (!roomId) return;
@@ -58,7 +56,6 @@ const RoomContent = () => {
       try {
         setLoading(true);
         
-        // Use the getRoom utility function from db.ts
         const room = await getRoom(roomId);
         
         if (!room) {
@@ -72,7 +69,6 @@ const RoomContent = () => {
           return;
         }
         
-        // Fetch the session to get the start time
         const { data: sessionData, error: sessionError } = await supabase
           .from('sessions')
           .select('start_time')
@@ -90,7 +86,6 @@ const RoomContent = () => {
           sigil: getHouseIcon(room.name)
         });
         
-        // Fetch questions for the session
         if (room.sessionId) {
           const { data: questionData, error: questionsError } = await supabase
             .from('questions')
@@ -109,7 +104,6 @@ const RoomContent = () => {
             
             setQuestions(formattedQuestions);
           } else {
-            // No questions found for this session, use fallback
             setQuestions([
               {
                 id: 1,
@@ -165,7 +159,6 @@ const RoomContent = () => {
     fetchRoomAndQuestions();
   }, [roomId, toast]);
   
-  // Set the current question based on the current door
   useEffect(() => {
     if (questions.length > 0 && gameState.currentDoor <= questions.length) {
       setQuestion(questions[gameState.currentDoor - 1]);
@@ -180,7 +173,6 @@ const RoomContent = () => {
     const isCorrect = submitAnswer(answer);
     
     if (isCorrect) {
-      // Update the score in the database
       if (roomId) {
         supabase
           .from('rooms')
@@ -234,7 +226,6 @@ const RoomContent = () => {
   return (
     <div className="min-h-screen p-4 bg-gradient-to-b from-dragon-accent/5 to-white">
       <div className="max-w-4xl mx-auto">
-        {/* House Banner */}
         <div className="mb-6 bg-dragon-scroll/20 border-2 border-dragon-gold/30 rounded-lg p-4">
           <div className="flex flex-col sm:flex-row items-center justify-between">
             <div className="flex items-center mb-4 sm:mb-0">
@@ -252,7 +243,6 @@ const RoomContent = () => {
                 </p>
               </div>
             </div>
-            {/* Session Timer */}
             <SessionTimer 
               startTime={roomDetails?.sessionStartTime} 
               className="font-medieval text-dragon-scale"

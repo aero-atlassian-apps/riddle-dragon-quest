@@ -51,7 +51,7 @@ const RiddleQuestion: React.FC<RiddleQuestionProps> = ({
         {question.image && (
           <div className="mt-4 flex justify-center">
             <img 
-              src={`/images/${question.image}`} 
+              src={question.image} 
               alt="Riddle hint" 
               className="max-h-48 rounded-md border border-dragon-gold/30"
             />

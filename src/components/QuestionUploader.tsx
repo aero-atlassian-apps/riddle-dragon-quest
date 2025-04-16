@@ -54,11 +54,10 @@ const QuestionUploader: React.FC<QuestionUploaderProps> = ({ sessionId, onUpload
         }
       }
 
-      // Format questions to be stored in the database
+      // Format questions to be stored in the database (explicitly excluding image field)
       const questionsToAdd = parsedData.questions.map((q: any) => ({
         text: q.text,
-        answer: q.answer,
-        image: q.image || null
+        answer: q.answer
       }));
       
       // Store questions in the database
@@ -72,7 +71,7 @@ const QuestionUploader: React.FC<QuestionUploaderProps> = ({ sessionId, onUpload
         
         // Pass the questions to the parent component
         onUpload(questionsToAdd.map((q: any, index: number) => ({ 
-          id: index + 1, 
+          id: index + 1, // Temporary ID until we get real IDs from database
           ...q 
         })));
         
@@ -144,7 +143,6 @@ const QuestionUploader: React.FC<QuestionUploaderProps> = ({ sessionId, onUpload
   "questions": [
     {
       "text": "What has keys but can't open locks?",
-      "image": "piano.jpg",
       "answer": "piano"
     },
     {
@@ -154,6 +152,9 @@ const QuestionUploader: React.FC<QuestionUploaderProps> = ({ sessionId, onUpload
   ]
 }`}
         </pre>
+        <p className="mt-2 text-xs text-gray-500">
+          Note: You can add images to questions in the next step.
+        </p>
       </div>
     </div>
   );
