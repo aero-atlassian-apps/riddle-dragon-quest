@@ -84,21 +84,25 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const goToNextDoor = () => {
     const nextDoor = gameState.currentDoor + 1;
     
-    if (nextDoor > gameState.totalDoors) {
-      setGameState((prev) => ({
-        ...prev,
-        isGameComplete: true,
-      }));
-    } else {
-      setGameState((prev) => ({
-        ...prev,
-        currentDoor: nextDoor,
-        tokensLeft: 3, // Reset tokens for the next door
-        isAnswerCorrect: null,
-      }));
-    }
-    
-    setShowContinueButton(false);
+    // Keep isAnswerCorrect true for a moment before changing doors
+    // This ensures Calisy stays visible until transition begins
+    setTimeout(() => {
+      if (nextDoor > gameState.totalDoors) {
+        setGameState((prev) => ({
+          ...prev,
+          isGameComplete: true,
+        }));
+      } else {
+        setGameState((prev) => ({
+          ...prev,
+          currentDoor: nextDoor,
+          tokensLeft: 3, // Reset tokens for the next door
+          isAnswerCorrect: null,
+        }));
+      }
+      
+      setShowContinueButton(false);
+    }, 300); // Short delay to keep Calisy visible during transition
   };
 
   return (

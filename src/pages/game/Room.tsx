@@ -308,6 +308,11 @@ const RoomContent = () => {
       // Remove the automatic progression - let the continue button handle it
       // The continue button will appear after the correct answer due to the
       // setTimeout in the GameContext.tsx submitAnswer function
+      console.log("Answer is correct, showContinueButton should appear soon");
+      
+      // Explicitly set the continue button to appear
+      // This ensures it shows up regardless of the GameContext setTimeout
+      setShowContinueButton(true);
     }
   };
 
@@ -471,12 +476,25 @@ const RoomContent = () => {
                   isCorrect={gameState.isAnswerCorrect}
                 />
                 
-                {showContinueButton && gameState.isAnswerCorrect && (
+                {gameState.isAnswerCorrect && (
+                  <div className="mt-2 text-center text-green-600 font-medieval">
+                    Correct answer! {showContinueButton ? "Continue button is ready." : "Waiting for continue button..."}
+                  </div>
+                )}
+                
+                {gameState.isAnswerCorrect && showContinueButton && (
                   <div className="mt-6 text-center">
                     <Button 
                       onClick={() => {
-                        setShowQuestion(false);
+                        // First call goToNextDoor to trigger the state change
+                        // but keep the question screen visible for a moment
                         goToNextDoor();
+                        
+                        // Add a delay before hiding the question screen
+                        // This ensures Calisy stays visible during the transition
+                        setTimeout(() => {
+                          setShowQuestion(false);
+                        }, 500); // 500ms delay gives time to see Calisy
                       }}
                       className="bg-dragon-gold hover:bg-dragon-gold/80 font-medieval"
                       size="lg"
