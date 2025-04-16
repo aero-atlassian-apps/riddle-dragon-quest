@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Shield } from "lucide-react";
 import { GameProvider, useGame } from "@/context/GameContext";
 import Door from "@/components/Door";
+import Dragon from "@/components/Dragon";
 import FeedbackCharacter from "@/components/FeedbackCharacter";
 import RiddleQuestion from "@/components/RiddleQuestion";
 import { Question } from "@/types/game";
@@ -474,7 +475,7 @@ const RoomContent = () => {
         ) : (
           <div>
             <div className="my-8 flex justify-center">
-              <FeedbackCharacter isCorrect={null} isSpeaking={false} />
+              <Dragon isAwake={true} isSpeaking={false} />
             </div>
             
             <h2 className="text-xl font-bold text-center mb-6 font-medieval">
