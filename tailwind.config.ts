@@ -52,6 +52,17 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+        // Dragon theme colors
+        dragon: {
+          primary: '#8B5CF6',    // Dragon purple
+          secondary: '#7E69AB',  // Secondary purple
+          accent: '#D6BCFA',     // Light purple accent
+          gold: '#F59E0B',       // Gold for treasures
+          fire: '#DC2626',       // Dragon fire red
+          scale: '#1A1F2C',      // Dark scale color
+          stone: '#6B7280',      // Stone gray
+          scroll: '#FEF7CD',     // Aged scroll color
+        },
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
