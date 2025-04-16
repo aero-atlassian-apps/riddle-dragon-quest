@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Shield } from "lucide-react";
 import { GameProvider, useGame } from "@/context/GameContext";
 import Door from "@/components/Door";
-import Dragon from "@/components/Dragon";
+import FeedbackCharacter from "@/components/FeedbackCharacter";
 import RiddleQuestion from "@/components/RiddleQuestion";
 import { Question } from "@/types/game";
 import { supabase } from "@/integrations/supabase/client";
@@ -308,7 +307,7 @@ const RoomContent = () => {
       setTimeout(() => {
         setShowQuestion(false);
         goToNextDoor();
-      }, 2000);
+      }, 3000);
     }
   };
 
@@ -455,8 +454,8 @@ const RoomContent = () => {
         ) : showQuestion ? (
           <div className="my-8">
             <div className="mb-8 flex justify-center">
-              <Dragon
-                isAwake={true}
+              <FeedbackCharacter
+                isCorrect={gameState.isAnswerCorrect}
                 isSpeaking={true}
                 question={gameState.currentQuestion}
               />
@@ -475,7 +474,7 @@ const RoomContent = () => {
         ) : (
           <div>
             <div className="my-8 flex justify-center">
-              <Dragon isAwake={false} isSpeaking={false} />
+              <FeedbackCharacter isCorrect={null} isSpeaking={false} />
             </div>
             
             <h2 className="text-xl font-bold text-center mb-6 font-medieval">

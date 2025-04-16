@@ -2,9 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&display=swap');
-
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -12,260 +9,162 @@
 
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
-
+ 
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 222.2 47.4% 11.2%;
+ 
+    --primary: 222.1 83.2% 9.8%;
     --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
+ 
+    --secondary: 210 22.9% 89.8%;
+    --secondary-foreground: 222.2 84% 4.9%;
+ 
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-
+ 
     --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
+    --accent-foreground: 222.2 84% 4.9%;
+ 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
+ 
     --ring: 222.2 84% 4.9%;
-
+ 
     --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 240 4.9% 96.1%;
+    --sidebar-foreground: 222.2 47.4% 11.2%;
+    --sidebar-primary: 222.1 83.2% 9.8%;
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 210 40% 96.1%;
+    --sidebar-accent-foreground: 222.2 84% 4.9%;
+    --sidebar-border: 214.3 31.8% 91.4%;
+    --sidebar-ring: 222.2 84% 4.9%;
   }
-
+ 
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
-
+ 
     --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
-
+ 
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-
+ 
     --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
+    --primary-foreground: 222.2 84% 4.9%;
+ 
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
-
+ 
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
-
+ 
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
-
+ 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-
+ 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
+ 
     --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+
+    --sidebar-background: 222.2 84% 4.9%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 210 40% 98%;
+    --sidebar-primary-foreground: 222.2 84% 4.9%;
+    --sidebar-accent: 217.2 32.6% 17.5%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217.2 32.6% 17.5%;
+    --sidebar-ring: 212.7 26.8% 83.9%;
   }
 }
-
+ 
 @layer base {
   * {
     @apply border-border;
   }
-
   body {
     @apply bg-background text-foreground;
-    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-  }
-
-  .font-medieval {
-    font-family: 'MedievalSharp', 'Cinzel', serif;
   }
 }
 
-/* Enhanced Medieval/Fantasy theme animations */
+/* Dragon animations and effects */
+.dragon-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.dragon-neutral {
+  transition: all 0.5s ease;
+}
+
+.dragon-friendly {
+  animation: friendly-bob 2s ease-in-out infinite;
+}
+
+.dragon-angry {
+  animation: angry-shake 0.5s ease-in-out infinite;
+}
+
+.dragon-glow {
+  filter: drop-shadow(0 0 0.5rem rgba(220, 38, 38, 0.5));
+}
+
+.flame-animation {
+  animation: flame-flicker 0.5s ease-in-out infinite alternate;
+}
+
+.parchment {
+  background-color: #FEF7CD;
+  background-image: url('/images/parchment-bg.jpg');
+  background-size: cover;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.door-open {
+  animation: door-swing 1.5s ease-in-out forwards;
+}
+
+/* Keyframe animations */
 @keyframes float {
   0% { transform: translateY(0px); }
   50% { transform: translateY(-10px); }
   100% { transform: translateY(0px); }
 }
 
-@keyframes glow {
-  0% { filter: drop-shadow(0 0 2px rgba(139, 92, 246, 0.5)); }
-  50% { filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.8)); }
-  100% { filter: drop-shadow(0 0 2px rgba(139, 92, 246, 0.5)); }
+@keyframes friendly-bob {
+  0% { transform: translateY(0px) rotate(0deg); }
+  25% { transform: translateY(-5px) rotate(-2deg); }
+  75% { transform: translateY(-5px) rotate(2deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
 }
 
-@keyframes breathe {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
+@keyframes angry-shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  50% { transform: translateX(0); }
+  75% { transform: translateX(3px); }
+  100% { transform: translateX(0); }
 }
 
-@keyframes doorOpen {
-  0% { 
-    transform: perspective(1200px) rotateY(0deg);
-    filter: brightness(1);
-  }
-  100% { 
-    transform: perspective(1200px) rotateY(-75deg);
-    filter: brightness(1.8);
-  }
+@keyframes flame-flicker {
+  0% { opacity: 0.8; transform: scale(0.95); }
+  100% { opacity: 1; transform: scale(1.05); }
 }
 
-@keyframes flame {
-  0% { transform: scale(0.9) rotate(-2deg); opacity: 0.8; }
-  25% { transform: scale(1.1) rotate(1deg); opacity: 1; }
-  50% { transform: scale(0.95) rotate(-1deg); opacity: 0.9; }
-  75% { transform: scale(1.05) rotate(2deg); opacity: 0.95; }
-  100% { transform: scale(0.9) rotate(-2deg); opacity: 0.8; }
+@keyframes door-swing {
+  0% { transform: perspective(400px) rotateY(0); }
+  100% { transform: perspective(400px) rotateY(-70deg); }
 }
 
-@keyframes dragonEyes {
-  0% { transform: scale(1); filter: brightness(1); }
-  50% { transform: scale(1.1); filter: brightness(1.4); }
-  100% { transform: scale(1); filter: brightness(1); }
-}
-
-@keyframes torchFlicker {
-  0% { transform: scale(0.95); opacity: 0.8; }
-  50% { transform: scale(1.05); opacity: 1; }
-  100% { transform: scale(0.95); opacity: 0.8; }
-}
-
-@keyframes fadeInScale {
-  0% { opacity: 0; transform: scale(0.9); }
-  100% { opacity: 1; transform: scale(1); }
-}
-
-@layer components {
-  .dragon-float {
-    animation: float 6s ease-in-out infinite;
-  }
-  
-  .dragon-glow {
-    animation: glow 3s ease-in-out infinite;
-  }
-  
-  .door {
-    transform-origin: left;
-    perspective: 1200px;
-    transform-style: preserve-3d;
-    transition: all 0.5s ease-in-out;
-  }
-  
-  .door-open {
-    animation: doorOpen 1.8s forwards;
-  }
-  
-  .flame-animation {
-    animation: flame 3s infinite;
-  }
-  
-  .scroll {
-    background-color: theme('colors.dragon.scroll');
-    border-radius: 10px;
-    box-shadow: 0 6px 12px rgba(0,0,0,0.2);
-    padding: 20px;
-  }
-  
-  .medieval-input {
-    @apply bg-dragon-scroll border-2 border-dragon-gold/50 rounded-lg p-2 shadow-md focus:ring-2 focus:ring-dragon-gold text-dragon-scale;
-  }
-  
-  .medieval-button {
-    @apply bg-dragon-primary hover:bg-dragon-secondary text-white font-bold py-2 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 ease-in-out;
-  }
-  
-  .trophy-shine {
-    animation: glow 2s infinite;
-  }
-  
-  .parchment {
-    @apply bg-dragon-scroll border-2 border-dragon-gold/30 rounded-xl p-6 shadow-md;
-    background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23594a88' fill-opacity='0.1' fill-rule='evenodd'/%3E%3C/svg%3E");
-  }
-  
-  .got-title {
-    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-    @apply font-medieval tracking-wide;
-  }
-  
-  .shield {
-    @apply relative w-full h-full;
-    clip-path: polygon(50% 0%, 100% 0, 100% 75%, 50% 100%, 0 75%, 0 0);
-  }
-  
-  .heraldry {
-    @apply relative;
-  }
-  
-  .torch {
-    @apply relative;
-  }
-  
-  .torch-flame {
-    @apply absolute -top-6 w-8 h-10 bg-gradient-to-t from-dragon-fire to-dragon-gold rounded-full blur-sm opacity-80;
-    animation: torchFlicker 2s infinite;
-  }
-  
-  .torch-stick {
-    @apply w-3 h-16 bg-amber-800 rounded;
-  }
-  
-  .stone-texture {
-    background-image: url("data:image/svg+xml,%3Csvg width='42' height='44' viewBox='0 0 42 44' xmlns='http://www.w3.org/2000/svg'%3E%3Cg id='Page-1' fill='none' fill-rule='evenodd'%3E%3Cg id='brick-wall' fill='%239C92AC' fill-opacity='0.15'%3E%3Cpath d='M0 0h42v44H0V0zm1 1h40v20H1V1zM0 23h20v20H0V23zm22 0h20v20H22V23z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-  }
-  
-  .wood-texture {
-    background-image: url("data:image/svg+xml,%3Csvg width='84' height='48' viewBox='0 0 84 48' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.15'%3E%3Cpath d='M0 0h12v6H0V0zm28 8h12v6H28V8zm14-8h12v6H42V0zm14 0h12v6H56V0zm0 8h12v6H56V8zM42 8h12v6H42V8zm0 16h12v6H42v-6zm14-8h12v6H56v-6zm14 0h12v6H70v-6zm0-16h12v6H70V0zM28 32h12v6H28v-6zM14 16h12v6H14v-6zM0 24h12v6H0v-6zm0 8h12v6H0v-6zm14 0h12v6H14v-6zm14 8h12v6H28v-6zm-14 0h12v6H14v-6zm28 0h12v6H42v-6zm14-8h12v6H56v-6zm0-8h12v6H56v-6zm14 8h12v6H70v-6zm0 8h12v6H70v-6zM14 24h12v6H14v-6zm14-8h12v6H28v-6zM14 8h12v6H14V8zM0 8h12v6H0V8z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-  }
-  
-  .fadeIn {
-    animation: fadeInScale 0.5s ease-out forwards;
-  }
-}
-
-.door {
-  transform-origin: left;
-  perspective: 1200px;
-  transform-style: preserve-3d;
-  transition: all 0.5s ease-in-out;
-}
-
-.door-open {
-  animation: doorOpen 1.8s forwards;
-}
-
-.flame-animation {
-  animation: flame 3s infinite;
-}
-
-.dragon-eyes {
-  animation: dragonEyes 4s infinite;
+/* Additional styling for game elements */
+.font-medieval {
+  font-family: 'Cinzel', serif, 'Times New Roman', Times, serif;
 }
