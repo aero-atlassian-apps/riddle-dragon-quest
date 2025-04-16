@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Shield, ArrowRight } from "lucide-react";
+import { ArrowLeft, Shield } from "lucide-react";
 import { GameProvider, useGame } from "@/context/GameContext";
 import Door from "@/components/Door";
 import Dragon from "@/components/Dragon";
@@ -24,7 +24,7 @@ const GameRoom = () => {
 
 const RoomContent = () => {
   const { roomId } = useParams<{ roomId: string }>();
-  const { gameState, setQuestion, submitAnswer, useToken, goToNextDoor, showContinueButton, setShowContinueButton } = useGame();
+  const { gameState, setQuestion, submitAnswer, useToken, goToNextDoor, showContinueButton } = useGame();
   const { toast } = useToast();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -69,6 +69,7 @@ const RoomContent = () => {
         setDebugInfo(prev => [...prev, `Attempting to find room: ${roomId}`]);
         console.log("[ROOM PAGE] Attempting to fetch room with ID:", roomId);
 
+        // First try: Direct Supabase query (no authentication required)
         const { data: roomData, error: roomError } = await supabase
           .from('rooms')
           .select('*')
@@ -81,6 +82,7 @@ const RoomContent = () => {
         } 
         
         if (roomData) {
+          // Found room with direct query
           setDebugInfo(prev => [...prev, `Room found with direct DB query: ${roomData.name}`]);
           console.log("Room found with direct query:", roomData);
           
@@ -90,6 +92,7 @@ const RoomContent = () => {
             sigil: getHouseIcon(roomData.name)
           });
           
+          // Fetch session data if available
           if (roomData.session_id) {
             const { data: sessionData } = await supabase
               .from('sessions')
@@ -104,6 +107,7 @@ const RoomContent = () => {
               }));
             }
             
+            // Fetch questions for the session
             const { data: questionsData, error: questionsError } = await supabase
               .from('questions')
               .select('*')
@@ -135,6 +139,7 @@ const RoomContent = () => {
           setDebugInfo(prev => [...prev, "Room not found with direct DB query"]);
         }
         
+        // Fallback: Try to fetch all rooms to check if the room exists
         const { data: allRoomsData, error: allRoomsError } = await supabase
           .from('rooms')
           .select('*');
@@ -154,6 +159,7 @@ const RoomContent = () => {
               console.log("Room found in all rooms list:", matchingRoom);
               setDebugInfo(prev => [...prev, `Room found in all rooms list: ${matchingRoom.name}`]);
               
+              // Process found room (same code as above)
               setRoomDetails({
                 name: matchingRoom.name,
                 sessionId: matchingRoom.session_id,
@@ -205,6 +211,7 @@ const RoomContent = () => {
           }
         }
         
+        // If we reach here, the room was not found
         setDebugInfo(prev => [...prev, "Room not found via any method"]);
         setRoomNotFound(true);
         setErrorMessage("This game room doesn't exist or has been removed");
@@ -276,16 +283,33 @@ const RoomContent = () => {
   
   const handleDoorClick = () => {
     setShowQuestion(true);
-    setShowContinueButton(false);
   };
   
   const handleSubmitAnswer = (answer: string) => {
     const isCorrect = submitAnswer(answer);
-  };
-
-  const handleContinueAdventure = () => {
-    setShowQuestion(false);
-    goToNextDoor();
+    
+    if (isCorrect) {
+      if (roomId) {
+        supabase
+          .from('rooms')
+          .update({ 
+            score: gameState.score, 
+            current_door: gameState.currentDoor + 1,
+            tokens_left: gameState.tokensLeft 
+          })
+          .eq('id', roomId)
+          .then(({ error }) => {
+            if (error) {
+              console.error("Error updating room score:", error);
+            }
+          });
+      }
+      
+      setTimeout(() => {
+        setShowQuestion(false);
+        goToNextDoor();
+      }, 3000);
+    }
   };
 
   if (loading) {
@@ -449,21 +473,22 @@ const RoomContent = () => {
                 />
                 
                 {showContinueButton && gameState.isAnswerCorrect && (
-                  <div className="mt-8 text-center animate-fade-in">
-                    <p className="text-xl font-medieval mb-4 text-dragon-scale">
-                      Well done! You're ready to continue your adventure.
-                    </p>
+                  <div className="mt-6 text-center">
                     <Button 
-                      onClick={handleContinueAdventure}
-                      className="bg-dragon-gold hover:bg-dragon-gold/80 font-medieval px-6 py-3 text-lg"
+                      onClick={() => {
+                        setShowQuestion(false);
+                        goToNextDoor();
+                      }}
+                      className="bg-dragon-gold hover:bg-dragon-gold/80 font-medieval"
+                      size="lg"
                     >
-                      Continue the Adventure
-                      <ArrowRight className="ml-2 h-5 w-5" />
+                      Continue to Next Door
                     </Button>
                   </div>
                 )}
               </>
             )}
+
           </div>
         ) : (
           <div>

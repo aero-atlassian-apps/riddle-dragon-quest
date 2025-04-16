@@ -45,6 +45,7 @@ const RiddleQuestion: React.FC<RiddleQuestionProps> = ({
     <div className="parchment max-w-md mx-auto p-6">
       <h3 className="text-xl font-medium text-center mb-4">Solve the Dragon's Riddle</h3>
       
+      {/* Question text is now only displayed in the speech bubble */}
       <div className="mb-6">
         {question.image && (
           <div className="mt-4 flex justify-center">
@@ -83,7 +84,7 @@ const RiddleQuestion: React.FC<RiddleQuestionProps> = ({
           type="button"
           variant="outline"
           onClick={generateHint}
-          disabled={tokensLeft <= 0 || isCorrect === true}
+          disabled={tokensLeft <= 0}
           className="w-full text-dragon-scale border-dragon-primary hover:bg-dragon-accent/20 mb-4"
         >
           Use Token for Hint ({tokensLeft} left)
@@ -98,7 +99,6 @@ const RiddleQuestion: React.FC<RiddleQuestionProps> = ({
               value={answer}
               onChange={(e) => setAnswer(e.target.value)}
               className="border-2 border-dragon-gold/50"
-              disabled={isCorrect === true}
             />
           </div>
           
@@ -111,7 +111,6 @@ const RiddleQuestion: React.FC<RiddleQuestionProps> = ({
           <Button 
             type="submit" 
             className="w-full bg-dragon-primary hover:bg-dragon-secondary"
-            disabled={isCorrect === true || answer.trim() === ''}
           >
             Submit Answer
           </Button>
