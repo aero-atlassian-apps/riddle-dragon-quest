@@ -40,9 +40,8 @@ const RoomContent = () => {
   } | null>(null);
   const [roomNotFound, setRoomNotFound] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [debugInfo, setDebugInfo] = useState<string>("");
+  const [debugInfo, setDebugInfo] = useState<string[]>([]);
   const [debugMode, setDebugMode] = useState<boolean>(false);
-  const [roomCheckResults, setRoomCheckResults] = useState<any[]>([]);
   const [allRooms, setAllRooms] = useState<any[]>([]);
   
   const getHouseIcon = (name: string): string => {
@@ -64,47 +63,39 @@ const RoomContent = () => {
         return;
       }
       
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (!uuidRegex.test(roomId)) {
-        console.error("Invalid room ID format:", roomId);
-        setRoomNotFound(true);
-        setErrorMessage("Invalid room identifier format");
-        setLoading(false);
-        return;
-      }
-      
       try {
         setLoading(true);
         console.log("[ROOM PAGE] Attempting to fetch room with ID:", roomId);
         
-        const { data: allRooms, error: allRoomsError } = await supabase
+        const { data: allRoomsData, error: allRoomsError } = await supabase
           .from('rooms')
           .select('*');
           
         if (allRoomsError) {
-          console.error("Error fetching all rooms:", allRoomsError);
-          setDebugInfo(prev => prev + `\nRoom fetch error: ${JSON.stringify(allRoomsError)}`);
+          console.error("Error fetching all rooms directly:", allRoomsError);
+          setDebugInfo(prev => [...prev, `Error fetching rooms: ${allRoomsError.message}`]);
         } else {
-          setAllRooms(allRooms || []);
-          if (allRooms && allRooms.length > 0) {
-            console.log(`Found ${allRooms.length} rooms in database:`, 
-              allRooms.map(r => ({ id: r.id, name: r.name })));
-            
-            const roomExists = allRooms.find(r => r.id === roomId);
-            if (roomExists) {
-              console.log("Room found in initial check:", roomExists);
+          setAllRooms(allRoomsData || []);
+          console.log(`Found ${allRoomsData?.length || 0} rooms directly from database`);
+          setDebugInfo(prev => [...prev, `Found ${allRoomsData?.length || 0} rooms directly from database`]);
+          
+          if (allRoomsData && allRoomsData.length > 0) {
+            const matchingRoom = allRoomsData.find(r => r.id === roomId);
+            if (matchingRoom) {
+              console.log("Room found in initial direct database query:", matchingRoom);
+              setDebugInfo(prev => [...prev, `Room found in database: ${matchingRoom.name} (ID: ${matchingRoom.id})`]);
               
               setRoomDetails({
-                name: roomExists.name,
-                sessionId: roomExists.session_id,
-                sigil: getHouseIcon(roomExists.name)
+                name: matchingRoom.name,
+                sessionId: matchingRoom.session_id,
+                sigil: getHouseIcon(matchingRoom.name)
               });
               
-              if (roomExists.session_id) {
+              if (matchingRoom.session_id) {
                 const { data: sessionData } = await supabase
                   .from('sessions')
                   .select('start_time, status')
-                  .eq('id', roomExists.session_id)
+                  .eq('id', matchingRoom.session_id)
                   .maybeSingle();
                   
                 if (sessionData) {
@@ -117,7 +108,7 @@ const RoomContent = () => {
                 const { data: questionData } = await supabase
                   .from('questions')
                   .select('*')
-                  .eq('session_id', roomExists.session_id);
+                  .eq('session_id', matchingRoom.session_id);
                   
                 if (questionData && questionData.length > 0) {
                   const formattedQuestions: Question[] = questionData.map(q => ({
@@ -137,35 +128,23 @@ const RoomContent = () => {
                 return;
               }
             } else {
-              console.log(`Room with ID ${roomId} not found among ${allRooms.length} rooms`);
+              console.log(`Room with ID ${roomId} not found in database`);
+              setDebugInfo(prev => [...prev, `Room with ID ${roomId} NOT found in database`]);
+              if (allRoomsData.length > 0) {
+                setDebugInfo(prev => [...prev, `Available rooms: ${allRoomsData.map(r => `${r.name} (${r.id})`).join(', ')}`]);
+              }
             }
           } else {
             console.log("No rooms found in the database at all");
+            setDebugInfo(prev => [...prev, "No rooms found in the database at all"]);
           }
         }
-        
-        const roomDebugInfo: string[] = [];
-        roomDebugInfo.push(`Attempting to find room: ${roomId}`);
-        
-        if (allRooms && allRooms.length > 0) {
-          roomDebugInfo.push(`Database has ${allRooms.length} rooms`);
-          const matchingRoom = allRooms.find(r => r.id === roomId);
-          if (matchingRoom) {
-            roomDebugInfo.push(`Found matching room with ID ${matchingRoom.id} and name ${matchingRoom.name}`);
-          } else {
-            roomDebugInfo.push(`No room with ID ${roomId} found in the database`);
-          }
-        } else {
-          roomDebugInfo.push("No rooms found in the database at all");
-        }
-        
-        setRoomCheckResults(roomDebugInfo);
         
         const directCheck = await getRoomDirectCheck(roomId);
         
         if (directCheck.exists && directCheck.data) {
-          console.log("Room found via direct check:", directCheck.data);
-          setDebugInfo(prev => prev + `\nRoom found via direct check: ${JSON.stringify(directCheck.data)}`);
+          console.log("Room found via direct check function:", directCheck.data);
+          setDebugInfo(prev => [...prev, "Room found via direct check function"]);
           
           const roomData = directCheck.data;
           
@@ -212,7 +191,8 @@ const RoomContent = () => {
             return;
           }
         } else {
-          console.error("Room not found via direct check for ID:", roomId);
+          console.error("Room not found via any method for ID:", roomId);
+          setDebugInfo(prev => [...prev, "Room not found via any method"]);
           setRoomNotFound(true);
           setErrorMessage("This game room doesn't exist or has been removed");
           toast({
@@ -224,6 +204,7 @@ const RoomContent = () => {
       } catch (error) {
         console.error("Error fetching room and questions:", error);
         setErrorMessage(`Failed to load room data: ${error.message || "Unknown error"}`);
+        setDebugInfo(prev => [...prev, `Error: ${error.message || "Unknown error"}`]);
         setRoomNotFound(true);
       } finally {
         setLoading(false);
@@ -331,25 +312,25 @@ const RoomContent = () => {
           
           <div className="mb-6 text-sm text-left bg-gray-100 p-4 rounded overflow-auto max-h-60">
             <h3 className="font-bold mb-2">Debug Information:</h3>
-            {roomCheckResults.map((result, index) => (
-              <p key={index} className="mb-1">{result}</p>
+            {debugInfo.map((info, index) => (
+              <p key={index} className="mb-1">{info}</p>
             ))}
             
             {allRooms.length > 0 && (
               <div className="mt-3">
                 <p className="font-bold">Available rooms in database:</p>
                 <ul className="list-disc ml-4 mt-1">
-                  {allRooms.slice(0, 5).map((room) => (
+                  {allRooms.slice(0, 10).map((room) => (
                     <li key={room.id} className="mb-1">
                       {room.name} (ID: {room.id})
                     </li>
                   ))}
-                  {allRooms.length > 5 && <li>...and {allRooms.length - 5} more</li>}
+                  {allRooms.length > 10 && <li>...and {allRooms.length - 10} more</li>}
                 </ul>
               </div>
             )}
             
-            <p className="mt-2 font-bold">Room ID: {roomId}</p>
+            <p className="mt-2 font-bold">Room ID from URL: {roomId}</p>
             
             <div className="mt-4">
               <Button 
@@ -358,12 +339,14 @@ const RoomContent = () => {
                 size="sm"
                 className="text-xs"
               >
-                {debugMode ? "Hide Advanced Debug" : "Show Advanced Debug"}
+                {debugMode ? "Hide Technical Details" : "Show Technical Details"}
               </Button>
               
-              {debugMode && debugInfo && (
+              {debugMode && (
                 <pre className="mt-2 text-xs overflow-auto max-h-40 p-2 bg-gray-200 rounded">
-                  {debugInfo}
+                  Database connection info:
+                  Project URL: {process.env.SUPABASE_URL || 'Not Set'}
+                  {JSON.stringify(allRooms, null, 2)}
                 </pre>
               )}
             </div>

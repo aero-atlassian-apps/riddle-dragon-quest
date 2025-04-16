@@ -67,6 +67,9 @@ export const getRoom = async (roomId: string): Promise<Room | null> => {
       return null;
     }
 
+    console.log(`Found ${data?.length || 0} total rooms in database:`, 
+      data?.map(r => ({ id: r.id, name: r.name })) || []);
+
     if (!data || data.length === 0) {
       console.error('No rooms found in the database at all');
       return null;
@@ -111,15 +114,22 @@ export const getRoom = async (roomId: string): Promise<Room | null> => {
 };
 
 export const getRoomDirectCheck = async (roomId: string): Promise<{exists: boolean, data?: any}> => {
+  if (!roomId) {
+    console.error("Missing room ID");
+    return { exists: false };
+  }
+
   try {
     const { data, error } = await supabase
       .from('rooms')
-      .select('id, name, session_id, tokens_left, current_door, score');
+      .select('*');
       
     if (error) {
       console.error("Direct room check error:", error);
       return { exists: false };
     }
+
+    console.log(`Direct check found ${data?.length || 0} total rooms in database`);
 
     if (!data || data.length === 0) {
       console.log("No rooms found in the database at all");
@@ -129,9 +139,9 @@ export const getRoomDirectCheck = async (roomId: string): Promise<{exists: boole
     const roomData = data.find(room => room.id === roomId);
     
     if (!roomData) {
-      console.log(`Room not found in direct search results (id: ${roomId})`);
-      console.log(`Found ${data.length} other rooms:`, 
-        data.map(r => ({ id: r.id, name: r.name })));
+      console.log(`Direct check: No room found in database with ID ${roomId}`);
+      console.log(`Found ${data.length} other rooms with IDs:`, 
+        data.map(r => r.id).join(', '));
       return { exists: false };
     }
     
