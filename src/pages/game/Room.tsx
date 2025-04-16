@@ -459,13 +459,6 @@ const RoomContent = () => {
                 isCorrect={gameState.isAnswerCorrect}
                 isSpeaking={true}
                 question={gameState.currentQuestion}
-                onContinue={() => {
-                  // Only proceed if the answer was correct
-                  if (gameState.isAnswerCorrect) {
-                    setShowQuestion(false);
-                    setShowDoors(true);
-                  }
-                }}
               />
             </div>
             
