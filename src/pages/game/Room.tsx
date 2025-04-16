@@ -24,7 +24,7 @@ const GameRoom = () => {
 
 const RoomContent = () => {
   const { roomId } = useParams<{ roomId: string }>();
-  const { gameState, setQuestion, submitAnswer, useToken, goToNextDoor, showContinueButton } = useGame();
+  const { gameState, setQuestion, submitAnswer, useToken, goToNextDoor, showContinueButton, setShowContinueButton } = useGame();
   const { toast } = useToast();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
