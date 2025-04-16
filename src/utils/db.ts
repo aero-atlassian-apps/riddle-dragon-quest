@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Session, Question, Room, Score } from "@/types/game";
 
@@ -43,6 +42,8 @@ export const getSessions = async (): Promise<Session[]> => {
 };
 
 export const getRoom = async (roomId: string): Promise<Room | null> => {
+  console.log("Fetching room with ID:", roomId);
+  
   const { data, error } = await supabase
     .from('rooms')
     .select('*')
@@ -55,6 +56,7 @@ export const getRoom = async (roomId: string): Promise<Room | null> => {
   }
 
   if (!data) {
+    console.log("No room found with ID:", roomId);
     return null;
   }
 
@@ -121,6 +123,40 @@ export const updateGameScore = async (roomId: string, score: number): Promise<bo
 
   if (error) {
     console.error('Error updating score:', error);
+    return false;
+  }
+
+  return true;
+};
+
+export const deleteSession = async (sessionId: string): Promise<boolean> => {
+  const { error: roomsError } = await supabase
+    .from('rooms')
+    .delete()
+    .eq('session_id', sessionId);
+  
+  if (roomsError) {
+    console.error('Error deleting rooms:', roomsError);
+    return false;
+  }
+
+  const { error: questionsError } = await supabase
+    .from('questions')
+    .delete()
+    .eq('session_id', sessionId);
+  
+  if (questionsError) {
+    console.error('Error deleting questions:', questionsError);
+    return false;
+  }
+
+  const { error: sessionError } = await supabase
+    .from('sessions')
+    .delete()
+    .eq('id', sessionId);
+  
+  if (sessionError) {
+    console.error('Error deleting session:', sessionError);
     return false;
   }
 

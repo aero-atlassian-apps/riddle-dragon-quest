@@ -3,13 +3,12 @@ import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Trash } from "lucide-react";
 import SessionCreator from "@/components/SessionCreator";
 import RoomCreator from "@/components/RoomCreator";
-import QuestionUploader from "@/components/QuestionUploader";
 import { Session, Question } from "@/types/game";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getSessions, createRoom } from "@/utils/db";
+import { getSessions, createRoom, deleteSession } from "@/utils/db";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -79,24 +78,33 @@ const AdminDashboard = () => {
     });
   };
 
-  const handleUploadQuestions = (questions: Question[]) => {
-    if (!currentSession) return;
-    
-    // Update the current session with the questions
-    const updatedSession = {
-      ...currentSession,
-      questions,
-    };
-    
-    setCurrentSession(updatedSession);
-    
-    // After uploading questions, refetch sessions to get the updated data
-    refetch();
-  };
-  
-  // Move to questions tab when a user clicks the continue button in rooms tab
-  const continueToQuestions = () => {
-    setActiveTab("questions");
+  const handleDeleteSession = async (sessionId: string) => {
+    if (window.confirm("Are you sure you want to delete this session and all associated rooms and questions?")) {
+      const success = await deleteSession(sessionId);
+      
+      if (success) {
+        toast({
+          title: "Session deleted successfully",
+          description: "The session and all associated rooms and questions have been removed",
+        });
+        
+        // Refresh the sessions list
+        refetch();
+        
+        // Clear current session if it's the one we just deleted
+        if (currentSession && currentSession.id === sessionId) {
+          setCurrentSession(null);
+          setRoomCreationSessionId(null);
+          setActiveTab("sessions");
+        }
+      } else {
+        toast({
+          title: "Error deleting session",
+          description: "Failed to delete the session",
+          variant: "destructive",
+        });
+      }
+    }
   };
 
   return (
@@ -113,12 +121,9 @@ const AdminDashboard = () => {
         </div>
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="w-full grid grid-cols-3">
+          <TabsList className="w-full grid grid-cols-2">
             <TabsTrigger value="sessions" className="font-medieval">Sessions</TabsTrigger>
             <TabsTrigger value="rooms" disabled={!roomCreationSessionId} className="font-medieval">Houses</TabsTrigger>
-            <TabsTrigger value="questions" disabled={!currentSession} className="font-medieval">
-              Add More Questions
-            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="sessions" className="space-y-6">
@@ -132,7 +137,20 @@ const AdminDashboard = () => {
                   {sessions.map((session) => (
                     <Card key={session.id} className="border-dragon-gold/30">
                       <CardHeader className="p-4">
-                        <CardTitle className="text-lg font-medieval">{session.name}</CardTitle>
+                        <CardTitle className="text-lg font-medieval flex justify-between items-center">
+                          {session.name}
+                          <Button 
+                            variant="destructive" 
+                            size="sm" 
+                            onClick={(e) => {
+                              e.stopPropagation(); 
+                              handleDeleteSession(session.id);
+                            }}
+                            className="font-medieval"
+                          >
+                            <Trash className="h-4 w-4 mr-1" /> Delete
+                          </Button>
+                        </CardTitle>
                       </CardHeader>
                       <CardContent className="p-4 pt-0 flex justify-between">
                         <div>
@@ -166,26 +184,8 @@ const AdminDashboard = () => {
               <RoomCreator
                 sessionId={roomCreationSessionId}
                 onCreateRooms={handleCreateRooms}
-                onContinue={continueToQuestions}
+                onContinue={() => {}}
               />
-            )}
-          </TabsContent>
-          
-          <TabsContent value="questions">
-            {currentSession && (
-              <>
-                <div className="mb-6 bg-dragon-scroll/20 border-2 border-dragon-gold/30 rounded-lg p-4">
-                  <p className="font-medieval">
-                    This tab allows you to add more questions to an existing session. 
-                    Questions are attached to sessions when you create them, but you can 
-                    add additional questions here.
-                  </p>
-                </div>
-                <QuestionUploader 
-                  sessionId={currentSession.id} 
-                  onUpload={handleUploadQuestions} 
-                />
-              </>
             )}
           </TabsContent>
         </Tabs>
