@@ -1,10 +1,9 @@
-
 import React, { useState } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { createSession, addQuestionsToSession } from '@/utils/db';
-import { useToast } from './ui/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { Question } from '@/types/game';
 import { Loader2 } from 'lucide-react';
 
@@ -63,7 +62,6 @@ const SessionCreator: React.FC<SessionCreatorProps> = ({ onCreateSession }) => {
           description: "Failed to create session",
           variant: "destructive",
         });
-        setIsLoading(false);
         return;
       }
 
@@ -79,7 +77,6 @@ const SessionCreator: React.FC<SessionCreatorProps> = ({ onCreateSession }) => {
           description: "Invalid JSON format in uploaded file",
           variant: "destructive",
         });
-        setIsLoading(false);
         return;
       }
       
@@ -89,7 +86,6 @@ const SessionCreator: React.FC<SessionCreatorProps> = ({ onCreateSession }) => {
           description: "Invalid JSON format: missing questions array",
           variant: "destructive",
         });
-        setIsLoading(false);
         return;
       }
 
@@ -102,7 +98,6 @@ const SessionCreator: React.FC<SessionCreatorProps> = ({ onCreateSession }) => {
           description: "Failed to add questions",
           variant: "destructive",
         });
-        setIsLoading(false);
         return;
       }
 
@@ -115,14 +110,14 @@ const SessionCreator: React.FC<SessionCreatorProps> = ({ onCreateSession }) => {
       setSessionName('');
       setQuestionsFile(null);
       
-      // Notify parent component
+      // Notify parent component with the session ID
       onCreateSession(session.id);
       
     } catch (error) {
       console.error('Error:', error);
       toast({
         title: "Error",
-        description: "An error occurred while creating the session",
+        description: error.message || "An error occurred while creating the session",
         variant: "destructive",
       });
     } finally {
