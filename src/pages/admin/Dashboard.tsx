@@ -21,21 +21,13 @@ const AdminDashboard = () => {
     queryFn: getSessions
   });
 
-  const handleCreateSession = async (sessionName: string, questionsFile: File) => {
-    // In a real app, this would upload to Supabase and get an ID back
-    const newSession: Session = {
-      id: `session-${Date.now()}`,
-      name: sessionName,
-      startTime: new Date(),
-      questions: [],
-    };
-    
-    setSessions((prev) => [...prev, newSession]);
-    setCurrentSession(newSession);
-    setRoomCreationSessionId(newSession.id);
-    setActiveTab("rooms");
-    
-    // Next: admin would need to upload questions and create rooms
+  const handleCreateSession = (sessionId: string) => {
+    const session = sessions.find(s => s.id === sessionId);
+    if (session) {
+      setCurrentSession(session);
+      setRoomCreationSessionId(session.id);
+      setActiveTab("rooms");
+    }
   };
 
   const handleCreateRooms = (roomNames: string[]) => {

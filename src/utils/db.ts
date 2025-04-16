@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Session, Question, Room, Score } from "@/types/game";
 
@@ -14,20 +13,32 @@ export const createSession = async (name: string): Promise<Session | null> => {
     return null;
   }
 
-  return data;
+  return {
+    id: data.id,
+    name: data.name,
+    startTime: new Date(data.start_time),
+    endTime: data.end_time ? new Date(data.end_time) : undefined,
+    questions: []
+  };
 };
 
 export const getSessions = async (): Promise<Session[]> => {
   const { data, error } = await supabase
     .from('sessions')
-    .select('*');
+    .select('*, questions(*)');
 
   if (error) {
     console.error('Error fetching sessions:', error);
     return [];
   }
 
-  return data || [];
+  return (data || []).map(session => ({
+    id: session.id,
+    name: session.name,
+    startTime: new Date(session.start_time),
+    endTime: session.end_time ? new Date(session.end_time) : undefined,
+    questions: session.questions || []
+  }));
 };
 
 export const createRoom = async (sessionId: string, roomName: string): Promise<Room | null> => {
@@ -45,7 +56,14 @@ export const createRoom = async (sessionId: string, roomName: string): Promise<R
     return null;
   }
 
-  return data;
+  return {
+    id: data.id,
+    sessionId: data.session_id,
+    name: data.name,
+    tokensLeft: data.tokens_left,
+    currentDoor: data.current_door,
+    score: data.score
+  };
 };
 
 export const addQuestionsToSession = async (sessionId: string, questions: Omit<Question, 'id'>[]): Promise<boolean> => {
