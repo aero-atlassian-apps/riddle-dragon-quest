@@ -45,9 +45,8 @@ const RiddleQuestion: React.FC<RiddleQuestionProps> = ({
     <div className="parchment max-w-md mx-auto p-6">
       <h3 className="text-xl font-medium text-center mb-4">Solve the Dragon's Riddle</h3>
       
+      {/* Question text is now only displayed in the speech bubble */}
       <div className="mb-6">
-        <p className="text-lg font-medium mb-2">{question.text}</p>
-        
         {question.image && (
           <div className="mt-4 flex justify-center">
             <img 

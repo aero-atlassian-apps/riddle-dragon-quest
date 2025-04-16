@@ -48,68 +48,68 @@ const FeedbackCharacter: React.FC<FeedbackCharacterProps> = ({ isCorrect, isSpea
             <path d="M170 120c10-5 15 5 10 10s-15 0-10-10z" fill="#9b87f5" stroke="#1A1F2C" />
           </svg>
         ) : (
-          // Fierce Dragon with red eyes for wrong answer or neutral state
+          // Door Keeper (Game of Thrones style)
           <svg 
             viewBox="0 0 240 180" 
             xmlns="http://www.w3.org/2000/svg"
             className="w-full h-auto"
           >
-            {/* Dragon Body - More detailed, fierce-looking */}
+            {/* Door Keeper Body - Armored, imposing figure */}
             <path d="M120 155c35 0 65-25 65-60s-30-55-65-55-65 25-65 55 30 60 65 60z" 
-                  fill="#7E69AB" stroke="#1A1F2C" strokeWidth="3" />
-            <path d="M95 135c-15 5-30 0-35-10s5-25 20-30 30 0 35 10-5 25-20 30z" 
-                  fill="#8B5CF6" stroke="#1A1F2C" strokeWidth="2" />
-            <path d="M145 135c15 5 30 0 35-10s-5-25-20-30-30 0-35 10 5 25 20 30z" 
-                  fill="#8B5CF6" stroke="#1A1F2C" strokeWidth="2" />
+                  fill="#2A323C" stroke="#1A1F2C" strokeWidth="3" />
             
-            {/* Dragon's Scales */}
-            <path d="M100 120c5 15 35 15 40 0" stroke="#1A1F2C" strokeWidth="2" fill="none" />
-            <path d="M100 130c5 15 35 15 40 0" stroke="#1A1F2C" strokeWidth="2" fill="none" />
-            <path d="M110 140c5 10 15 10 20 0" stroke="#1A1F2C" strokeWidth="2" fill="none" />
+            {/* Armor plates and chainmail */}
+            <path d="M95 100c-5 15 50 15 50 0" stroke="#4B5563" strokeWidth="3" fill="none" />
+            <path d="M95 110c-5 15 50 15 50 0" stroke="#4B5563" strokeWidth="3" fill="none" />
+            <path d="M95 120c-5 15 50 15 50 0" stroke="#4B5563" strokeWidth="3" fill="none" />
+            <path d="M95 130c-5 15 50 15 50 0" stroke="#4B5563" strokeWidth="3" fill="none" />
             
-            {/* Dragon's Neck/Head - More fierce-looking */}
-            <path d="M90 75c-10-20 5-45 30-55 15-5 30 0 45 15 5 5 0 20-10 20-10 0-20-15-40-5-15 7-20 15-25 25z" 
-                  fill="#8B5CF6" stroke="#1A1F2C" strokeWidth="2" />
+            {/* Helmet - Medieval style with face guard */}
+            <path d="M120 60c-20 0-35 15-35 35 0 10 5 20 15 25 5 2 10 3 20 3s15-1 20-3c10-5 15-15 15-25 0-20-15-35-35-35z" 
+                  fill="#4B5563" stroke="#1A1F2C" strokeWidth="2" />
             
-            {/* Dragon's Horns - Larger and sharper */}
-            <path d="M95 40c-5-10-15-20-5-25s15 5 15 15-5 15-10 10z" 
-                  fill="#1A1F2C" stroke="#1A1F2C" strokeWidth="1" />
-            <path d="M125 40c5-10 15-20 5-25s-15 5-15 15 5 15 10 10z" 
-                  fill="#1A1F2C" stroke="#1A1F2C" strokeWidth="1" />
+            {/* Helmet details - Eye slits and breathing holes */}
+            <path d="M105 80h30" stroke="#1A1F2C" strokeWidth="1.5" fill="none" />
+            <path d="M105 85h30" stroke="#1A1F2C" strokeWidth="1.5" fill="none" />
+            <path d="M115 90h10" stroke="#1A1F2C" strokeWidth="1.5" fill="none" />
+            <path d="M115 95h10" stroke="#1A1F2C" strokeWidth="1.5" fill="none" />
             
-            {/* Dragon's Eyes - Red and glowing for wrong answer, normal otherwise */}
-            <circle cx="105" cy="55" r="6" fill={isCorrect === false ? "#ea384c" : "#6B7280"} className="dragon-eyes animate-pulse" />
-            <circle cx="135" cy="55" r="6" fill={isCorrect === false ? "#ea384c" : "#6B7280"} className="dragon-eyes animate-pulse" />
+            {/* Eyes glowing through helmet slits */}
+            <rect x="108" y="82" width="8" height="2" fill={isCorrect === false ? "#ea384c" : "#60A5FA"} className="animate-pulse" />
+            <rect x="124" y="82" width="8" height="2" fill={isCorrect === false ? "#ea384c" : "#60A5FA"} className="animate-pulse" />
             
-            {/* Dragon's Wings - Larger, more menacing */}
-            <path d="M65 110c-25-15-50 0-50 25s25 30 50 20c15-5 15-35 0-45z" 
-                  fill="#7E69AB" stroke="#1A1F2C" strokeWidth="2" />
-            <path d="M175 110c25-15 50 0 50 25s-25 30-50 20c-15-5-15-35 0-45z" 
-                  fill="#7E69AB" stroke="#1A1F2C" strokeWidth="2" />
+            {/* Shoulder pauldrons */}
+            <path d="M85 90c-10 0-20 10-20 20s5 20 15 20c15 0 20-10 20-25 0-10-5-15-15-15z" 
+                  fill="#4B5563" stroke="#1A1F2C" strokeWidth="2" />
+            <path d="M155 90c10 0 20 10 20 20s-5 20-15 20c-15 0-20-10-20-25 0-10 5-15 15-15z" 
+                  fill="#4B5563" stroke="#1A1F2C" strokeWidth="2" />
             
-            {/* Wing details */}
-            <path d="M35 130c10-10 30-20 30-20" stroke="#1A1F2C" strokeWidth="1.5" fill="none" />
-            <path d="M40 145c15-10 35-25 35-25" stroke="#1A1F2C" strokeWidth="1.5" fill="none" />
-            <path d="M205 130c-10-10-30-20-30-20" stroke="#1A1F2C" strokeWidth="1.5" fill="none" />
-            <path d="M200 145c-15-10-35-25-35-25" stroke="#1A1F2C" strokeWidth="1.5" fill="none" />
+            {/* Sword/weapon */}
+            <path d="M75 120l-30 30" stroke="#9CA3AF" strokeWidth="3" fill="none" />
+            <path d="M45 150l-5-5" stroke="#9CA3AF" strokeWidth="3" fill="none" />
+            <path d="M75 120c-2-2-5-2-7 0" stroke="#9CA3AF" strokeWidth="2" fill="none" />
             
-            {/* Dragon's Fire - More intense for wrong answer */}
+            {/* Shield */}
+            <path d="M165 120c10 0 20 5 25 15s0 20-10 25-20 0-25-10-0-30 10-30z" 
+                  fill="#6B7280" stroke="#1A1F2C" strokeWidth="2" />
+            <path d="M165 125c5 0 10 2 12 7s0 10-5 12-10 0-12-5-0-14 5-14z" 
+                  fill="#4B5563" stroke="#1A1F2C" strokeWidth="1" />
+            
+            {/* Torch or flame effect when speaking */}
             {(isSpeaking || isCorrect === false) && (
               <g className="flame-animation">
-                <path d="M120 35c0-15 8-25 15-30 7 5 15 15 15 30 0 8-7 15-15 15s-15-7-15-15z" 
+                <path d="M90 70c-5-10 0-15 5-20 5 5 10 10 5 20 0 5-3 8-5 8s-5-3-5-8z" 
                       fill={isCorrect === false ? "#F59E0B" : "#DC2626"} stroke="#DC2626" strokeWidth="1.5" />
-                <path d="M127 15c3 5 8 10 8 15 0 5-3 8-8 8s-8-3-8-8c0-5 5-10 8-15z" 
-                      fill="#DC2626" />
-                <path d="M127 15c2 3 4 7 4 10 0 3-2 5-4 5s-4-2-4-5c0-3 2-7 4-10z" 
+                <path d="M90 60c2 3 4 5 4 8 0 3-1 5-2 5s-2-2-2-5c0-3 0-5 0-8z" 
                       fill="#FBBF24" />
               </g>
             )}
             
-            {/* Dragon's Tail */}
-            <path d="M120 155c-15 15-30 20-45 5s-5-40 15-25c10 7 15 15 30 20z" 
-                  fill="#8B5CF6" stroke="#1A1F2C" strokeWidth="2" />
-            <path d="M90 135c-10 10-20 20-10 25s20-15 10-25z" 
-                  fill="#7E69AB" stroke="#1A1F2C" strokeWidth="1.5" />
+            {/* Cape/cloak */}
+            <path d="M85 100c-5 40 70 40 70 0" 
+                  fill="#1F2937" stroke="#1A1F2C" strokeWidth="2" />
+            <path d="M90 110c0 30 60 30 60 0" 
+                  fill="#1F2937" stroke="#1A1F2C" strokeWidth="1.5" />
           </svg>
         )}
       </div>
@@ -128,7 +128,7 @@ const FeedbackCharacter: React.FC<FeedbackCharacterProps> = ({ isCorrect, isSpea
             {question.image && (
               <div className="mt-4 flex justify-center">
                 <img 
-                  src={question.image} 
+                  src={`/images/${question.image}`} 
                   alt="Riddle hint" 
                   className="max-h-32 rounded-md border-2 border-dragon-gold/30 shadow-lg"
                 />

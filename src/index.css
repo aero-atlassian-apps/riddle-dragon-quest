@@ -98,6 +98,10 @@
 /* Dragon animations and effects */
 .dragon-float {
   animation: float 3s ease-in-out infinite;
+  width: 100%;
+  height: auto;
+  min-height: 180px;
+  display: block;
 }
 
 .dragon-neutral {
@@ -126,6 +130,11 @@
   background-size: cover;
   border-radius: 0.5rem;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.speech-bubble {
+  z-index: 10;
+  filter: drop-shadow(0 4px 3px rgba(0, 0, 0, 0.1));
 }
 
 .door-open {
