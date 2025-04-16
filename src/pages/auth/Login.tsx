@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
-const TEMP_EMAIL = "admin@dragonriddle.com";
+// Using a valid email format that Supabase will accept
+const TEMP_EMAIL = "admin@example.com";
 const TEMP_PASSWORD = "admin123";
 
 const Login = () => {
