@@ -140,25 +140,30 @@ const RoomContent = () => {
           }
         }
         
-        const directCheck = await getRoomDirectCheck(roomId);
+        const { data: singleRoomData, error: singleRoomError } = await supabase
+          .from('rooms')
+          .select('*')
+          .eq('id', roomId)
+          .maybeSingle();
         
-        if (directCheck.exists && directCheck.data) {
-          console.log("Room found via direct check function:", directCheck.data);
-          setDebugInfo(prev => [...prev, "Room found via direct check function"]);
-          
-          const roomData = directCheck.data;
+        if (singleRoomError) {
+          console.error("Error fetching room with specific ID:", singleRoomError);
+          setDebugInfo(prev => [...prev, `Error fetching specific room: ${singleRoomError.message}`]);
+        } else if (singleRoomData) {
+          console.log("Room found via direct single query:", singleRoomData);
+          setDebugInfo(prev => [...prev, "Room found via direct single query"]);
           
           setRoomDetails({
-            name: roomData.name,
-            sessionId: roomData.session_id,
-            sigil: getHouseIcon(roomData.name)
+            name: singleRoomData.name,
+            sessionId: singleRoomData.session_id,
+            sigil: getHouseIcon(singleRoomData.name)
           });
           
-          if (roomData.session_id) {
+          if (singleRoomData.session_id) {
             const { data: sessionData } = await supabase
               .from('sessions')
               .select('start_time')
-              .eq('id', roomData.session_id)
+              .eq('id', singleRoomData.session_id)
               .maybeSingle();
             
             if (sessionData) {
@@ -171,7 +176,7 @@ const RoomContent = () => {
             const { data: questionData } = await supabase
               .from('questions')
               .select('*')
-              .eq('session_id', roomData.session_id);
+              .eq('session_id', singleRoomData.session_id);
             
             if (questionData && questionData.length > 0) {
               const formattedQuestions: Question[] = questionData.map(q => ({
