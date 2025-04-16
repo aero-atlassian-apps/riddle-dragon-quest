@@ -58,23 +58,31 @@ const RoomContent = () => {
       try {
         setLoading(true);
         
-        // Fetch the room details using maybeSingle()
+        // Fetch the room details 
         const { data: room, error: roomError } = await supabase
           .from('rooms')
           .select('name, session_id')
           .eq('id', roomId)
-          .maybeSingle();
+          .single();
         
-        if (roomError) throw roomError;
-        
-        // Handle case when room is not found
-        if (!room) {
-          setRoomNotFound(true);
-          toast({
-            title: "Room not found",
-            description: "This game room doesn't exist or has been removed",
-            variant: "destructive",
-          });
+        if (roomError) {
+          // Check if this is a "no rows returned" error
+          if (roomError.code === 'PGRST116') {
+            setRoomNotFound(true);
+            toast({
+              title: "Room not found",
+              description: "This game room doesn't exist or has been removed",
+              variant: "destructive",
+            });
+          } else {
+            console.error("Error fetching room:", roomError);
+            toast({
+              title: "Error",
+              description: "Failed to load room data",
+              variant: "destructive",
+            });
+          }
+          setLoading(false);
           return;
         }
         
@@ -162,6 +170,7 @@ const RoomContent = () => {
           description: "Failed to load room data",
           variant: "destructive",
         });
+        setRoomNotFound(true);
       } finally {
         setLoading(false);
       }
