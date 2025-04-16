@@ -305,10 +305,9 @@ const RoomContent = () => {
           });
       }
       
-      setTimeout(() => {
-        setShowQuestion(false);
-        goToNextDoor();
-      }, 3000);
+      // Remove the automatic progression - let the continue button handle it
+      // The continue button will appear after the correct answer due to the
+      // setTimeout in the GameContext.tsx submitAnswer function
     }
   };
 
