@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { Question, GameState } from '../types/game';
 
@@ -43,7 +42,6 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const isCorrect = gameState.currentQuestion.answer.toLowerCase() === answer.toLowerCase();
     
     if (isCorrect) {
-      // Calculate score: 100 points - (10 points * tokens used)
       const tokensUsed = 3 - gameState.tokensLeft;
       const pointsEarned = 100 - (10 * tokensUsed);
       
@@ -53,10 +51,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isAnswerCorrect: true,
       }));
       
-      // Show continue button after a successful answer - using a longer timeout to ensure visibility
       setTimeout(() => {
         setShowContinueButton(true);
-      }, 1500);
+      }, 2500);
     } else {
       setGameState((prev) => ({
         ...prev,
@@ -84,8 +81,6 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const goToNextDoor = () => {
     const nextDoor = gameState.currentDoor + 1;
     
-    // Keep isAnswerCorrect true for a moment before changing doors
-    // This ensures Calisy stays visible until transition begins
     setTimeout(() => {
       if (nextDoor > gameState.totalDoors) {
         setGameState((prev) => ({
@@ -96,13 +91,13 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setGameState((prev) => ({
           ...prev,
           currentDoor: nextDoor,
-          tokensLeft: 3, // Reset tokens for the next door
+          tokensLeft: 3,
           isAnswerCorrect: null,
         }));
       }
       
       setShowContinueButton(false);
-    }, 300); // Short delay to keep Calisy visible during transition
+    }, 800);
   };
 
   return (
