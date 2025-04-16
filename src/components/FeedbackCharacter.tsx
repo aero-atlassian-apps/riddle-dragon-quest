@@ -9,22 +9,13 @@ interface FeedbackCharacterProps {
 }
 
 const FeedbackCharacter: React.FC<FeedbackCharacterProps> = ({ isCorrect, isSpeaking, question }) => {
-  const [character, setCharacter] = useState<'dragon' | 'calisy' | null>(null);
-
-  useEffect(() => {
-    if (isCorrect === true) {
-      setCharacter('calisy');
-    } else if (isCorrect === false) {
-      setCharacter('dragon');
-    } else {
-      setCharacter(null);
-    }
-  }, [isCorrect]);
+  // Remove the character state that was causing issues
+  // Instead use the isCorrect prop directly to determine which character to show
 
   return (
     <div className="relative w-full max-w-md mx-auto">
       <div className={`dragon-float ${isCorrect === null ? 'dragon-neutral' : isCorrect ? 'dragon-friendly' : 'dragon-angry'}`}>
-        {character === 'calisy' || (isCorrect === true && character !== 'dragon') ? (
+        {isCorrect === true ? (
           <svg 
             viewBox="0 0 240 180" 
             xmlns="http://www.w3.org/2000/svg"

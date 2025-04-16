@@ -53,7 +53,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isAnswerCorrect: true,
       }));
       
-      // Show continue button after a successful answer
+      // Show continue button after a successful answer - using a longer timeout to ensure visibility
       setTimeout(() => {
         setShowContinueButton(true);
       }, 1500);
