@@ -41,6 +41,8 @@ const RoomContent = () => {
   const [roomNotFound, setRoomNotFound] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [debugInfo, setDebugInfo] = useState<string>("");
+  const [debugMode, setDebugMode] = useState<boolean>(false);
+  const [roomCheckResults, setRoomCheckResults] = useState<any[]>([]);
   
   const getHouseIcon = (name: string): string => {
     if (name.includes('Stark')) return '🐺';
@@ -72,29 +74,48 @@ const RoomContent = () => {
       
       try {
         setLoading(true);
-        console.log("Attempting to fetch room with ID:", roomId);
+        console.log("[ROOM PAGE] Attempting to fetch room with ID:", roomId);
+        
+        const roomDebugInfo = [];
         
         const { data: directRoomCheck, error: directCheckError } = await supabase
           .from('rooms')
-          .select('id, name')
+          .select('id, name, session_id')
           .eq('id', roomId)
           .maybeSingle();
           
         if (directCheckError) {
-          console.error("Direct room check error:", directCheckError);
-          setDebugInfo(prev => prev + `\nDirect check error: ${JSON.stringify(directCheckError)}`);
+          console.error("[ROOM PAGE] Direct room check error:", directCheckError);
+          roomDebugInfo.push(`Direct check error: ${JSON.stringify(directCheckError)}`);
         } else if (directRoomCheck) {
-          console.log("Direct room check successful:", directRoomCheck);
-          setDebugInfo(prev => prev + `\nRoom exists in DB: ${JSON.stringify(directRoomCheck)}`);
+          console.log("[ROOM PAGE] Direct room check successful:", directRoomCheck);
+          roomDebugInfo.push(`Room exists in DB: ${JSON.stringify(directRoomCheck)}`);
         } else {
-          console.log("Direct room check: No room found");
-          setDebugInfo(prev => prev + "\nDirect check: No room found in database");
+          console.log("[ROOM PAGE] Direct room check: No room found");
+          roomDebugInfo.push("Direct check: No room found in database");
+          
+          const { data: allRooms, error: allRoomsError } = await supabase
+            .from('rooms')
+            .select('id, name')
+            .limit(10);
+            
+          if (allRoomsError) {
+            console.error("[ROOM PAGE] Error fetching all rooms:", allRoomsError);
+            roomDebugInfo.push(`Error checking all rooms: ${JSON.stringify(allRoomsError)}`);
+          } else if (allRooms && allRooms.length > 0) {
+            console.log("[ROOM PAGE] Available rooms in database:", allRooms);
+            roomDebugInfo.push(`Available ${allRooms.length} rooms: ${allRooms.map(r => r.id).join(', ')}`);
+          } else {
+            roomDebugInfo.push("No rooms found in the database at all");
+          }
         }
+        
+        setRoomCheckResults(roomDebugInfo);
         
         const room = await getRoom(roomId);
         
         if (!room) {
-          console.error("Room not found for ID:", roomId);
+          console.error("[ROOM PAGE] Room not found for ID:", roomId);
           setRoomNotFound(true);
           setErrorMessage("This game room doesn't exist or has been removed");
           toast({
@@ -106,7 +127,7 @@ const RoomContent = () => {
           return;
         }
         
-        console.log("Room found:", room);
+        console.log("[ROOM PAGE] Room found:", room);
         setDebugInfo(prev => prev + `\nRoom found: ${JSON.stringify(room)}`);
         
         const { data: sessionData, error: sessionError } = await supabase
@@ -260,18 +281,45 @@ const RoomContent = () => {
         <div className="text-center parchment p-8 max-w-md">
           <h2 className="text-2xl font-bold font-medieval mb-4">Room Not Found</h2>
           <p className="mb-6 font-medieval">{errorMessage || "This game room doesn't exist or has been removed."}</p>
-          {debugInfo && (
-            <div className="mb-6 text-sm text-left bg-gray-100 p-4 rounded overflow-auto max-h-60">
-              <h3 className="font-bold mb-2">Debug Information:</h3>
-              <pre>{debugInfo}</pre>
-              <p className="mt-2">Room ID: {roomId}</p>
+          
+          <div className="mb-6 text-sm text-left bg-gray-100 p-4 rounded overflow-auto max-h-60">
+            <h3 className="font-bold mb-2">Debug Information:</h3>
+            {roomCheckResults.map((result, index) => (
+              <p key={index} className="mb-1">{result}</p>
+            ))}
+            <p className="mt-2 font-bold">Room ID: {roomId}</p>
+            
+            <div className="mt-4">
+              <Button 
+                onClick={() => setDebugMode(!debugMode)}
+                variant="outline"
+                size="sm"
+                className="text-xs"
+              >
+                {debugMode ? "Hide Advanced Debug" : "Show Advanced Debug"}
+              </Button>
+              
+              {debugMode && debugInfo && (
+                <pre className="mt-2 text-xs overflow-auto max-h-40 p-2 bg-gray-200 rounded">
+                  {debugInfo}
+                </pre>
+              )}
             </div>
-          )}
-          <Link to="/">
-            <Button className="bg-dragon-primary hover:bg-dragon-secondary font-medieval">
-              Return Home
-            </Button>
-          </Link>
+          </div>
+          
+          <div className="flex flex-col gap-3">
+            <Link to="/">
+              <Button className="w-full bg-dragon-primary hover:bg-dragon-secondary font-medieval">
+                Return Home
+              </Button>
+            </Link>
+            
+            <Link to="/admin">
+              <Button variant="outline" className="w-full font-medieval">
+                Go to Admin Dashboard
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
     );

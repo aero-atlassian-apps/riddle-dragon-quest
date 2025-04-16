@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Session, Question, Room, Score } from "@/types/game";
 
@@ -59,42 +58,37 @@ export const getRoom = async (roomId: string): Promise<Room | null> => {
   }
   
   try {
-    // First, log the raw query we're about to execute
-    console.log(`Executing query: SELECT * FROM rooms WHERE id = '${roomId}'`);
+    console.log(`[ROOM DEBUG] Attempting to fetch room with ID: ${roomId}`);
     
-    // Try to fetch without joins first to check if the room exists at all
-    const { data: roomData, error: roomError } = await supabase
+    const { count, error: countError } = await supabase
       .from('rooms')
-      .select('*')
-      .eq('id', roomId)
-      .maybeSingle();
-      
-    if (roomError) {
-      console.error('Error fetching room (basic query):', roomError);
-      return null;
-    }
+      .select('*', { count: 'exact', head: true })
+      .eq('id', roomId);
     
-    if (!roomData) {
-      console.log("No room found with ID (basic query):", roomId);
-      
-      // Let's check if there are ANY rooms in the database
-      const { data: allRooms, error: allRoomsError } = await supabase
-        .from('rooms')
-        .select('id, name')
-        .limit(5);
+    if (countError) {
+      console.error('[ROOM DEBUG] Error checking if room exists:', countError);
+    } else {
+      console.log(`[ROOM DEBUG] Room count: ${count}`);
+      if (count === 0) {
+        console.error(`[ROOM DEBUG] Room ${roomId} definitely does not exist in the database`);
         
-      if (allRoomsError) {
-        console.error('Error fetching all rooms:', allRoomsError);
-      } else {
-        console.log("Available rooms in database:", allRooms);
+        const { data: anyRooms, error: anyRoomsError } = await supabase
+          .from('rooms')
+          .select('id')
+          .limit(5);
+          
+        if (anyRoomsError) {
+          console.error('[ROOM DEBUG] Error checking for any rooms:', anyRoomsError);
+        } else {
+          console.log(`[ROOM DEBUG] Found ${anyRooms.length} rooms in the database:`, anyRooms.map(r => r.id));
+        }
+        
+        return null;
       }
-      
-      return null;
     }
     
-    console.log("Room found (basic query):", roomData);
+    console.log(`[ROOM DEBUG] Room exists, fetching complete data for ${roomId}`);
     
-    // Now fetch with the session data
     const { data, error } = await supabase
       .from('rooms')
       .select('*, sessions(*)')
@@ -102,26 +96,16 @@ export const getRoom = async (roomId: string): Promise<Room | null> => {
       .maybeSingle();
 
     if (error) {
-      console.error('Error fetching room with session data:', error);
+      console.error('[ROOM DEBUG] Error fetching room with session data:', error);
       return null;
     }
 
     if (!data) {
-      console.log("Room found but no session data for ID:", roomId);
-      
-      // Return the room with default values for session data
-      return {
-        id: roomData.id,
-        sessionId: roomData.session_id,
-        name: roomData.name,
-        tokensLeft: roomData.tokens_left,
-        currentDoor: roomData.current_door,
-        score: roomData.score,
-        sessionStatus: 'unknown'
-      };
+      console.error(`[ROOM DEBUG] Room with ID ${roomId} exists but returned no data when fetched with sessions`);
+      return null;
     }
 
-    console.log("Full room data retrieved:", data);
+    console.log("[ROOM DEBUG] Room found with complete data:", data);
     
     return {
       id: data.id,
@@ -133,12 +117,14 @@ export const getRoom = async (roomId: string): Promise<Room | null> => {
       sessionStatus: data.sessions?.status
     };
   } catch (err) {
-    console.error('Error in getRoom function:', err);
+    console.error('[ROOM DEBUG] Unexpected error in getRoom function:', err);
     return null;
   }
 };
 
 export const createRoom = async (sessionId: string, roomName: string, roomId?: string): Promise<Room | null> => {
+  console.log(`[ROOM DEBUG] Creating room with name: ${roomName}, sessionId: ${sessionId}, roomId: ${roomId || 'auto-generated'}`);
+  
   const roomData: {
     session_id: string;
     name: string;
@@ -159,10 +145,12 @@ export const createRoom = async (sessionId: string, roomName: string, roomId?: s
     .single();
 
   if (error) {
-    console.error('Error creating room:', error);
+    console.error('[ROOM DEBUG] Error creating room:', error);
     return null;
   }
 
+  console.log('[ROOM DEBUG] Room created successfully:', data);
+  
   return {
     id: data.id,
     sessionId: data.session_id,
