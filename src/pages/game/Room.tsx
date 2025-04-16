@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { GameProvider, useGame } from "@/context/GameContext";
@@ -23,11 +23,13 @@ const RoomContent = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const { gameState, setQuestion, submitAnswer, useToken, goToNextDoor } = useGame();
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   const [showQuestion, setShowQuestion] = useState(false);
   const [loading, setLoading] = useState(true);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [roomDetails, setRoomDetails] = useState<{name: string, sessionId: string} | null>(null);
+  const [roomNotFound, setRoomNotFound] = useState(false);
   
   // Fetch room details and questions
   useEffect(() => {
@@ -37,79 +39,88 @@ const RoomContent = () => {
       try {
         setLoading(true);
         
-        // Fetch the room details
+        // Fetch the room details using maybeSingle() instead of single()
         const { data: room, error: roomError } = await supabase
           .from('rooms')
           .select('name, session_id')
           .eq('id', roomId)
-          .single();
+          .maybeSingle();
         
         if (roomError) throw roomError;
         
-        if (room) {
-          setRoomDetails({
-            name: room.name,
-            sessionId: room.session_id
+        // Handle case when room is not found
+        if (!room) {
+          setRoomNotFound(true);
+          toast({
+            title: "Room not found",
+            description: "This game room doesn't exist or has been removed",
+            variant: "destructive",
           });
+          return;
+        }
+        
+        setRoomDetails({
+          name: room.name,
+          sessionId: room.session_id
+        });
+        
+        // Fetch questions for the session
+        if (room.session_id) {
+          const { data: questionData, error: questionsError } = await supabase
+            .from('questions')
+            .select('*')
+            .eq('session_id', room.session_id);
           
-          // Fetch questions for the session
-          if (room.session_id) {
-            const { data: questionData, error: questionsError } = await supabase
-              .from('questions')
-              .select('*')
-              .eq('session_id', room.session_id);
+          if (questionsError) throw questionsError;
+          
+          if (questionData && questionData.length > 0) {
+            const formattedQuestions: Question[] = questionData.map(q => ({
+              id: q.id,
+              text: q.text,
+              image: q.image,
+              answer: q.answer
+            }));
             
-            if (questionsError) throw questionsError;
+            setQuestions(formattedQuestions);
+          } else {
+            // No questions found for this session, use fallback
+            setQuestions([
+              {
+                id: 1,
+                text: "What has keys but can't open locks?",
+                answer: "piano",
+              },
+              {
+                id: 2,
+                text: "What gets wetter as it dries?",
+                answer: "towel",
+              },
+              {
+                id: 3,
+                text: "What has a head and a tail but no body?",
+                answer: "coin",
+              },
+              {
+                id: 4,
+                text: "What has one eye but cannot see?",
+                answer: "needle",
+              },
+              {
+                id: 5,
+                text: "What can travel around the world while staying in a corner?",
+                answer: "stamp",
+              },
+              {
+                id: 6,
+                text: "What has legs but doesn't walk?",
+                answer: "table",
+              },
+            ]);
             
-            if (questionData && questionData.length > 0) {
-              const formattedQuestions: Question[] = questionData.map(q => ({
-                id: q.id,
-                text: q.text,
-                image: q.image,
-                answer: q.answer
-              }));
-              
-              setQuestions(formattedQuestions);
-            } else {
-              // No questions found for this session, use fallback
-              setQuestions([
-                {
-                  id: 1,
-                  text: "What has keys but can't open locks?",
-                  answer: "piano",
-                },
-                {
-                  id: 2,
-                  text: "What gets wetter as it dries?",
-                  answer: "towel",
-                },
-                {
-                  id: 3,
-                  text: "What has a head and a tail but no body?",
-                  answer: "coin",
-                },
-                {
-                  id: 4,
-                  text: "What has one eye but cannot see?",
-                  answer: "needle",
-                },
-                {
-                  id: 5,
-                  text: "What can travel around the world while staying in a corner?",
-                  answer: "stamp",
-                },
-                {
-                  id: 6,
-                  text: "What has legs but doesn't walk?",
-                  answer: "table",
-                },
-              ]);
-              
-              toast({
-                title: "No questions found",
-                description: "Using default questions instead",
-              });
-            }
+            toast({
+              title: "No questions found",
+              description: "Using default questions instead",
+            });
           }
         }
       } catch (error) {
@@ -125,7 +136,7 @@ const RoomContent = () => {
     };
     
     fetchRoomAndQuestions();
-  }, [roomId, toast]);
+  }, [roomId, toast, navigate]);
   
   // Set the current question based on the current door
   useEffect(() => {
@@ -172,6 +183,22 @@ const RoomContent = () => {
         <div className="text-center">
           <div className="animate-pulse text-4xl font-medieval mb-4">⚔️</div>
           <p className="text-xl font-medieval">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (roomNotFound) {
+    return (
+      <div className="min-h-screen p-4 bg-gradient-to-b from-dragon-accent/5 to-white flex items-center justify-center">
+        <div className="text-center parchment p-8 max-w-md">
+          <h2 className="text-2xl font-bold font-medieval mb-4">Room Not Found</h2>
+          <p className="mb-6 font-medieval">This game room doesn't exist or has been removed.</p>
+          <Link to="/">
+            <Button className="bg-dragon-primary hover:bg-dragon-secondary font-medieval">
+              Return Home
+            </Button>
+          </Link>
         </div>
       </div>
     );
