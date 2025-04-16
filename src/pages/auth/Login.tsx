@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
-const TEMP_EMAIL = "admin@example.com";
+const TEMP_EMAIL = "admin@dragonriddle.com";
 const TEMP_PASSWORD = "admin123";
 
 const Login = () => {
@@ -121,6 +121,12 @@ const Login = () => {
           >
             {loading ? 'Logging in...' : 'Login'}
           </Button>
+          
+          <div className="text-center text-sm text-gray-600 mt-4">
+            <p>Demo credentials:</p>
+            <p>Email: {TEMP_EMAIL}</p>
+            <p>Password: {TEMP_PASSWORD}</p>
+          </div>
         </form>
       </div>
     </div>
