@@ -116,7 +116,9 @@ const AdminDashboard = () => {
           <TabsList className="w-full grid grid-cols-3">
             <TabsTrigger value="sessions" className="font-medieval">Sessions</TabsTrigger>
             <TabsTrigger value="rooms" disabled={!roomCreationSessionId} className="font-medieval">Houses</TabsTrigger>
-            <TabsTrigger value="questions" disabled={!currentSession} className="font-medieval">Questions</TabsTrigger>
+            <TabsTrigger value="questions" disabled={!currentSession} className="font-medieval">
+              Add More Questions
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="sessions" className="space-y-6">
@@ -171,10 +173,19 @@ const AdminDashboard = () => {
           
           <TabsContent value="questions">
             {currentSession && (
-              <QuestionUploader 
-                sessionId={currentSession.id} 
-                onUpload={handleUploadQuestions} 
-              />
+              <>
+                <div className="mb-6 bg-dragon-scroll/20 border-2 border-dragon-gold/30 rounded-lg p-4">
+                  <p className="font-medieval">
+                    This tab allows you to add more questions to an existing session. 
+                    Questions are attached to sessions when you create them, but you can 
+                    add additional questions here.
+                  </p>
+                </div>
+                <QuestionUploader 
+                  sessionId={currentSession.id} 
+                  onUpload={handleUploadQuestions} 
+                />
+              </>
             )}
           </TabsContent>
         </Tabs>

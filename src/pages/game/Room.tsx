@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -12,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import SessionTimer from "@/components/SessionTimer";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { getRoom } from "@/utils/db";
 
 const GameRoom = () => {
   return (
@@ -58,30 +58,16 @@ const RoomContent = () => {
       try {
         setLoading(true);
         
-        // Fetch the room details 
-        const { data: room, error: roomError } = await supabase
-          .from('rooms')
-          .select('name, session_id')
-          .eq('id', roomId)
-          .single();
+        // Use the getRoom utility function from db.ts
+        const room = await getRoom(roomId);
         
-        if (roomError) {
-          // Check if this is a "no rows returned" error
-          if (roomError.code === 'PGRST116') {
-            setRoomNotFound(true);
-            toast({
-              title: "Room not found",
-              description: "This game room doesn't exist or has been removed",
-              variant: "destructive",
-            });
-          } else {
-            console.error("Error fetching room:", roomError);
-            toast({
-              title: "Error",
-              description: "Failed to load room data",
-              variant: "destructive",
-            });
-          }
+        if (!room) {
+          setRoomNotFound(true);
+          toast({
+            title: "Room not found",
+            description: "This game room doesn't exist or has been removed",
+            variant: "destructive",
+          });
           setLoading(false);
           return;
         }
@@ -90,7 +76,7 @@ const RoomContent = () => {
         const { data: sessionData, error: sessionError } = await supabase
           .from('sessions')
           .select('start_time')
-          .eq('id', room.session_id)
+          .eq('id', room.sessionId)
           .maybeSingle();
         
         if (sessionError) {
@@ -99,17 +85,17 @@ const RoomContent = () => {
         
         setRoomDetails({
           name: room.name,
-          sessionId: room.session_id,
+          sessionId: room.sessionId,
           sessionStartTime: sessionData?.start_time,
           sigil: getHouseIcon(room.name)
         });
         
         // Fetch questions for the session
-        if (room.session_id) {
+        if (room.sessionId) {
           const { data: questionData, error: questionsError } = await supabase
             .from('questions')
             .select('*')
-            .eq('session_id', room.session_id);
+            .eq('session_id', room.sessionId);
           
           if (questionsError) throw questionsError;
           
@@ -177,7 +163,7 @@ const RoomContent = () => {
     };
     
     fetchRoomAndQuestions();
-  }, [roomId, toast, navigate]);
+  }, [roomId, toast]);
   
   // Set the current question based on the current door
   useEffect(() => {
