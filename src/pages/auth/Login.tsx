@@ -52,15 +52,26 @@ const Login = () => {
           }
         }
 
-        // Add admin role
-        const { error: roleError } = await supabase
+        // Check if user role already exists before trying to insert it
+        const userId = (await supabase.auth.getUser()).data.user?.id;
+        const { data: existingRole } = await supabase
           .from('user_roles')
-          .insert([{ 
-            user_id: (await supabase.auth.getUser()).data.user?.id,
-            role: 'admin' 
-          }]);
+          .select('*')
+          .eq('user_id', userId)
+          .eq('role', 'admin')
+          .single();
 
-        if (roleError) throw roleError;
+        // Only add admin role if it doesn't exist
+        if (!existingRole) {
+          const { error: roleError } = await supabase
+            .from('user_roles')
+            .insert([{ 
+              user_id: userId,
+              role: 'admin' 
+            }]);
+
+          if (roleError) throw roleError;
+        }
 
         toast({
           title: "Login successful",
