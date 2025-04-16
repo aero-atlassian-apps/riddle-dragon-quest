@@ -61,15 +61,14 @@ export const getRoom = async (roomId: string): Promise<Room | null> => {
     const { data, error } = await supabase
       .from('rooms')
       .select('*')
-      .eq('id', roomId)
-      .maybeSingle();
+      .eq('id', roomId);
 
     if (error) {
       console.error('Error fetching room basic data:', error);
       return null;
     }
 
-    if (!data) {
+    if (!data || data.length === 0) {
       console.error(`Room ${roomId} does not exist in the database`);
       
       const { data: allRooms, error: allRoomsError } = await supabase
@@ -89,12 +88,13 @@ export const getRoom = async (roomId: string): Promise<Room | null> => {
       return null;
     }
 
+    const roomData = data[0];
     let sessionStatus = null;
-    if (data.session_id) {
+    if (roomData.session_id) {
       const { data: sessionData, error: sessionError } = await supabase
         .from('sessions')
         .select('status')
-        .eq('id', data.session_id)
+        .eq('id', roomData.session_id)
         .maybeSingle();
         
       if (!sessionError && sessionData) {
@@ -103,17 +103,53 @@ export const getRoom = async (roomId: string): Promise<Room | null> => {
     }
     
     return {
-      id: data.id,
-      sessionId: data.session_id,
-      name: data.name,
-      tokensLeft: data.tokens_left,
-      currentDoor: data.current_door,
-      score: data.score,
+      id: roomData.id,
+      sessionId: roomData.session_id,
+      name: roomData.name,
+      tokensLeft: roomData.tokens_left,
+      currentDoor: roomData.current_door,
+      score: roomData.score,
       sessionStatus: sessionStatus
     };
   } catch (err) {
     console.error('Unexpected error in getRoom function:', err);
     return null;
+  }
+};
+
+export const getRoomDirectCheck = async (roomId: string): Promise<{exists: boolean, data?: any}> => {
+  try {
+    const { data, error } = await supabase
+      .from('rooms')
+      .select('id, name, session_id, tokens_left, current_door, score');
+      
+    if (error) {
+      console.error("Direct room check error:", error);
+      return { exists: false };
+    }
+    
+    const roomData = data.find(room => room.id === roomId);
+    
+    if (!roomData) {
+      console.log("Room not found in direct search results");
+      
+      if (data.length > 0) {
+        console.log(`Found ${data.length} other rooms:`, 
+          data.map(r => ({ id: r.id, name: r.name })));
+      } else {
+        console.log("No rooms found in the database at all");
+      }
+      
+      return { exists: false };
+    }
+    
+    return { 
+      exists: true, 
+      data: roomData 
+    };
+  } catch (err) {
+    console.error("Error in direct room check:", err);
+    return { exists: false };
   }
 };
 
@@ -309,27 +345,4 @@ export const getSessionStatus = async (sessionId: string): Promise<string | null
   }
   
   return data.status;
-};
-
-export const getRoomDirectCheck = async (roomId: string): Promise<{exists: boolean, data?: any}> => {
-  try {
-    const { data, error } = await supabase
-      .from('rooms')
-      .select('id, name, session_id, tokens_left, current_door, score')
-      .eq('id', roomId)
-      .maybeSingle();
-      
-    if (error) {
-      console.error("Direct room check error:", error);
-      return { exists: false };
-    }
-    
-    return { 
-      exists: !!data, 
-      data: data 
-    };
-  } catch (err) {
-    console.error("Error in direct room check:", err);
-    return { exists: false };
-  }
 };
