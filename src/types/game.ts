@@ -12,6 +12,7 @@ export interface Session {
   startTime: Date;
   endTime?: Date;
   questions: Question[];
+  status?: string;
 }
 
 export interface Room {
@@ -21,6 +22,7 @@ export interface Room {
   tokensLeft: number;
   currentDoor: number;
   score: number;
+  sessionStatus?: string;
 }
 
 export interface Score {

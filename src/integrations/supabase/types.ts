@@ -124,18 +124,21 @@ export type Database = {
           id: string
           name: string
           start_time: string | null
+          status: string
         }
         Insert: {
           end_time?: string | null
           id?: string
           name: string
           start_time?: string | null
+          status?: string
         }
         Update: {
           end_time?: string | null
           id?: string
           name?: string
           start_time?: string | null
+          status?: string
         }
         Relationships: []
       }

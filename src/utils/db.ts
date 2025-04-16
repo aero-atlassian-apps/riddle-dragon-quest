@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Session, Question, Room, Score } from "@/types/game";
 
@@ -18,7 +19,8 @@ export const createSession = async (name: string): Promise<Session | null> => {
     name: data.name,
     startTime: new Date(data.start_time),
     endTime: data.end_time ? new Date(data.end_time) : undefined,
-    questions: []
+    questions: [],
+    status: data.status
   };
 };
 
@@ -37,7 +39,8 @@ export const getSessions = async (): Promise<Session[]> => {
     name: session.name,
     startTime: new Date(session.start_time),
     endTime: session.end_time ? new Date(session.end_time) : undefined,
-    questions: session.questions || []
+    questions: session.questions || [],
+    status: session.status
   }));
 };
 
@@ -46,7 +49,7 @@ export const getRoom = async (roomId: string): Promise<Room | null> => {
   
   const { data, error } = await supabase
     .from('rooms')
-    .select('*')
+    .select('*, sessions!inner(*)')
     .eq('id', roomId)
     .maybeSingle();
 
@@ -66,7 +69,8 @@ export const getRoom = async (roomId: string): Promise<Room | null> => {
     name: data.name,
     tokensLeft: data.tokens_left,
     currentDoor: data.current_door,
-    score: data.score
+    score: data.score,
+    sessionStatus: data.sessions?.status
   };
 };
 
@@ -161,4 +165,33 @@ export const deleteSession = async (sessionId: string): Promise<boolean> => {
   }
 
   return true;
+};
+
+export const updateSessionStatus = async (sessionId: string, status: 'pending' | 'active' | 'completed'): Promise<boolean> => {
+  const { error } = await supabase
+    .from('sessions')
+    .update({ status })
+    .eq('id', sessionId);
+  
+  if (error) {
+    console.error('Error updating session status:', error);
+    return false;
+  }
+  
+  return true;
+};
+
+export const getSessionStatus = async (sessionId: string): Promise<string | null> => {
+  const { data, error } = await supabase
+    .from('sessions')
+    .select('status')
+    .eq('id', sessionId)
+    .maybeSingle();
+  
+  if (error || !data) {
+    console.error('Error fetching session status:', error);
+    return null;
+  }
+  
+  return data.status;
 };
