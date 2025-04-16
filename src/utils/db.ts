@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Session, Question, Room, Score } from "@/types/game";
 
@@ -58,6 +59,42 @@ export const getRoom = async (roomId: string): Promise<Room | null> => {
   }
   
   try {
+    // First, log the raw query we're about to execute
+    console.log(`Executing query: SELECT * FROM rooms WHERE id = '${roomId}'`);
+    
+    // Try to fetch without joins first to check if the room exists at all
+    const { data: roomData, error: roomError } = await supabase
+      .from('rooms')
+      .select('*')
+      .eq('id', roomId)
+      .maybeSingle();
+      
+    if (roomError) {
+      console.error('Error fetching room (basic query):', roomError);
+      return null;
+    }
+    
+    if (!roomData) {
+      console.log("No room found with ID (basic query):", roomId);
+      
+      // Let's check if there are ANY rooms in the database
+      const { data: allRooms, error: allRoomsError } = await supabase
+        .from('rooms')
+        .select('id, name')
+        .limit(5);
+        
+      if (allRoomsError) {
+        console.error('Error fetching all rooms:', allRoomsError);
+      } else {
+        console.log("Available rooms in database:", allRooms);
+      }
+      
+      return null;
+    }
+    
+    console.log("Room found (basic query):", roomData);
+    
+    // Now fetch with the session data
     const { data, error } = await supabase
       .from('rooms')
       .select('*, sessions(*)')
@@ -65,15 +102,27 @@ export const getRoom = async (roomId: string): Promise<Room | null> => {
       .maybeSingle();
 
     if (error) {
-      console.error('Error fetching room:', error);
+      console.error('Error fetching room with session data:', error);
       return null;
     }
 
     if (!data) {
-      console.log("No room found with ID:", roomId);
-      return null;
+      console.log("Room found but no session data for ID:", roomId);
+      
+      // Return the room with default values for session data
+      return {
+        id: roomData.id,
+        sessionId: roomData.session_id,
+        name: roomData.name,
+        tokensLeft: roomData.tokens_left,
+        currentDoor: roomData.current_door,
+        score: roomData.score,
+        sessionStatus: 'unknown'
+      };
     }
 
+    console.log("Full room data retrieved:", data);
+    
     return {
       id: data.id,
       sessionId: data.session_id,

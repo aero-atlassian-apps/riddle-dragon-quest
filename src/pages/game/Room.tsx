@@ -40,6 +40,7 @@ const RoomContent = () => {
   } | null>(null);
   const [roomNotFound, setRoomNotFound] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [debugInfo, setDebugInfo] = useState<string>("");
   
   const getHouseIcon = (name: string): string => {
     if (name.includes('Stark')) return '🐺';
@@ -73,6 +74,23 @@ const RoomContent = () => {
         setLoading(true);
         console.log("Attempting to fetch room with ID:", roomId);
         
+        const { data: directRoomCheck, error: directCheckError } = await supabase
+          .from('rooms')
+          .select('id, name')
+          .eq('id', roomId)
+          .maybeSingle();
+          
+        if (directCheckError) {
+          console.error("Direct room check error:", directCheckError);
+          setDebugInfo(prev => prev + `\nDirect check error: ${JSON.stringify(directCheckError)}`);
+        } else if (directRoomCheck) {
+          console.log("Direct room check successful:", directRoomCheck);
+          setDebugInfo(prev => prev + `\nRoom exists in DB: ${JSON.stringify(directRoomCheck)}`);
+        } else {
+          console.log("Direct room check: No room found");
+          setDebugInfo(prev => prev + "\nDirect check: No room found in database");
+        }
+        
         const room = await getRoom(roomId);
         
         if (!room) {
@@ -89,6 +107,7 @@ const RoomContent = () => {
         }
         
         console.log("Room found:", room);
+        setDebugInfo(prev => prev + `\nRoom found: ${JSON.stringify(room)}`);
         
         const { data: sessionData, error: sessionError } = await supabase
           .from('sessions')
@@ -171,7 +190,8 @@ const RoomContent = () => {
         }
       } catch (error) {
         console.error("Error fetching room and questions:", error);
-        setErrorMessage("Failed to load room data. Please try again later.");
+        setErrorMessage(`Failed to load room data: ${error.message || "Unknown error"}`);
+        setDebugInfo(prev => prev + `\nError: ${JSON.stringify(error)}`);
         toast({
           title: "Error",
           description: "Failed to load room data",
@@ -240,6 +260,13 @@ const RoomContent = () => {
         <div className="text-center parchment p-8 max-w-md">
           <h2 className="text-2xl font-bold font-medieval mb-4">Room Not Found</h2>
           <p className="mb-6 font-medieval">{errorMessage || "This game room doesn't exist or has been removed."}</p>
+          {debugInfo && (
+            <div className="mb-6 text-sm text-left bg-gray-100 p-4 rounded overflow-auto max-h-60">
+              <h3 className="font-bold mb-2">Debug Information:</h3>
+              <pre>{debugInfo}</pre>
+              <p className="mt-2">Room ID: {roomId}</p>
+            </div>
+          )}
           <Link to="/">
             <Button className="bg-dragon-primary hover:bg-dragon-secondary font-medieval">
               Return Home
