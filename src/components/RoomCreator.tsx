@@ -97,8 +97,8 @@ const RoomCreator: React.FC<RoomCreatorProps> = ({ sessionId, onCreateRooms, onC
     });
   };
 
-  const continueToQuestions = () => {
-    setShowLinks(false);
+  const finishSetup = () => {
+    // Complete the setup process
     onContinue();
   };
 
@@ -192,10 +192,10 @@ const RoomCreator: React.FC<RoomCreatorProps> = ({ sessionId, onCreateRooms, onC
           
           <div className="pt-4">
             <Button 
-              onClick={continueToQuestions}
+              onClick={finishSetup}
               className="w-full bg-dragon-primary hover:bg-dragon-secondary font-medieval"
             >
-              Continue to Questions
+              Finish Setup
             </Button>
           </div>
         </div>
