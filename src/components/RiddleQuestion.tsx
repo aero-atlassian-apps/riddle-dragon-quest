@@ -99,6 +99,7 @@ const RiddleQuestion: React.FC<RiddleQuestionProps> = ({
               value={answer}
               onChange={(e) => setAnswer(e.target.value)}
               className="border-2 border-dragon-gold/50"
+              disabled={isCorrect === true}
             />
           </div>
           
@@ -111,6 +112,7 @@ const RiddleQuestion: React.FC<RiddleQuestionProps> = ({
           <Button 
             type="submit" 
             className="w-full bg-dragon-primary hover:bg-dragon-secondary"
+            disabled={isCorrect === true}
           >
             Submit Answer
           </Button>

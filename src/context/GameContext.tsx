@@ -54,6 +54,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       // Immediately show the continue button on correct answer
       setShowContinueButton(true);
+      console.log("Setting showContinueButton to true"); // Add debug log
       
       // No need for timeout here, it was causing the button to not appear reliably
     } else {
