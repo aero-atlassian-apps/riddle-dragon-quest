@@ -11,24 +11,50 @@ import { Session, Question } from "@/types/game";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getSessions } from "@/utils/db";
 import { useQuery } from "@tanstack/react-query";
+import { useToast } from "@/components/ui/use-toast";
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("sessions");
   const [currentSession, setCurrentSession] = useState<Session | null>(null);
   const [roomCreationSessionId, setRoomCreationSessionId] = useState<string | null>(null);
+  const { toast } = useToast();
 
-  const { data: sessions = [], isLoading } = useQuery({
+  const { data: sessions = [], isLoading, refetch } = useQuery({
     queryKey: ['sessions'],
     queryFn: getSessions
   });
 
   const handleCreateSession = (sessionId: string) => {
-    const session = sessions.find(s => s.id === sessionId);
-    if (session) {
-      setCurrentSession(session);
-      setRoomCreationSessionId(session.id);
-      setActiveTab("rooms");
-    }
+    // Refetch the sessions to get the newest one
+    refetch().then(() => {
+      const session = sessions.find(s => s.id === sessionId);
+      
+      if (session) {
+        setCurrentSession(session);
+        setRoomCreationSessionId(session.id);
+        setActiveTab("rooms");
+        
+        toast({
+          title: "Session created successfully",
+          description: "Now you can create rooms for this session",
+        });
+      } else {
+        // If we can't find the session after refetching, try to use just the ID
+        setCurrentSession({
+          id: sessionId,
+          name: "New Session",
+          startTime: new Date(),
+          questions: []
+        });
+        setRoomCreationSessionId(sessionId);
+        setActiveTab("rooms");
+        
+        toast({
+          title: "Moving to room creation",
+          description: "Create rooms for your new session",
+        });
+      }
+    });
   };
 
   const handleCreateRooms = (roomNames: string[]) => {
@@ -37,6 +63,11 @@ const AdminDashboard = () => {
     
     // After creating rooms, move to the questions tab
     setActiveTab("questions");
+    
+    toast({
+      title: "Rooms created successfully",
+      description: "Now you can upload questions for this session",
+    });
   };
 
   const handleUploadQuestions = (questions: Question[]) => {
@@ -52,10 +83,12 @@ const AdminDashboard = () => {
     };
     
     setCurrentSession(updatedSession);
-    // Remove the reference to setSessions since it doesn't exist
-    // We're using the useQuery hook to manage sessions data
     
-    // Show success message or redirect
+    // Show success message
+    toast({
+      title: "Questions uploaded successfully",
+      description: `${questions.length} questions have been added to the session`,
+    });
   };
 
   return (

@@ -6,6 +6,7 @@ import { Label } from './ui/label';
 import { createSession, addQuestionsToSession } from '@/utils/db';
 import { useToast } from './ui/use-toast';
 import { Question } from '@/types/game';
+import { Loader2 } from 'lucide-react';
 
 interface SessionCreatorProps {
   onCreateSession: (sessionId: string) => void;
@@ -15,6 +16,7 @@ const SessionCreator: React.FC<SessionCreatorProps> = ({ onCreateSession }) => {
   const [sessionName, setSessionName] = useState('');
   const [questionsFile, setQuestionsFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,6 +38,11 @@ const SessionCreator: React.FC<SessionCreatorProps> = ({ onCreateSession }) => {
     e.preventDefault();
     
     if (!sessionName.trim()) {
+      toast({
+        title: "Error",
+        description: "Session name cannot be empty",
+        variant: "destructive",
+      });
       return;
     }
     
@@ -43,6 +50,8 @@ const SessionCreator: React.FC<SessionCreatorProps> = ({ onCreateSession }) => {
       setFileError('Please upload a questions file');
       return;
     }
+
+    setIsLoading(true);
 
     try {
       // Create session
@@ -54,12 +63,25 @@ const SessionCreator: React.FC<SessionCreatorProps> = ({ onCreateSession }) => {
           description: "Failed to create session",
           variant: "destructive",
         });
+        setIsLoading(false);
         return;
       }
 
       // Read and parse questions file
       const fileContent = await questionsFile.text();
-      const parsedData = JSON.parse(fileContent);
+      let parsedData;
+      
+      try {
+        parsedData = JSON.parse(fileContent);
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Invalid JSON format in uploaded file",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
       
       if (!parsedData.questions || !Array.isArray(parsedData.questions)) {
         toast({
@@ -67,6 +89,7 @@ const SessionCreator: React.FC<SessionCreatorProps> = ({ onCreateSession }) => {
           description: "Invalid JSON format: missing questions array",
           variant: "destructive",
         });
+        setIsLoading(false);
         return;
       }
 
@@ -79,6 +102,7 @@ const SessionCreator: React.FC<SessionCreatorProps> = ({ onCreateSession }) => {
           description: "Failed to add questions",
           variant: "destructive",
         });
+        setIsLoading(false);
         return;
       }
 
@@ -87,6 +111,11 @@ const SessionCreator: React.FC<SessionCreatorProps> = ({ onCreateSession }) => {
         description: "Session created successfully",
       });
       
+      // Reset form
+      setSessionName('');
+      setQuestionsFile(null);
+      
+      // Notify parent component
       onCreateSession(session.id);
       
     } catch (error) {
@@ -96,6 +125,8 @@ const SessionCreator: React.FC<SessionCreatorProps> = ({ onCreateSession }) => {
         description: "An error occurred while creating the session",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -114,6 +145,7 @@ const SessionCreator: React.FC<SessionCreatorProps> = ({ onCreateSession }) => {
               onChange={(e) => setSessionName(e.target.value)}
               required
               className="border-dragon-gold/30"
+              disabled={isLoading}
             />
           </div>
           
@@ -126,6 +158,7 @@ const SessionCreator: React.FC<SessionCreatorProps> = ({ onCreateSession }) => {
                 accept=".json"
                 onChange={handleFileChange}
                 className="border-dragon-gold/30"
+                disabled={isLoading}
               />
             </div>
             {fileError && <p className="text-red-500 text-sm">{fileError}</p>}
@@ -139,9 +172,16 @@ const SessionCreator: React.FC<SessionCreatorProps> = ({ onCreateSession }) => {
             <Button 
               type="submit" 
               className="w-full bg-dragon-primary hover:bg-dragon-secondary"
-              disabled={!sessionName.trim() || !questionsFile}
+              disabled={isLoading || !sessionName.trim() || !questionsFile}
             >
-              Create Session
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                'Create Session'
+              )}
             </Button>
           </div>
         </div>
