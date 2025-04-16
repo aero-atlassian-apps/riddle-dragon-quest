@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Shield } from "lucide-react";
 import { GameProvider, useGame } from "@/context/GameContext";
 import Door from "@/components/Door";
 import Dragon from "@/components/Dragon";
@@ -10,6 +10,8 @@ import RiddleQuestion from "@/components/RiddleQuestion";
 import { Question } from "@/types/game";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import SessionTimer from "@/components/SessionTimer";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const GameRoom = () => {
   return (
@@ -24,12 +26,29 @@ const RoomContent = () => {
   const { gameState, setQuestion, submitAnswer, useToken, goToNextDoor } = useGame();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   
   const [showQuestion, setShowQuestion] = useState(false);
   const [loading, setLoading] = useState(true);
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [roomDetails, setRoomDetails] = useState<{name: string, sessionId: string} | null>(null);
+  const [roomDetails, setRoomDetails] = useState<{
+    name: string, 
+    sessionId: string,
+    sigil?: string,
+    motto?: string,
+    sessionStartTime?: string
+  } | null>(null);
   const [roomNotFound, setRoomNotFound] = useState(false);
+  
+  // Get house icon based on house name
+  const getHouseIcon = (name: string): string => {
+    if (name.includes('Stark')) return '🐺';
+    if (name.includes('Lannister')) return '🦁';
+    if (name.includes('Targaryen')) return '🐉';
+    if (name.includes('Baratheon')) return '🦌';
+    if (name.includes('Greyjoy')) return '🦑';
+    return '🛡️';
+  };
   
   // Fetch room details and questions
   useEffect(() => {
@@ -39,7 +58,7 @@ const RoomContent = () => {
       try {
         setLoading(true);
         
-        // Fetch the room details using maybeSingle() instead of single()
+        // Fetch the room details using maybeSingle()
         const { data: room, error: roomError } = await supabase
           .from('rooms')
           .select('name, session_id')
@@ -59,9 +78,22 @@ const RoomContent = () => {
           return;
         }
         
+        // Fetch the session to get the start time
+        const { data: sessionData, error: sessionError } = await supabase
+          .from('sessions')
+          .select('start_time')
+          .eq('id', room.session_id)
+          .maybeSingle();
+        
+        if (sessionError) {
+          console.error("Error fetching session:", sessionError);
+        }
+        
         setRoomDetails({
           name: room.name,
-          sessionId: room.session_id
+          sessionId: room.session_id,
+          sessionStartTime: sessionData?.start_time,
+          sigil: getHouseIcon(room.name)
         });
         
         // Fetch questions for the session
@@ -207,6 +239,32 @@ const RoomContent = () => {
   return (
     <div className="min-h-screen p-4 bg-gradient-to-b from-dragon-accent/5 to-white">
       <div className="max-w-4xl mx-auto">
+        {/* House Banner */}
+        <div className="mb-6 bg-dragon-scroll/20 border-2 border-dragon-gold/30 rounded-lg p-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between">
+            <div className="flex items-center mb-4 sm:mb-0">
+              <div className="flex-shrink-0 mr-3 flex items-center justify-center bg-dragon-accent/10 w-12 h-12 rounded-full">
+                <span className="text-3xl" role="img" aria-label="House Sigil">
+                  {roomDetails?.sigil || '🛡️'}
+                </span>
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold font-medieval text-dragon-primary">
+                  {roomDetails?.name || "Dragon's Lair"}
+                </h1>
+                <p className="text-sm text-gray-600 italic">
+                  {roomDetails?.motto || "Battle the dragon's riddles"}
+                </p>
+              </div>
+            </div>
+            {/* Session Timer */}
+            <SessionTimer 
+              startTime={roomDetails?.sessionStartTime} 
+              className="font-medieval text-dragon-scale"
+            />
+          </div>
+        </div>
+        
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center">
             <Link to="/" className="mr-4">
@@ -214,10 +272,6 @@ const RoomContent = () => {
                 <ArrowLeft className="h-4 w-4 mr-1" /> Exit Game
               </Button>
             </Link>
-            
-            <h1 className="text-2xl font-bold font-medieval">
-              {roomDetails?.name || "Dragon's Lair"}
-            </h1>
           </div>
           
           <div className="flex items-center space-x-4">
