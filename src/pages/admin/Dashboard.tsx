@@ -9,7 +9,7 @@ import RoomCreator from "@/components/RoomCreator";
 import QuestionUploader from "@/components/QuestionUploader";
 import { Session, Question } from "@/types/game";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getSessions } from "@/utils/db";
+import { getSessions, createRoom } from "@/utils/db";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -57,13 +57,21 @@ const AdminDashboard = () => {
     });
   };
 
-  const handleCreateRooms = (roomNames: string[]) => {
-    // In a real app, these would be created in Supabase
-    console.log("Creating rooms:", roomNames, "for session:", roomCreationSessionId);
+  const handleCreateRooms = async (roomNames: string[]) => {
+    if (!roomCreationSessionId) return;
     
-    // We no longer automatically move to questions tab
-    // The RoomCreator component will show the links and provide a button to continue
-    // which will then programmatically change the active tab
+    // Create rooms in the database
+    for (const roomName of roomNames) {
+      const room = await createRoom(roomCreationSessionId, roomName);
+      
+      if (!room) {
+        toast({
+          title: "Error creating room",
+          description: `Failed to create room: ${roomName}`,
+          variant: "destructive",
+        });
+      }
+    }
     
     toast({
       title: "Rooms created successfully",
@@ -74,9 +82,6 @@ const AdminDashboard = () => {
   const handleUploadQuestions = (questions: Question[]) => {
     if (!currentSession) return;
     
-    // In a real app, these would be stored in Supabase
-    console.log("Uploaded questions for session:", currentSession.id, questions);
-    
     // Update the current session with the questions
     const updatedSession = {
       ...currentSession,
@@ -85,11 +90,13 @@ const AdminDashboard = () => {
     
     setCurrentSession(updatedSession);
     
-    // Show success message
-    toast({
-      title: "Questions uploaded successfully",
-      description: `${questions.length} questions have been added to the session`,
-    });
+    // After uploading questions, refetch sessions to get the updated data
+    refetch();
+  };
+  
+  // Move to questions tab when a user clicks the continue button in rooms tab
+  const continueToQuestions = () => {
+    setActiveTab("questions");
   };
 
   return (
@@ -102,14 +109,14 @@ const AdminDashboard = () => {
             </Button>
           </Link>
           
-          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+          <h1 className="text-3xl font-bold font-medieval">Admin Dashboard</h1>
         </div>
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="w-full grid grid-cols-3">
-            <TabsTrigger value="sessions">Sessions</TabsTrigger>
-            <TabsTrigger value="rooms" disabled={!roomCreationSessionId}>Rooms</TabsTrigger>
-            <TabsTrigger value="questions" disabled={!currentSession}>Questions</TabsTrigger>
+            <TabsTrigger value="sessions" className="font-medieval">Sessions</TabsTrigger>
+            <TabsTrigger value="rooms" disabled={!roomCreationSessionId} className="font-medieval">Houses</TabsTrigger>
+            <TabsTrigger value="questions" disabled={!currentSession} className="font-medieval">Questions</TabsTrigger>
           </TabsList>
           
           <TabsContent value="sessions" className="space-y-6">
@@ -117,13 +124,13 @@ const AdminDashboard = () => {
             
             {sessions.length > 0 && (
               <div className="mt-8">
-                <h2 className="text-xl font-bold mb-4">Existing Sessions</h2>
+                <h2 className="text-xl font-bold mb-4 font-medieval">Existing Sessions</h2>
                 
                 <div className="grid gap-4">
                   {sessions.map((session) => (
                     <Card key={session.id} className="border-dragon-gold/30">
                       <CardHeader className="p-4">
-                        <CardTitle className="text-lg">{session.name}</CardTitle>
+                        <CardTitle className="text-lg font-medieval">{session.name}</CardTitle>
                       </CardHeader>
                       <CardContent className="p-4 pt-0 flex justify-between">
                         <div>
@@ -140,6 +147,7 @@ const AdminDashboard = () => {
                             setRoomCreationSessionId(session.id);
                             setActiveTab("rooms");
                           }}
+                          className="bg-dragon-primary hover:bg-dragon-secondary font-medieval"
                         >
                           Manage
                         </Button>
@@ -156,12 +164,18 @@ const AdminDashboard = () => {
               <RoomCreator
                 sessionId={roomCreationSessionId}
                 onCreateRooms={handleCreateRooms}
+                onContinue={continueToQuestions}
               />
             )}
           </TabsContent>
           
           <TabsContent value="questions">
-            <QuestionUploader onUpload={handleUploadQuestions} />
+            {currentSession && (
+              <QuestionUploader 
+                sessionId={currentSession.id} 
+                onUpload={handleUploadQuestions} 
+              />
+            )}
           </TabsContent>
         </Tabs>
       </div>

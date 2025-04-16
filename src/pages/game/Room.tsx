@@ -8,43 +8,10 @@ import Door from "@/components/Door";
 import Dragon from "@/components/Dragon";
 import RiddleQuestion from "@/components/RiddleQuestion";
 import { Question } from "@/types/game";
-
-// Mock questions for demonstration purposes
-const mockQuestions: Question[] = [
-  {
-    id: 1,
-    text: "What has keys but can't open locks?",
-    answer: "piano",
-  },
-  {
-    id: 2,
-    text: "What gets wetter as it dries?",
-    answer: "towel",
-  },
-  {
-    id: 3,
-    text: "What has a head and a tail but no body?",
-    answer: "coin",
-  },
-  {
-    id: 4,
-    text: "What has one eye but cannot see?",
-    answer: "needle",
-  },
-  {
-    id: 5,
-    text: "What can travel around the world while staying in a corner?",
-    answer: "stamp",
-  },
-  {
-    id: 6,
-    text: "What has legs but doesn't walk?",
-    answer: "table",
-  },
-];
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 const GameRoom = () => {
-  // In a real app, these would be fetched from Supabase based on the room ID
   return (
     <GameProvider>
       <RoomContent />
@@ -55,15 +22,117 @@ const GameRoom = () => {
 const RoomContent = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const { gameState, setQuestion, submitAnswer, useToken, goToNextDoor } = useGame();
+  const { toast } = useToast();
   
   const [showQuestion, setShowQuestion] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [roomDetails, setRoomDetails] = useState<{name: string, sessionId: string} | null>(null);
+  
+  // Fetch room details and questions
+  useEffect(() => {
+    const fetchRoomAndQuestions = async () => {
+      if (!roomId) return;
+      
+      try {
+        setLoading(true);
+        
+        // Fetch the room details
+        const { data: room, error: roomError } = await supabase
+          .from('rooms')
+          .select('name, session_id')
+          .eq('id', roomId)
+          .single();
+        
+        if (roomError) throw roomError;
+        
+        if (room) {
+          setRoomDetails({
+            name: room.name,
+            sessionId: room.session_id
+          });
+          
+          // Fetch questions for the session
+          if (room.session_id) {
+            const { data: questionData, error: questionsError } = await supabase
+              .from('questions')
+              .select('*')
+              .eq('session_id', room.session_id);
+            
+            if (questionsError) throw questionsError;
+            
+            if (questionData && questionData.length > 0) {
+              const formattedQuestions: Question[] = questionData.map(q => ({
+                id: q.id,
+                text: q.text,
+                image: q.image,
+                answer: q.answer
+              }));
+              
+              setQuestions(formattedQuestions);
+            } else {
+              // No questions found for this session, use fallback
+              setQuestions([
+                {
+                  id: 1,
+                  text: "What has keys but can't open locks?",
+                  answer: "piano",
+                },
+                {
+                  id: 2,
+                  text: "What gets wetter as it dries?",
+                  answer: "towel",
+                },
+                {
+                  id: 3,
+                  text: "What has a head and a tail but no body?",
+                  answer: "coin",
+                },
+                {
+                  id: 4,
+                  text: "What has one eye but cannot see?",
+                  answer: "needle",
+                },
+                {
+                  id: 5,
+                  text: "What can travel around the world while staying in a corner?",
+                  answer: "stamp",
+                },
+                {
+                  id: 6,
+                  text: "What has legs but doesn't walk?",
+                  answer: "table",
+                },
+              ]);
+              
+              toast({
+                title: "No questions found",
+                description: "Using default questions instead",
+              });
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching room and questions:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load room data",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchRoomAndQuestions();
+  }, [roomId, toast]);
   
   // Set the current question based on the current door
   useEffect(() => {
-    if (gameState.currentDoor <= mockQuestions.length) {
-      setQuestion(mockQuestions[gameState.currentDoor - 1]);
+    if (questions.length > 0 && gameState.currentDoor <= questions.length) {
+      setQuestion(questions[gameState.currentDoor - 1]);
     }
-  }, [gameState.currentDoor, setQuestion]);
+  }, [gameState.currentDoor, questions, setQuestion]);
   
   const handleDoorClick = () => {
     setShowQuestion(true);
@@ -73,12 +142,40 @@ const RoomContent = () => {
     const isCorrect = submitAnswer(answer);
     
     if (isCorrect) {
+      // Update the score in the database
+      if (roomId) {
+        supabase
+          .from('rooms')
+          .update({ 
+            score: gameState.score, 
+            current_door: gameState.currentDoor + 1,
+            tokens_left: gameState.tokensLeft 
+          })
+          .eq('id', roomId)
+          .then(({ error }) => {
+            if (error) {
+              console.error("Error updating room score:", error);
+            }
+          });
+      }
+      
       setTimeout(() => {
         setShowQuestion(false);
         goToNextDoor();
       }, 2000);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen p-4 bg-gradient-to-b from-dragon-accent/5 to-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-pulse text-4xl font-medieval mb-4">⚔️</div>
+          <p className="text-xl font-medieval">Loading...</p>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="min-h-screen p-4 bg-gradient-to-b from-dragon-accent/5 to-white">
@@ -86,44 +183,44 @@ const RoomContent = () => {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center">
             <Link to="/" className="mr-4">
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" className="font-medieval">
                 <ArrowLeft className="h-4 w-4 mr-1" /> Exit Game
               </Button>
             </Link>
             
-            <h1 className="text-2xl font-bold">
-              Room: {roomId || "Dragon's Lair"}
+            <h1 className="text-2xl font-bold font-medieval">
+              {roomDetails?.name || "Dragon's Lair"}
             </h1>
           </div>
           
           <div className="flex items-center space-x-4">
             <div className="text-right">
-              <div className="text-lg font-bold">{gameState.score}</div>
-              <div className="text-xs text-gray-500">Points</div>
+              <div className="text-lg font-bold font-medieval">{gameState.score}</div>
+              <div className="text-xs text-gray-500 font-medieval">Points</div>
             </div>
             
             <div className="border-l h-10 border-gray-300"></div>
             
             <div className="text-right">
-              <div className="text-lg font-bold">
-                {gameState.currentDoor}/{gameState.totalDoors}
+              <div className="text-lg font-bold font-medieval">
+                {gameState.currentDoor}/{questions.length || gameState.totalDoors}
               </div>
-              <div className="text-xs text-gray-500">Door</div>
+              <div className="text-xs text-gray-500 font-medieval">Door</div>
             </div>
           </div>
         </div>
         
         {gameState.isGameComplete ? (
           <div className="text-center my-16 parchment py-12">
-            <h2 className="text-3xl font-bold mb-6">Quest Complete!</h2>
-            <p className="text-xl mb-8">
+            <h2 className="text-3xl font-bold mb-6 font-medieval">Quest Complete!</h2>
+            <p className="text-xl mb-8 font-medieval">
               You've solved all the dragon's riddles and opened all doors!
             </p>
-            <p className="text-2xl font-bold mb-8">
+            <p className="text-2xl font-bold mb-8 font-medieval">
               Final Score: {gameState.score}
             </p>
             <Link to="/leaderboard">
-              <Button size="lg" className="bg-dragon-gold hover:bg-dragon-gold/80">
+              <Button size="lg" className="bg-dragon-gold hover:bg-dragon-gold/80 font-medieval">
                 View Leaderboard
               </Button>
             </Link>
@@ -154,12 +251,12 @@ const RoomContent = () => {
               <Dragon isAwake={false} isSpeaking={false} />
             </div>
             
-            <h2 className="text-xl font-bold text-center mb-6">
+            <h2 className="text-xl font-bold text-center mb-6 font-medieval">
               Choose a door to face the dragon's challenge
             </h2>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 max-w-2xl mx-auto">
-              {Array.from({ length: gameState.totalDoors }).map((_, i) => (
+              {Array.from({ length: questions.length || gameState.totalDoors }).map((_, i) => (
                 <div
                   key={i}
                   className="flex justify-center"
@@ -176,10 +273,10 @@ const RoomContent = () => {
             
             {gameState.currentDoor > 1 && (
               <div className="text-center mt-12">
-                <p className="text-dragon-scale">
+                <p className="text-dragon-scale font-medieval">
                   You've successfully unlocked {gameState.currentDoor - 1} door(s)!
                 </p>
-                <p className="text-dragon-scale">
+                <p className="text-dragon-scale font-medieval">
                   Current score: {gameState.score} points
                 </p>
               </div>

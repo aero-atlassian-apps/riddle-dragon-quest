@@ -17,9 +17,10 @@ const HOUSE_NAMES = [
 interface RoomCreatorProps {
   sessionId: string;
   onCreateRooms: (roomNames: string[]) => void;
+  onContinue: () => void;
 }
 
-const RoomCreator: React.FC<RoomCreatorProps> = ({ sessionId, onCreateRooms }) => {
+const RoomCreator: React.FC<RoomCreatorProps> = ({ sessionId, onCreateRooms, onContinue }) => {
   const [numberOfRooms, setNumberOfRooms] = useState<number>(2);
   const [createdRooms, setCreatedRooms] = useState<{name: string, link: string, sigil: string, motto: string}[]>([]);
   const [showLinks, setShowLinks] = useState(false);
@@ -73,6 +74,7 @@ const RoomCreator: React.FC<RoomCreatorProps> = ({ sessionId, onCreateRooms }) =
 
   const continueToQuestions = () => {
     setShowLinks(false);
+    onContinue();
   };
 
   return (
@@ -182,4 +184,3 @@ const RoomCreator: React.FC<RoomCreatorProps> = ({ sessionId, onCreateRooms }) =
 };
 
 export default RoomCreator;
-
