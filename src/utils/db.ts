@@ -60,35 +60,28 @@ export const getRoom = async (roomId: string): Promise<Room | null> => {
   try {
     const { data, error } = await supabase
       .from('rooms')
-      .select('*')
-      .eq('id', roomId);
+      .select('*');
 
     if (error) {
-      console.error('Error fetching room basic data:', error);
+      console.error('Error fetching rooms data:', error);
       return null;
     }
 
     if (!data || data.length === 0) {
-      console.error(`Room ${roomId} does not exist in the database`);
-      
-      const { data: allRooms, error: allRoomsError } = await supabase
-        .from('rooms')
-        .select('id, name')
-        .limit(5);
-        
-      if (!allRoomsError) {
-        if (allRooms.length === 0) {
-          console.log("No rooms found in the database at all");
-        } else {
-          console.log(`Found ${allRooms.length} other rooms in the database:`, 
-            allRooms.map(r => ({ id: r.id, name: r.name })));
-        }
-      }
-      
+      console.error('No rooms found in the database at all');
       return null;
     }
 
-    const roomData = data[0];
+    const roomData = data.find(room => room.id === roomId);
+    
+    if (!roomData) {
+      console.error(`Room ${roomId} not found among ${data.length} rooms`);
+      console.log('Available rooms:', data.map(r => ({ id: r.id, name: r.name })));
+      return null;
+    }
+
+    console.log('Room found successfully:', roomData);
+    
     let sessionStatus = null;
     if (roomData.session_id) {
       const { data: sessionData, error: sessionError } = await supabase
@@ -127,21 +120,22 @@ export const getRoomDirectCheck = async (roomId: string): Promise<{exists: boole
       console.error("Direct room check error:", error);
       return { exists: false };
     }
+
+    if (!data || data.length === 0) {
+      console.log("No rooms found in the database at all");
+      return { exists: false };
+    }
     
     const roomData = data.find(room => room.id === roomId);
     
     if (!roomData) {
-      console.log("Room not found in direct search results");
-      
-      if (data.length > 0) {
-        console.log(`Found ${data.length} other rooms:`, 
-          data.map(r => ({ id: r.id, name: r.name })));
-      } else {
-        console.log("No rooms found in the database at all");
-      }
-      
+      console.log(`Room not found in direct search results (id: ${roomId})`);
+      console.log(`Found ${data.length} other rooms:`, 
+        data.map(r => ({ id: r.id, name: r.name })));
       return { exists: false };
     }
+    
+    console.log("Room found successfully via direct check:", roomData);
     
     return { 
       exists: true, 
