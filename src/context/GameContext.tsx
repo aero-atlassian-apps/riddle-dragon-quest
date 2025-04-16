@@ -52,10 +52,10 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isAnswerCorrect: true,
       }));
       
-      // Increased timeout to 2500ms to ensure the feedback is visible longer
-      setTimeout(() => {
-        setShowContinueButton(true);
-      }, 2500);
+      // Immediately show the continue button on correct answer
+      setShowContinueButton(true);
+      
+      // No need for timeout here, it was causing the button to not appear reliably
     } else {
       setGameState((prev) => ({
         ...prev,
@@ -83,7 +83,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const goToNextDoor = () => {
     const nextDoor = gameState.currentDoor + 1;
     
-    // Increased timeout to 800ms to make transitions smoother
+    // Increased timeout to 1500ms to make transitions smoother and more visible
     setTimeout(() => {
       if (nextDoor > gameState.totalDoors) {
         setGameState((prev) => ({
@@ -100,7 +100,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
       
       setShowContinueButton(false);
-    }, 800);
+    }, 1500);
   };
 
   return (

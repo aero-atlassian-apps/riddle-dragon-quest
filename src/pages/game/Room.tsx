@@ -69,7 +69,6 @@ const RoomContent = () => {
         setDebugInfo(prev => [...prev, `Attempting to find room: ${roomId}`]);
         console.log("[ROOM PAGE] Attempting to fetch room with ID:", roomId);
 
-        // First try: Direct Supabase query (no authentication required)
         const { data: roomData, error: roomError } = await supabase
           .from('rooms')
           .select('*')
@@ -82,7 +81,6 @@ const RoomContent = () => {
         } 
         
         if (roomData) {
-          // Found room with direct query
           setDebugInfo(prev => [...prev, `Room found with direct DB query: ${roomData.name}`]);
           console.log("Room found with direct query:", roomData);
           
@@ -92,7 +90,6 @@ const RoomContent = () => {
             sigil: getHouseIcon(roomData.name)
           });
           
-          // Fetch session data if available
           if (roomData.session_id) {
             const { data: sessionData } = await supabase
               .from('sessions')
@@ -107,7 +104,6 @@ const RoomContent = () => {
               }));
             }
             
-            // Fetch questions for the session
             const { data: questionsData, error: questionsError } = await supabase
               .from('questions')
               .select('*')
@@ -139,7 +135,6 @@ const RoomContent = () => {
           setDebugInfo(prev => [...prev, "Room not found with direct DB query"]);
         }
         
-        // Fallback: Try to fetch all rooms to check if the room exists
         const { data: allRoomsData, error: allRoomsError } = await supabase
           .from('rooms')
           .select('*');
@@ -159,7 +154,6 @@ const RoomContent = () => {
               console.log("Room found in all rooms list:", matchingRoom);
               setDebugInfo(prev => [...prev, `Room found in all rooms list: ${matchingRoom.name}`]);
               
-              // Process found room (same code as above)
               setRoomDetails({
                 name: matchingRoom.name,
                 sessionId: matchingRoom.session_id,
@@ -211,7 +205,6 @@ const RoomContent = () => {
           }
         }
         
-        // If we reach here, the room was not found
         setDebugInfo(prev => [...prev, "Room not found via any method"]);
         setRoomNotFound(true);
         setErrorMessage("This game room doesn't exist or has been removed");
@@ -305,11 +298,7 @@ const RoomContent = () => {
           });
       }
       
-      console.log("Answer is correct, showContinueButton should appear soon");
-      
-      setTimeout(() => {
-        setShowContinueButton(true);
-      }, 1500);
+      console.log("Answer is correct, continue button should appear immediately");
     }
   };
 
@@ -475,7 +464,7 @@ const RoomContent = () => {
                 
                 {gameState.isAnswerCorrect && (
                   <div className="mt-2 text-center text-green-600 font-medieval">
-                    Correct answer! {showContinueButton ? "Continue button is ready." : "Waiting for continue button..."}
+                    Correct answer!
                   </div>
                 )}
                 
@@ -487,7 +476,7 @@ const RoomContent = () => {
                         
                         setTimeout(() => {
                           setShowQuestion(false);
-                        }, 500);
+                        }, 1000);
                       }}
                       className="bg-dragon-gold hover:bg-dragon-gold/80 font-medieval"
                       size="lg"
