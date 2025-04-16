@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -51,14 +52,21 @@ const RoomContent = () => {
   
   useEffect(() => {
     const fetchRoomAndQuestions = async () => {
-      if (!roomId) return;
+      if (!roomId) {
+        console.error("No room ID in URL parameters");
+        setRoomNotFound(true);
+        setLoading(false);
+        return;
+      }
       
       try {
         setLoading(true);
+        console.log("Attempting to fetch room with ID:", roomId);
         
         const room = await getRoom(roomId);
         
         if (!room) {
+          console.error("Room not found for ID:", roomId);
           setRoomNotFound(true);
           toast({
             title: "Room not found",
@@ -68,6 +76,8 @@ const RoomContent = () => {
           setLoading(false);
           return;
         }
+        
+        console.log("Room found:", room);
         
         const { data: sessionData, error: sessionError } = await supabase
           .from('sessions')
@@ -92,7 +102,10 @@ const RoomContent = () => {
             .select('*')
             .eq('session_id', room.sessionId);
           
-          if (questionsError) throw questionsError;
+          if (questionsError) {
+            console.error("Error fetching questions:", questionsError);
+            throw questionsError;
+          }
           
           if (questionData && questionData.length > 0) {
             const formattedQuestions: Question[] = questionData.map(q => ({
@@ -103,7 +116,9 @@ const RoomContent = () => {
             }));
             
             setQuestions(formattedQuestions);
+            console.log("Questions loaded:", formattedQuestions.length);
           } else {
+            console.log("No questions found, using default questions");
             setQuestions([
               {
                 id: 1,

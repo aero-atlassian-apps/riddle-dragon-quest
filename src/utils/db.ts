@@ -46,9 +46,14 @@ export const getSessions = async (): Promise<Session[]> => {
 export const getRoom = async (roomId: string): Promise<Room | null> => {
   console.log("Fetching room with ID:", roomId);
   
+  if (!roomId) {
+    console.error("No room ID provided");
+    return null;
+  }
+  
   const { data, error } = await supabase
     .from('rooms')
-    .select('*, sessions!inner(*)')
+    .select('*, sessions(*)')
     .eq('id', roomId)
     .maybeSingle();
 
