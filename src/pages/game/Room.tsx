@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Shield } from "lucide-react";
+import { ArrowLeft, Shield, ArrowRight } from "lucide-react";
 import { GameProvider, useGame } from "@/context/GameContext";
 import Door from "@/components/Door";
 import Dragon from "@/components/Dragon";
@@ -30,6 +30,7 @@ const RoomContent = () => {
   const isMobile = useIsMobile();
   
   const [showQuestion, setShowQuestion] = useState(false);
+  const [showContinueButton, setShowContinueButton] = useState(false);
   const [loading, setLoading] = useState(true);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [roomDetails, setRoomDetails] = useState<{
@@ -283,6 +284,7 @@ const RoomContent = () => {
   
   const handleDoorClick = () => {
     setShowQuestion(true);
+    setShowContinueButton(false);
   };
   
   const handleSubmitAnswer = (answer: string) => {
@@ -306,10 +308,15 @@ const RoomContent = () => {
       }
       
       setTimeout(() => {
-        setShowQuestion(false);
-        goToNextDoor();
-      }, 3000);
+        setShowContinueButton(true);
+      }, 1500);
     }
+  };
+
+  const handleContinueAdventure = () => {
+    setShowQuestion(false);
+    setShowContinueButton(false);
+    goToNextDoor();
   };
 
   if (loading) {
@@ -463,13 +470,30 @@ const RoomContent = () => {
             </div>
             
             {gameState.currentQuestion && (
-              <RiddleQuestion
-                question={gameState.currentQuestion}
-                tokensLeft={gameState.tokensLeft}
-                onSubmitAnswer={handleSubmitAnswer}
-                onUseToken={useToken}
-                isCorrect={gameState.isAnswerCorrect}
-              />
+              <>
+                <RiddleQuestion
+                  question={gameState.currentQuestion}
+                  tokensLeft={gameState.tokensLeft}
+                  onSubmitAnswer={handleSubmitAnswer}
+                  onUseToken={useToken}
+                  isCorrect={gameState.isAnswerCorrect}
+                />
+                
+                {showContinueButton && gameState.isAnswerCorrect && (
+                  <div className="mt-8 text-center animate-fade-in">
+                    <p className="text-xl font-medieval mb-4 text-dragon-scale">
+                      Well done! You're ready to continue your adventure.
+                    </p>
+                    <Button 
+                      onClick={handleContinueAdventure}
+                      className="bg-dragon-gold hover:bg-dragon-gold/80 font-medieval px-6 py-3 text-lg"
+                    >
+                      Continue the Adventure
+                      <ArrowRight className="ml-2 h-5 w-5" />
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         ) : (
