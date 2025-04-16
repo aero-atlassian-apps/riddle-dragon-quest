@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -57,20 +56,8 @@ const AdminDashboard = () => {
   };
 
   const handleCreateRooms = async (roomNames: string[]) => {
-    if (!roomCreationSessionId) return;
-    
-    // Create rooms in the database
-    for (const roomName of roomNames) {
-      const room = await createRoom(roomCreationSessionId, roomName);
-      
-      if (!room) {
-        toast({
-          title: "Error creating room",
-          description: `Failed to create room: ${roomName}`,
-          variant: "destructive",
-        });
-      }
-    }
+    // Note: Room creation is now handled directly in the RoomCreator component
+    // We keep this method for compatibility but don't need to do anything here
     
     toast({
       title: "Rooms created successfully",

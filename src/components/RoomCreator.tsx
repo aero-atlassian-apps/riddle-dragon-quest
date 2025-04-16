@@ -22,7 +22,7 @@ interface RoomCreatorProps {
 
 const RoomCreator: React.FC<RoomCreatorProps> = ({ sessionId, onCreateRooms, onContinue }) => {
   const [numberOfRooms, setNumberOfRooms] = useState<number>(2);
-  const [createdRooms, setCreatedRooms] = useState<{name: string, link: string, sigil: string, motto: string}[]>([]);
+  const [createdRooms, setCreatedRooms] = useState<{name: string, link: string, sigil: string, motto: string, id: string}[]>([]);
   const [showLinks, setShowLinks] = useState(false);
   const { toast } = useToast();
 
@@ -53,15 +53,40 @@ const RoomCreator: React.FC<RoomCreatorProps> = ({ sessionId, onCreateRooms, onC
         name: house.name,
         link,
         sigil: house.sigil,
-        motto: house.motto
+        motto: house.motto,
+        id: roomId // Store the ID for database creation
       };
     });
     
     setCreatedRooms(generatedRooms);
     setShowLinks(true);
     
-    // Pass room names to parent component
+    // Pass room data to parent component
     onCreateRooms(generatedRooms.map(room => room.name));
+    
+    // Create the rooms in the database with the generated IDs
+    createRoomsInDatabase(generatedRooms);
+  };
+
+  const createRoomsInDatabase = async (rooms: {name: string, id: string}[]) => {
+    const { createRoom } = await import('@/utils/db');
+    
+    for (const room of rooms) {
+      const result = await createRoom(sessionId, room.name, room.id);
+      
+      if (!result) {
+        toast({
+          title: "Error creating room",
+          description: `Failed to create room: ${room.name}`,
+          variant: "destructive",
+        });
+      }
+    }
+    
+    toast({
+      title: "Rooms created successfully",
+      description: `${rooms.length} rooms have been created`,
+    });
   };
 
   const copyToClipboard = (link: string) => {

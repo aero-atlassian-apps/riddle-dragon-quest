@@ -74,13 +74,21 @@ export const getRoom = async (roomId: string): Promise<Room | null> => {
   };
 };
 
-export const createRoom = async (sessionId: string, roomName: string): Promise<Room | null> => {
+export const createRoom = async (sessionId: string, roomName: string, roomId?: string): Promise<Room | null> => {
+  // Prepare the room data
+  const roomData = {
+    session_id: sessionId,
+    name: roomName,
+  };
+
+  // If a specific roomId was provided, use it
+  if (roomId) {
+    roomData.id = roomId;
+  }
+
   const { data, error } = await supabase
     .from('rooms')
-    .insert([{
-      session_id: sessionId,
-      name: roomName,
-    }])
+    .insert([roomData])
     .select()
     .single();
 
