@@ -1,19 +1,46 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Question } from '../types/game';
 
 interface FeedbackCharacterProps {
   isCorrect: boolean | null;
   isSpeaking: boolean;
   question?: Question;
+  onContinue?: () => void;
 }
 
-const FeedbackCharacter: React.FC<FeedbackCharacterProps> = ({ isCorrect, isSpeaking, question }) => {
+const FeedbackCharacter: React.FC<FeedbackCharacterProps> = ({ isCorrect, isSpeaking, question, onContinue }) => {
+  const [showCharacter, setShowCharacter] = useState<boolean | null>(null);
+  const [showContinueButton, setShowContinueButton] = useState(false);
+  
+  // Handle character transition
+  useEffect(() => {
+    // When answer status changes, update the character display with a slight delay
+    const timer = setTimeout(() => {
+      setShowCharacter(isCorrect);
+    }, 300); // Small delay for smoother transition
+    
+    return () => clearTimeout(timer);
+  }, [isCorrect]);
+
+  // Handle continue button display
+  useEffect(() => {
+    // If answer is correct, show the continue button after a delay
+    if (isCorrect === true) {
+      const timer = setTimeout(() => {
+        setShowContinueButton(true);
+      }, 2000); // 2 seconds delay before showing continue button
+      return () => clearTimeout(timer);
+    } else {
+      setShowContinueButton(false);
+    }
+  }, [isCorrect]);
+
   return (
     <div className="relative w-full max-w-md mx-auto">
       {/* Dragon or Calisy based on answer correctness */}
-      <div className={`dragon-float ${isCorrect === null ? 'dragon-neutral' : isCorrect ? 'dragon-friendly' : 'dragon-angry'}`}>
-        {isCorrect === true ? (
+      <div className={`dragon-float ${isCorrect === null ? 'dragon-neutral' : isCorrect ? 'dragon-friendly' : 'dragon-angry'} transition-all duration-700 ease-in-out`}>
+        {showCharacter === true ? (
           // Calisy (Mother of Dragons) - Friendly character with a smile for correct answer
           <svg 
             viewBox="0 0 240 180" 
@@ -47,8 +74,8 @@ const FeedbackCharacter: React.FC<FeedbackCharacterProps> = ({ isCorrect, isSpea
             <path d="M70 120c-10-5-15 5-10 10s15 0 10-10z" fill="#8B5CF6" stroke="#1A1F2C" />
             <path d="M170 120c10-5 15 5 10 10s-15 0-10-10z" fill="#9b87f5" stroke="#1A1F2C" />
           </svg>
-        ) : (
-          // Door Keeper (Game of Thrones style)
+        ) : showCharacter === false ? (
+          // Furious Dragon (Game of Thrones style)
           <svg 
             viewBox="0 0 240 180" 
             xmlns="http://www.w3.org/2000/svg"
@@ -74,9 +101,9 @@ const FeedbackCharacter: React.FC<FeedbackCharacterProps> = ({ isCorrect, isSpea
             <path d="M115 90h10" stroke="#1A1F2C" strokeWidth="1.5" fill="none" />
             <path d="M115 95h10" stroke="#1A1F2C" strokeWidth="1.5" fill="none" />
             
-            {/* Eyes glowing through helmet slits */}
-            <rect x="108" y="82" width="8" height="2" fill={isCorrect === false ? "#ea384c" : "#60A5FA"} className="animate-pulse" />
-            <rect x="124" y="82" width="8" height="2" fill={isCorrect === false ? "#ea384c" : "#60A5FA"} className="animate-pulse" />
+            {/* Eyes glowing through helmet slits - RED for wrong answer */}
+            <rect x="108" y="82" width="8" height="2" fill="#ea384c" className="animate-pulse" />
+            <rect x="124" y="82" width="8" height="2" fill="#ea384c" className="animate-pulse" />
             
             {/* Shoulder pauldrons */}
             <path d="M85 90c-10 0-20 10-20 20s5 20 15 20c15 0 20-10 20-25 0-10-5-15-15-15z" 
@@ -95,11 +122,11 @@ const FeedbackCharacter: React.FC<FeedbackCharacterProps> = ({ isCorrect, isSpea
             <path d="M165 125c5 0 10 2 12 7s0 10-5 12-10 0-12-5-0-14 5-14z" 
                   fill="#4B5563" stroke="#1A1F2C" strokeWidth="1" />
             
-            {/* Torch or flame effect when speaking */}
+            {/* Torch or flame effect when speaking or wrong answer */}
             {(isSpeaking || isCorrect === false) && (
               <g className="flame-animation">
                 <path d="M90 70c-5-10 0-15 5-20 5 5 10 10 5 20 0 5-3 8-5 8s-5-3-5-8z" 
-                      fill={isCorrect === false ? "#F59E0B" : "#DC2626"} stroke="#DC2626" strokeWidth="1.5" />
+                      fill="#F59E0B" stroke="#DC2626" strokeWidth="1.5" />
                 <path d="M90 60c2 3 4 5 4 8 0 3-1 5-2 5s-2-2-2-5c0-3 0-5 0-8z" 
                       fill="#FBBF24" />
               </g>
@@ -111,8 +138,34 @@ const FeedbackCharacter: React.FC<FeedbackCharacterProps> = ({ isCorrect, isSpea
             <path d="M90 110c0 30 60 30 60 0" 
                   fill="#1F2937" stroke="#1A1F2C" strokeWidth="1.5" />
           </svg>
+        ) : (
+          // Neutral character - waiting for answer
+          <svg 
+            viewBox="0 0 240 180" 
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-full h-auto"
+          >
+            {/* Neutral character - waiting for answer */}
+            <path d="M120 155c35 0 65-25 65-55s-30-55-65-55-65 25-65 55 30 55 65 55z" 
+                  fill="#9CA3AF" stroke="#4B5563" strokeWidth="2" />
+            <path d="M95 80c5 15 50 15 50 0" stroke="#1A1F2C" strokeWidth="2" fill="none" />
+            <circle cx="105" cy="85" r="6" fill="#1A1F2C" />
+            <circle cx="135" cy="85" r="6" fill="#1A1F2C" />
+          </svg>
         )}
       </div>
+      
+      {/* Continue button for correct answers */}
+      {showContinueButton && (
+        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full mt-8 w-full flex justify-center">
+          <button 
+            onClick={onContinue}
+            className="px-6 py-3 bg-dragon-gold text-white font-medieval rounded-lg shadow-lg hover:bg-amber-600 transition-colors duration-300 animate-bounce-slow"
+          >
+            Continue the Adventure
+          </button>
+        </div>
+      )}
       
       {/* Speech bubble when speaking with riddle */}
       {isSpeaking && question && (
