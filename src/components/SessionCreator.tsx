@@ -3,15 +3,19 @@ import React, { useState } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { createSession, addQuestionsToSession } from '@/utils/db';
+import { useToast } from './ui/use-toast';
+import { Question } from '@/types/game';
 
 interface SessionCreatorProps {
-  onCreateSession: (sessionName: string, questionsFile: File) => void;
+  onCreateSession: (sessionId: string) => void;
 }
 
 const SessionCreator: React.FC<SessionCreatorProps> = ({ onCreateSession }) => {
   const [sessionName, setSessionName] = useState('');
   const [questionsFile, setQuestionsFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState('');
+  const { toast } = useToast();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -28,7 +32,7 @@ const SessionCreator: React.FC<SessionCreatorProps> = ({ onCreateSession }) => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!sessionName.trim()) {
@@ -39,8 +43,60 @@ const SessionCreator: React.FC<SessionCreatorProps> = ({ onCreateSession }) => {
       setFileError('Please upload a questions file');
       return;
     }
-    
-    onCreateSession(sessionName, questionsFile);
+
+    try {
+      // Create session
+      const session = await createSession(sessionName);
+      
+      if (!session) {
+        toast({
+          title: "Error",
+          description: "Failed to create session",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Read and parse questions file
+      const fileContent = await questionsFile.text();
+      const parsedData = JSON.parse(fileContent);
+      
+      if (!parsedData.questions || !Array.isArray(parsedData.questions)) {
+        toast({
+          title: "Error",
+          description: "Invalid JSON format: missing questions array",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Add questions to session
+      const success = await addQuestionsToSession(session.id, parsedData.questions);
+      
+      if (!success) {
+        toast({
+          title: "Error",
+          description: "Failed to add questions",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: "Session created successfully",
+      });
+      
+      onCreateSession(session.id);
+      
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: "An error occurred while creating the session",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

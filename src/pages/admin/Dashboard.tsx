@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -9,14 +8,20 @@ import RoomCreator from "@/components/RoomCreator";
 import QuestionUploader from "@/components/QuestionUploader";
 import { Session, Question } from "@/types/game";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getSessions } from "@/utils/db";
+import { useQuery } from "@tanstack/react-query";
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("sessions");
   const [currentSession, setCurrentSession] = useState<Session | null>(null);
-  const [sessions, setSessions] = useState<Session[]>([]);
   const [roomCreationSessionId, setRoomCreationSessionId] = useState<string | null>(null);
 
-  const handleCreateSession = (sessionName: string, questionsFile: File) => {
+  const { data: sessions = [], isLoading } = useQuery({
+    queryKey: ['sessions'],
+    queryFn: getSessions
+  });
+
+  const handleCreateSession = async (sessionName: string, questionsFile: File) => {
     // In a real app, this would upload to Supabase and get an ID back
     const newSession: Session = {
       id: `session-${Date.now()}`,

@@ -9,7 +9,136 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      questions: {
+        Row: {
+          answer: string
+          id: number
+          image: string | null
+          session_id: string | null
+          text: string
+        }
+        Insert: {
+          answer: string
+          id?: number
+          image?: string | null
+          session_id?: string | null
+          text: string
+        }
+        Update: {
+          answer?: string
+          id?: number
+          image?: string | null
+          session_id?: string | null
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rooms: {
+        Row: {
+          current_door: number
+          id: string
+          name: string
+          score: number
+          session_id: string | null
+          tokens_left: number
+        }
+        Insert: {
+          current_door?: number
+          id?: string
+          name: string
+          score?: number
+          session_id?: string | null
+          tokens_left?: number
+        }
+        Update: {
+          current_door?: number
+          id?: string
+          name?: string
+          score?: number
+          session_id?: string | null
+          tokens_left?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rooms_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scores: {
+        Row: {
+          created_at: string | null
+          id: string
+          room_id: string | null
+          room_name: string
+          session_id: string | null
+          total_score: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          room_id?: string | null
+          room_name: string
+          session_id?: string | null
+          total_score?: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          room_id?: string | null
+          room_name?: string
+          session_id?: string | null
+          total_score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scores_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scores_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sessions: {
+        Row: {
+          end_time: string | null
+          id: string
+          name: string
+          start_time: string | null
+        }
+        Insert: {
+          end_time?: string | null
+          id?: string
+          name: string
+          start_time?: string | null
+        }
+        Update: {
+          end_time?: string | null
+          id?: string
+          name?: string
+          start_time?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
