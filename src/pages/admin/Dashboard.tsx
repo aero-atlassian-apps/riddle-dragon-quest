@@ -61,12 +61,13 @@ const AdminDashboard = () => {
     // In a real app, these would be created in Supabase
     console.log("Creating rooms:", roomNames, "for session:", roomCreationSessionId);
     
-    // After creating rooms, move to the questions tab
-    setActiveTab("questions");
+    // We no longer automatically move to questions tab
+    // The RoomCreator component will show the links and provide a button to continue
+    // which will then programmatically change the active tab
     
     toast({
       title: "Rooms created successfully",
-      description: "Now you can upload questions for this session",
+      description: `${roomNames.length} rooms have been created`,
     });
   };
 
