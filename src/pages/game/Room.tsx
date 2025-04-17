@@ -37,13 +37,16 @@ const RoomContent = () => {
     sessionId: string,
     sigil?: string,
     motto?: string,
-    sessionStartTime?: string
+    sessionStartTime?: string,
+    sessionStatus?: string
   } | null>(null);
   const [roomNotFound, setRoomNotFound] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [debugInfo, setDebugInfo] = useState<string[]>([]);
   const [debugMode, setDebugMode] = useState<boolean>(false);
   const [allRooms, setAllRooms] = useState<any[]>([]);
+  const [sessionStatus, setSessionStatus] = useState<string>('pending');
+  const [checkingSession, setCheckingSession] = useState<boolean>(false);
   
   const getHouseIcon = (name: string): string => {
     if (name.includes('Stark')) return '🐺';
@@ -96,12 +99,17 @@ const RoomContent = () => {
               .select('start_time, status')
               .eq('id', roomData.session_id)
               .maybeSingle();
+            
+            console.log("Session data:", sessionData);
               
             if (sessionData) {
               setRoomDetails(prev => ({
                 ...prev!,
-                sessionStartTime: sessionData.start_time
+                sessionStartTime: sessionData.start_time,
+                sessionStatus: sessionData.status
               }));
+              
+              setSessionStatus(sessionData.status || 'pending');
             }
             
             const { data: questionsData, error: questionsError } = await supabase
@@ -163,15 +171,20 @@ const RoomContent = () => {
               if (matchingRoom.session_id) {
                 const { data: sessionData } = await supabase
                   .from('sessions')
-                  .select('start_time')
+                  .select('start_time, status')
                   .eq('id', matchingRoom.session_id)
                   .maybeSingle();
+                  
+                console.log("Session data (alternate path):", sessionData);
                   
                 if (sessionData) {
                   setRoomDetails(prev => ({
                     ...prev!,
-                    sessionStartTime: sessionData.start_time
+                    sessionStartTime: sessionData.start_time,
+                    sessionStatus: sessionData.status
                   }));
+                  
+                  setSessionStatus(sessionData.status || 'pending');
                 }
                 
                 const { data: questionsData } = await supabase
@@ -226,6 +239,57 @@ const RoomContent = () => {
     
     fetchRoomAndQuestions();
   }, [roomId, toast]);
+  
+  // Poll for session status every 5 seconds if session is pending
+  useEffect(() => {
+    if (!roomDetails?.sessionId || sessionStatus === 'active' || sessionStatus === 'completed') {
+      return;
+    }
+    
+    const checkSessionStatus = async () => {
+      if (checkingSession) return;
+      
+      try {
+        setCheckingSession(true);
+        console.log("Checking session status...");
+        
+        const { data: sessionData, error } = await supabase
+          .from('sessions')
+          .select('status')
+          .eq('id', roomDetails.sessionId)
+          .maybeSingle();
+          
+        if (error) {
+          console.error("Error checking session status:", error);
+          return;
+        }
+        
+        if (sessionData && sessionData.status) {
+          console.log("Session status:", sessionData.status);
+          setSessionStatus(sessionData.status);
+          
+          if (sessionData.status === 'active') {
+            toast({
+              title: "Session started",
+              description: "The game session has started!",
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error polling session status:", error);
+      } finally {
+        setCheckingSession(false);
+      }
+    };
+    
+    // Check immediately on first load
+    checkSessionStatus();
+    
+    // Then check every 5 seconds
+    const intervalId = setInterval(checkSessionStatus, 5000);
+    
+    return () => clearInterval(intervalId);
+  }, [roomDetails?.sessionId, sessionStatus, toast, checkingSession]);
   
   const setDefaultQuestions = () => {
     console.log("No questions found, using default questions");
@@ -427,7 +491,23 @@ const RoomContent = () => {
           </div>
         </div>
         
-        {gameState.isGameComplete ? (
+        {sessionStatus === 'pending' ? (
+          <div className="text-center my-16 parchment py-12">
+            <h2 className="text-3xl font-bold mb-6 font-medieval">Waiting for Session to Start</h2>
+            <div className="mb-8 flex justify-center">
+              <Dragon isAwake={false} isSpeaking={false} />
+            </div>
+            <p className="text-xl mb-8 font-medieval">
+              The game master has not started the session yet. Please wait...
+            </p>
+            <div className="animate-pulse flex justify-center">
+              <div className="w-16 h-16 border-4 border-dragon-gold border-t-transparent rounded-full animate-spin"></div>
+            </div>
+            <p className="mt-8 text-sm text-gray-500 font-medieval">
+              The page will automatically update when the session begins
+            </p>
+          </div>
+        ) : gameState.isGameComplete ? (
           <div className="text-center my-16 parchment py-12">
             <h2 className="text-3xl font-bold mb-6 font-medieval">Quest Complete!</h2>
             <p className="text-xl mb-8 font-medieval">
@@ -444,12 +524,24 @@ const RoomContent = () => {
           </div>
         ) : showQuestion ? (
           <div className="my-8">
-            <div className="mb-8 flex justify-center">
-              <FeedbackCharacter
-                isCorrect={gameState.isAnswerCorrect}
-                isSpeaking={true}
-                question={gameState.currentQuestion}
-              />
+            <div className="mb-8 flex justify-center relative">
+              <div className="w-full max-w-xl px-16"> {/* Added padding to make room for speech bubble */}
+                <FeedbackCharacter
+                  isCorrect={gameState.isAnswerCorrect}
+                  isSpeaking={true}
+                  question={gameState.currentQuestion}
+                  onTryAgain={() => {
+                    // Reset answer state to null to go back to DoorKeeper
+                    setQuestion(gameState.currentQuestion!);
+                  }}
+                  onContinue={() => {
+                    goToNextDoor();
+                    setTimeout(() => {
+                      setShowQuestion(false);
+                    }, 1000);
+                  }}
+                />
+              </div>
             </div>
             
             {gameState.currentQuestion && (

@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Trash2, Play, Pause, RotateCcw } from "lucide-react";
+import { PlusCircle, Trash2, Play, Pause, RotateCcw, ExternalLink, Copy, X } from "lucide-react";
 import SessionCreator from "@/components/SessionCreator";
 import QuestionUploader from "@/components/QuestionUploader";
 import QuestionManager from "@/components/QuestionManager";
 import RoomCreator from "@/components/RoomCreator";
 import { getSessions, deleteSession, updateSessionStatus } from "@/utils/db";
-import { Session, Question } from "@/types/game";
+import { Session, Question, Room } from "@/types/game";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,6 +30,10 @@ const AdminDashboard = () => {
   const [roomCreationSessionId, setRoomCreationSessionId] = useState<string | null>(null);
   const [deleteSessionId, setDeleteSessionId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showRoomsDialog, setShowRoomsDialog] = useState(false);
+  const [sessionRooms, setSessionRooms] = useState<Room[]>([]);
+  const [loadingRooms, setLoadingRooms] = useState(false);
+  const [currentSessionName, setCurrentSessionName] = useState("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -120,6 +127,68 @@ const AdminDashboard = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleViewRooms = async (sessionId: string) => {
+    setLoadingRooms(true);
+    setShowRoomsDialog(true);
+    
+    try {
+      // Find the session name
+      const session = sessions.find(s => s.id === sessionId);
+      if (session) {
+        setCurrentSessionName(session.name);
+      }
+      
+      // Fetch rooms for this session
+      const { data, error } = await supabase
+        .from('rooms')
+        .select('*')
+        .eq('session_id', sessionId);
+      
+      if (error) {
+        console.error('Error fetching rooms:', error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch rooms for this session",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (data && data.length > 0) {
+        const formattedRooms = data.map(room => ({
+          id: room.id,
+          sessionId: room.session_id,
+          name: room.name,
+          tokensLeft: room.tokens_left,
+          currentDoor: room.current_door,
+          score: room.score,
+          link: `${window.location.origin}/game/room/${room.id}`
+        }));
+        
+        setSessionRooms(formattedRooms);
+      } else {
+        setSessionRooms([]);
+      }
+    } catch (error) {
+      console.error('Error in handleViewRooms:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingRooms(false);
+    }
+  };
+  
+  const copyToClipboard = (link: string) => {
+    navigator.clipboard.writeText(link);
+    toast({
+      title: "Link Copied",
+      description: "Room link has been copied to clipboard",
+    });
   };
 
   return (
@@ -243,6 +312,15 @@ const AdminDashboard = () => {
                           </div>
 
                           <div className="flex space-x-2 justify-end">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border-dragon-gold/30 hover:bg-dragon-accent/10"
+                              onClick={() => handleViewRooms(session.id)}
+                            >
+                              <ExternalLink size={16} className="mr-1" /> View Rooms
+                            </Button>
+                            
                             {session.status === 'pending' && (
                               <Button 
                                 size="sm" 
@@ -317,6 +395,69 @@ const AdminDashboard = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={showRoomsDialog} onOpenChange={setShowRoomsDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-medieval">{currentSessionName} - Room Links</DialogTitle>
+            <DialogDescription>
+              Share these links with participants to join the game session.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            {loadingRooms ? (
+              <div className="text-center py-8">
+                <div className="animate-spin h-6 w-6 border-2 border-dragon-primary border-t-transparent rounded-full mx-auto mb-2"></div>
+                <p>Loading rooms...</p>
+              </div>
+            ) : sessionRooms.length === 0 ? (
+              <p className="text-center text-gray-500">No rooms found for this session.</p>
+            ) : (
+              <ScrollArea className="max-h-[60vh]">
+                <div className="space-y-4">
+                  {sessionRooms.map((room) => (
+                    <div key={room.id} className="border-2 border-dragon-gold/30 rounded-md p-4 bg-dragon-scroll/20">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-medieval text-lg text-dragon-primary">{room.name}</h3>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 w-8 p-0"
+                          asChild
+                        >
+                          <a href={room.link} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="h-4 w-4" />
+                          </a>
+                        </Button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-sm text-gray-500 truncate flex-1">
+                          {room.link}
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-shrink-0 border-dragon-gold/30"
+                          onClick={() => copyToClipboard(room.link)}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
+          </div>
+          
+          <DialogClose asChild>
+            <Button type="button" variant="secondary">
+              Close
+            </Button>
+          </DialogClose>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

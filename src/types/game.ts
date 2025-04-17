@@ -23,6 +23,7 @@ export interface Room {
   currentDoor: number;
   score: number;
   sessionStatus?: string;
+  link?: string;
 }
 
 export interface Score {

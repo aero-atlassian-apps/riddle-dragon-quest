@@ -1,0 +1,110 @@
+import React from 'react';
+import { Question } from '../types/game';
+
+interface DoorKeeperProps {
+  isCorrect: boolean | null;
+  isSpeaking: boolean;
+  question?: Question;
+}
+
+const DoorKeeper: React.FC<DoorKeeperProps> = ({ isCorrect, isSpeaking, question }) => {
+  return (
+    <div className="relative w-full max-w-md mx-auto">
+      <div className={`dragon-float ${isCorrect === null ? 'dragon-neutral' : 'dragon-angry'}`}>
+        <svg 
+          viewBox="0 0 240 180" 
+          xmlns="http://www.w3.org/2000/svg"
+          className="w-full h-auto"
+        >
+          {/* Door Keeper Body - Armored, imposing figure */}
+          <path d="M120 155c35 0 65-25 65-60s-30-55-65-55-65 25-65 55 30 60 65 60z" 
+                fill="#2A323C" stroke="#1A1F2C" strokeWidth="3" />
+          
+          {/* Armor plates and chainmail */}
+          <path d="M95 100c-5 15 50 15 50 0" stroke="#4B5563" strokeWidth="3" fill="none" />
+          <path d="M95 110c-5 15 50 15 50 0" stroke="#4B5563" strokeWidth="3" fill="none" />
+          <path d="M95 120c-5 15 50 15 50 0" stroke="#4B5563" strokeWidth="3" fill="none" />
+          <path d="M95 130c-5 15 50 15 50 0" stroke="#4B5563" strokeWidth="3" fill="none" />
+          
+          {/* Helmet - Medieval style with face guard */}
+          <path d="M120 60c-20 0-35 15-35 35 0 10 5 20 15 25 5 2 10 3 20 3s15-1 20-3c10-5 15-15 15-25 0-20-15-35-35-35z" 
+                fill="#4B5563" stroke="#1A1F2C" strokeWidth="2" />
+          
+          {/* Helmet details - Eye slits and breathing holes */}
+          <path d="M105 80h30" stroke="#1A1F2C" strokeWidth="1.5" fill="none" />
+          <path d="M105 85h30" stroke="#1A1F2C" strokeWidth="1.5" fill="none" />
+          <path d="M115 90h10" stroke="#1A1F2C" strokeWidth="1.5" fill="none" />
+          <path d="M115 95h10" stroke="#1A1F2C" strokeWidth="1.5" fill="none" />
+          
+          {/* Eyes glowing through helmet slits */}
+          <rect x="108" y="82" width="8" height="2" fill={isCorrect === false ? "#ea384c" : "#60A5FA"} className="animate-pulse" />
+          <rect x="124" y="82" width="8" height="2" fill={isCorrect === false ? "#ea384c" : "#60A5FA"} className="animate-pulse" />
+          
+          {/* Shoulder pauldrons */}
+          <path d="M85 90c-10 0-20 10-20 20s5 20 15 20c15 0 20-10 20-25 0-10-5-15-15-15z" 
+                fill="#4B5563" stroke="#1A1F2C" strokeWidth="2" />
+          <path d="M155 90c10 0 20 10 20 20s-5 20-15 20c-15 0-20-10-20-25 0-10 5-15 15-15z" 
+                fill="#4B5563" stroke="#1A1F2C" strokeWidth="2" />
+          
+          {/* Sword/weapon */}
+          <path d="M75 120l-30 30" stroke="#9CA3AF" strokeWidth="3" fill="none" />
+          <path d="M45 150l-5-5" stroke="#9CA3AF" strokeWidth="3" fill="none" />
+          <path d="M75 120c-2-2-5-2-7 0" stroke="#9CA3AF" strokeWidth="2" fill="none" />
+          
+          {/* Shield */}
+          <path d="M165 120c10 0 20 5 25 15s0 20-10 25-20 0-25-10-0-30 10-30z" 
+                fill="#6B7280" stroke="#1A1F2C" strokeWidth="2" />
+          <path d="M165 125c5 0 10 2 12 7s0 10-5 12-10 0-12-5-0-14 5-14z" 
+                fill="#4B5563" stroke="#1A1F2C" strokeWidth="1" />
+          
+          {/* Torch or flame effect when speaking */}
+          {(isSpeaking || isCorrect === false) && (
+            <g className="flame-animation">
+              <path d="M90 70c-5-10 0-15 5-20 5 5 10 10 5 20 0 5-3 8-5 8s-5-3-5-8z" 
+                    fill={isCorrect === false ? "#F59E0B" : "#DC2626"} stroke="#DC2626" strokeWidth="1.5" />
+              <path d="M90 60c2 3 4 5 4 8 0 3-1 5-2 5s-2-2-2-5c0-3 0-5 0-8z" 
+                    fill="#FBBF24" />
+            </g>
+          )}
+          
+          {/* Cape/cloak */}
+          <path d="M85 100c-5 40 70 40 70 0" 
+                fill="#1F2937" stroke="#1A1F2C" strokeWidth="2" />
+          <path d="M90 110c0 30 60 30 60 0" 
+                fill="#1F2937" stroke="#1A1F2C" strokeWidth="1.5" />
+        </svg>
+      </div>
+      
+      {/* Speech bubble when speaking with riddle - positioned to the right */}
+      {isSpeaking && question && (
+        <div className="speech-bubble absolute sm:top-1/2 sm:right-0 sm:transform sm:translate-x-full sm:-translate-y-1/2 p-5 max-w-xs w-full md:w-80 -top-16 left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0">
+          {/* On mobile, position above; on desktop, position to the right */}
+          <div className="parchment rounded-lg border-2 border-dragon-gold/50 p-4 relative shadow-lg">
+            <div className="mb-3 text-center">
+              <h3 className="text-xl font-bold text-dragon-scale font-medieval">
+                {isCorrect === null ? "Riddle me this:" : "Wrong! Try again!"}
+              </h3>
+              <p className="mt-3 text-dragon-scale font-serif italic">{question.text}</p>
+            </div>
+            {question.image && (
+              <div className="mt-4 flex justify-center">
+                <img 
+                  src={`/images/${question.image}`} 
+                  alt="Riddle hint" 
+                  className="max-h-32 rounded-md border-2 border-dragon-gold/30 shadow-lg"
+                />
+              </div>
+            )}
+            <div className="absolute top-1/2 left-0 transform -translate-x-1/2 -translate-y-1/2">
+              <svg width="15" height="30" viewBox="0 0 15 30">
+                <polygon points="0,15 15,0 15,30" fill="#FEF7CD" stroke="#F59E0B" strokeWidth="1" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default DoorKeeper;
