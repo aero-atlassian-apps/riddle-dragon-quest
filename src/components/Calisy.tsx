@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Question } from '../types/game';
 
@@ -7,6 +8,8 @@ interface CalisyProps {
 }
 
 const Calisy: React.FC<CalisyProps> = ({ isSpeaking, question }) => {
+  console.log("Calisy render:", { isSpeaking, questionText: question?.text });
+  
   return (
     <div className="relative w-full max-w-md mx-auto">
       <div className="dragon-float dragon-friendly">

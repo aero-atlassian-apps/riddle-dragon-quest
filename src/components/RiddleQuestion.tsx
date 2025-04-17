@@ -1,8 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Question } from '../types/game';
+import { Alert, AlertDescription } from './ui/alert';
 
 interface RiddleQuestionProps {
   question: Question;
@@ -21,10 +22,19 @@ const RiddleQuestion: React.FC<RiddleQuestionProps> = ({
 }) => {
   const [answer, setAnswer] = useState('');
   const [hint, setHint] = useState('');
+  
+  console.log("RiddleQuestion render:", { isCorrect, tokensLeft });
+
+  // Clear answer field when question changes
+  useEffect(() => {
+    setAnswer('');
+    setHint('');
+  }, [question]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (answer.trim()) {
+      console.log("Submitting answer:", answer);
       onSubmitAnswer(answer);
     }
   };
@@ -84,7 +94,7 @@ const RiddleQuestion: React.FC<RiddleQuestionProps> = ({
           type="button"
           variant="outline"
           onClick={generateHint}
-          disabled={tokensLeft <= 0}
+          disabled={tokensLeft <= 0 || isCorrect === true}
           className="w-full text-dragon-scale border-dragon-primary hover:bg-dragon-accent/20 mb-4"
         >
           Use Token for Hint ({tokensLeft} left)
@@ -104,15 +114,19 @@ const RiddleQuestion: React.FC<RiddleQuestionProps> = ({
           </div>
           
           {isCorrect !== null && (
-            <div className={`p-3 rounded-lg ${isCorrect ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-              {isCorrect ? 'Correct! The door is now unlocked!' : 'Incorrect. Try again or use a token for a hint.'}
-            </div>
+            <Alert
+              className={`p-3 rounded-lg ${isCorrect ? 'bg-green-100 text-green-800 border-green-300' : 'bg-red-100 text-red-800 border-red-300'}`}
+            >
+              <AlertDescription>
+                {isCorrect ? 'Correct! The door is now unlocked!' : 'Incorrect. Try again or use a token for a hint.'}
+              </AlertDescription>
+            </Alert>
           )}
           
           <Button 
             type="submit" 
             className="w-full bg-dragon-primary hover:bg-dragon-secondary"
-            disabled={isCorrect === true}
+            disabled={isCorrect === true || !answer.trim()}
           >
             Submit Answer
           </Button>

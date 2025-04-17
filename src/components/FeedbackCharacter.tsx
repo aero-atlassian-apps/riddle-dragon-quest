@@ -1,10 +1,11 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Question } from '../types/game';
 import Calisy from './Calisy';
 import DoorKeeper from './DoorKeeper';
 import Dragon from './Dragon';
 import { Button } from './ui/button';
+import { useToast } from '@/components/ui/use-toast';
 
 interface FeedbackCharacterProps {
   isCorrect: boolean | null;
@@ -14,11 +15,35 @@ interface FeedbackCharacterProps {
   onContinue?: () => void;
 }
 
-const FeedbackCharacter: React.FC<FeedbackCharacterProps> = ({ isCorrect, isSpeaking, question, onTryAgain, onContinue }) => {
-  // Updated character display logic:
-  // isCorrect === null: show DoorKeeper (default, waiting for answer)
-  // isCorrect === false: show Dragon (wrong answer)
-  // isCorrect === true: show Calisy (correct answer)
+const FeedbackCharacter: React.FC<FeedbackCharacterProps> = ({ 
+  isCorrect, 
+  isSpeaking, 
+  question, 
+  onTryAgain, 
+  onContinue 
+}) => {
+  const { toast } = useToast();
+  
+  // Debug logs to track component state
+  console.log("FeedbackCharacter render:", { 
+    isCorrect, 
+    isSpeaking, 
+    hasQuestion: !!question,
+    hasContinueHandler: !!onContinue,
+    hasOnTryAgain: !!onTryAgain
+  });
+
+  // Effect to notify when the correct answer state changes
+  useEffect(() => {
+    if (isCorrect === true) {
+      console.log("Correct answer detected! Continue button should appear");
+      
+      toast({
+        title: "Correct answer!",
+        description: "You've solved this riddle successfully.",
+      });
+    }
+  }, [isCorrect, toast]);
   
   return (
     <div className="relative w-full max-w-md mx-auto">
@@ -26,12 +51,18 @@ const FeedbackCharacter: React.FC<FeedbackCharacterProps> = ({ isCorrect, isSpea
         <>
           <Calisy 
             isSpeaking={isSpeaking} 
-            question={question} 
+            question={{
+              ...question,
+              text: question?.text || "Well done, brave one! You've solved this riddle."
+            }}
           />
           {onContinue && (
             <div className="mt-4 flex justify-center">
               <Button 
-                onClick={onContinue}
+                onClick={() => {
+                  console.log("Continue button clicked");
+                  onContinue();
+                }}
                 className="bg-dragon-primary hover:bg-dragon-secondary font-medieval"
               >
                 Continue
@@ -52,7 +83,10 @@ const FeedbackCharacter: React.FC<FeedbackCharacterProps> = ({ isCorrect, isSpea
           {onTryAgain && (
             <div className="mt-4 flex justify-center">
               <Button 
-                onClick={onTryAgain}
+                onClick={() => {
+                  console.log("Try Again button clicked"); 
+                  onTryAgain();
+                }}
                 className="bg-dragon-primary hover:bg-dragon-secondary font-medieval"
               >
                 Try Again
