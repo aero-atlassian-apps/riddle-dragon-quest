@@ -23,7 +23,7 @@ const RiddleQuestion: React.FC<RiddleQuestionProps> = ({
   const [answer, setAnswer] = useState('');
   const [hint, setHint] = useState('');
   
-  console.log("RiddleQuestion render:", { isCorrect, tokensLeft });
+  console.log("RiddleQuestion render:", { isCorrect, tokensLeft, questionId: question?.id });
 
   // Clear answer field when question changes
   useEffect(() => {

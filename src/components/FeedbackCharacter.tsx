@@ -45,12 +45,16 @@ const FeedbackCharacter: React.FC<FeedbackCharacterProps> = ({
     }
   }, [isCorrect, toast]);
   
-  return (
-    <div className="relative w-full max-w-md mx-auto">
-      {isCorrect === true ? (
+  // Determine which character to show based on the answer status
+  const renderCharacter = () => {
+    console.log("Rendering character with isCorrect:", isCorrect);
+    
+    if (isCorrect === true) {
+      console.log("Showing Calisy for correct answer");
+      return (
         <>
           <Calisy 
-            isSpeaking={isSpeaking} 
+            isSpeaking={true} 
             question={{
               ...question,
               text: question?.text || "Well done, brave one! You've solved this riddle."
@@ -70,7 +74,10 @@ const FeedbackCharacter: React.FC<FeedbackCharacterProps> = ({
             </div>
           )}
         </>
-      ) : isCorrect === false ? (
+      );
+    } else if (isCorrect === false) {
+      console.log("Showing Dragon for incorrect answer");
+      return (
         <>
           <Dragon 
             isAwake={true}
@@ -94,13 +101,22 @@ const FeedbackCharacter: React.FC<FeedbackCharacterProps> = ({
             </div>
           )}
         </>
-      ) : (
+      );
+    } else {
+      console.log("Showing DoorKeeper for neutral state");
+      return (
         <DoorKeeper 
           isCorrect={isCorrect} 
           isSpeaking={isSpeaking} 
           question={question} 
         />
-      )}
+      );
+    }
+  };
+  
+  return (
+    <div className="relative w-full max-w-md mx-auto">
+      {renderCharacter()}
     </div>
   );
 };

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Question } from '../types/game';
 
 interface CalisyProps {
@@ -9,6 +9,12 @@ interface CalisyProps {
 
 const Calisy: React.FC<CalisyProps> = ({ isSpeaking, question }) => {
   console.log("Calisy render:", { isSpeaking, questionText: question?.text });
+  
+  // Add an effect to log when Calisy appears
+  useEffect(() => {
+    console.log("Calisy mounted with speaking:", isSpeaking);
+    return () => console.log("Calisy unmounted");
+  }, []);
   
   return (
     <div className="relative w-full max-w-md mx-auto">
