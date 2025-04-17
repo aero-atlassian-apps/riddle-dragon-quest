@@ -14,7 +14,7 @@ const Calisy: React.FC<CalisyProps> = ({ isSpeaking, question }) => {
   useEffect(() => {
     console.log("Calisy mounted with speaking:", isSpeaking);
     return () => console.log("Calisy unmounted");
-  }, []);
+  }, [isSpeaking]);
   
   return (
     <div className="relative w-full max-w-md mx-auto">

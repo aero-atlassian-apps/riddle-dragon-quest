@@ -240,7 +240,6 @@ const RoomContent = () => {
     fetchRoomAndQuestions();
   }, [roomId, toast]);
   
-  // Poll for session status every 5 seconds if session is pending
   useEffect(() => {
     if (!roomDetails?.sessionId || sessionStatus === 'active' || sessionStatus === 'completed') {
       return;
@@ -282,10 +281,8 @@ const RoomContent = () => {
       }
     };
     
-    // Check immediately on first load
     checkSessionStatus();
     
-    // Then check every 5 seconds
     const intervalId = setInterval(checkSessionStatus, 5000);
     
     return () => clearInterval(intervalId);
@@ -344,8 +341,12 @@ const RoomContent = () => {
   
   const handleSubmitAnswer = (answer: string) => {
     const isCorrect = submitAnswer(answer);
+    console.log("Answer submitted, isCorrect:", isCorrect);
     
     if (isCorrect) {
+      console.log("Correct answer! Setting showContinueButton to true");
+      setShowContinueButton(true);
+      
       if (roomId) {
         supabase
           .from('rooms')
@@ -361,9 +362,20 @@ const RoomContent = () => {
             }
           });
       }
-      
-      console.log("Answer is correct, continue button should appear immediately");
     }
+  };
+  
+  const handleContinue = () => {
+    console.log("Continue handler called");
+    goToNextDoor();
+    setTimeout(() => {
+      setShowQuestion(false);
+    }, 1000);
+  };
+  
+  const handleTryAgain = () => {
+    console.log("Try again handler called");
+    setQuestion(gameState.currentQuestion!);
   };
 
   if (loading) {
@@ -525,61 +537,26 @@ const RoomContent = () => {
         ) : showQuestion ? (
           <div className="my-8">
             <div className="mb-8 flex justify-center relative">
-              <div className="w-full max-w-xl px-16"> {/* Added padding to make room for speech bubble */}
+              <div className="w-full max-w-xl px-16">
                 <FeedbackCharacter
                   isCorrect={gameState.isAnswerCorrect}
                   isSpeaking={true}
                   question={gameState.currentQuestion}
-                  onTryAgain={() => {
-                    // Reset answer state to null to go back to DoorKeeper
-                    setQuestion(gameState.currentQuestion!);
-                  }}
-                  onContinue={() => {
-                    goToNextDoor();
-                    setTimeout(() => {
-                      setShowQuestion(false);
-                    }, 1000);
-                  }}
+                  onTryAgain={handleTryAgain}
+                  onContinue={gameState.isAnswerCorrect ? handleContinue : undefined}
                 />
               </div>
             </div>
             
             {gameState.currentQuestion && (
-              <>
-                <RiddleQuestion
-                  question={gameState.currentQuestion}
-                  tokensLeft={gameState.tokensLeft}
-                  onSubmitAnswer={handleSubmitAnswer}
-                  onUseToken={useToken}
-                  isCorrect={gameState.isAnswerCorrect}
-                />
-                
-                {gameState.isAnswerCorrect && (
-                  <div className="mt-2 text-center text-green-600 font-medieval">
-                    Correct answer!
-                  </div>
-                )}
-                
-                {gameState.isAnswerCorrect && showContinueButton && (
-                  <div className="mt-6 text-center">
-                    <Button 
-                      onClick={() => {
-                        goToNextDoor();
-                        
-                        setTimeout(() => {
-                          setShowQuestion(false);
-                        }, 1000);
-                      }}
-                      className="bg-dragon-gold hover:bg-dragon-gold/80 font-medieval"
-                      size="lg"
-                    >
-                      Continue to Next Door
-                    </Button>
-                  </div>
-                )}
-              </>
+              <RiddleQuestion
+                question={gameState.currentQuestion}
+                tokensLeft={gameState.tokensLeft}
+                onSubmitAnswer={handleSubmitAnswer}
+                onUseToken={useToken}
+                isCorrect={gameState.isAnswerCorrect}
+              />
             )}
-
           </div>
         ) : (
           <div>

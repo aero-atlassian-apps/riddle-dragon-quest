@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Question } from '../types/game';
 import Calisy from './Calisy';
@@ -45,78 +44,72 @@ const FeedbackCharacter: React.FC<FeedbackCharacterProps> = ({
     }
   }, [isCorrect, toast]);
   
-  // Determine which character to show based on the answer status
-  const renderCharacter = () => {
-    console.log("Rendering character with isCorrect:", isCorrect);
-    
-    if (isCorrect === true) {
-      console.log("Showing Calisy for correct answer");
-      return (
-        <>
-          <Calisy 
-            isSpeaking={true} 
-            question={{
-              ...question,
-              text: question?.text || "Well done, brave one! You've solved this riddle."
-            }}
-          />
-          {onContinue && (
-            <div className="mt-4 flex justify-center">
-              <Button 
-                onClick={() => {
-                  console.log("Continue button clicked");
-                  onContinue();
-                }}
-                className="bg-dragon-primary hover:bg-dragon-secondary font-medieval"
-              >
-                Continue
-              </Button>
-            </div>
-          )}
-        </>
-      );
-    } else if (isCorrect === false) {
-      console.log("Showing Dragon for incorrect answer");
-      return (
-        <>
-          <Dragon 
-            isAwake={true}
-            isSpeaking={isSpeaking}
-            question={{
-              ...question,
-              text: "Wrong answer, try again!"
-            }}
-          />
-          {onTryAgain && (
-            <div className="mt-4 flex justify-center">
-              <Button 
-                onClick={() => {
-                  console.log("Try Again button clicked"); 
-                  onTryAgain();
-                }}
-                className="bg-dragon-primary hover:bg-dragon-secondary font-medieval"
-              >
-                Try Again
-              </Button>
-            </div>
-          )}
-        </>
-      );
-    } else {
-      console.log("Showing DoorKeeper for neutral state");
-      return (
-        <DoorKeeper 
-          isCorrect={isCorrect} 
-          isSpeaking={isSpeaking} 
-          question={question} 
+  // Force showing Calisy on correct answers
+  if (isCorrect === true) {
+    console.log("RENDERING CALISY - Correct answer detected!");
+    return (
+      <div className="relative w-full max-w-md mx-auto">
+        <Calisy 
+          isSpeaking={true} 
+          question={{
+            ...question,
+            text: question?.text || "Well done, brave one! You've solved this riddle."
+          }}
         />
-      );
-    }
-  };
+        {onContinue && (
+          <div className="mt-4 flex justify-center">
+            <Button 
+              onClick={() => {
+                console.log("Continue button clicked");
+                onContinue();
+              }}
+              className="bg-dragon-primary hover:bg-dragon-secondary font-medieval"
+            >
+              Continue
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  }
   
+  // Wrong answer shows Dragon
+  if (isCorrect === false) {
+    return (
+      <div className="relative w-full max-w-md mx-auto">
+        <Dragon 
+          isAwake={true}
+          isSpeaking={isSpeaking}
+          question={{
+            ...question,
+            text: "Wrong answer, try again!"
+          }}
+        />
+        {onTryAgain && (
+          <div className="mt-4 flex justify-center">
+            <Button 
+              onClick={() => {
+                console.log("Try Again button clicked"); 
+                onTryAgain();
+              }}
+              className="bg-dragon-primary hover:bg-dragon-secondary font-medieval"
+            >
+              Try Again
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  }
+  
+  // Default state shows DoorKeeper
   return (
     <div className="relative w-full max-w-md mx-auto">
-      {renderCharacter()}
+      <DoorKeeper 
+        isCorrect={isCorrect} 
+        isSpeaking={isSpeaking} 
+        question={question} 
+      />
     </div>
   );
 };

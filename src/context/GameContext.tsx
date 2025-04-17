@@ -42,6 +42,10 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const isCorrect = gameState.currentQuestion.answer.toLowerCase() === answer.toLowerCase();
     
+    console.log("submitAnswer called with:", answer);
+    console.log("Correct answer is:", gameState.currentQuestion.answer);
+    console.log("Is answer correct?", isCorrect);
+    
     if (isCorrect) {
       const tokensUsed = 3 - gameState.tokensLeft;
       const pointsEarned = 100 - (10 * tokensUsed);
@@ -52,11 +56,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isAnswerCorrect: true,
       }));
       
-      // Immediately show the continue button on correct answer
+      // Always show continue button on correct answer
+      console.log("Setting showContinueButton to true on correct answer");
       setShowContinueButton(true);
-      console.log("Setting showContinueButton to true"); // Add debug log
-      
-      // No need for timeout here, it was causing the button to not appear reliably
     } else {
       setGameState((prev) => ({
         ...prev,
@@ -83,6 +85,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const goToNextDoor = () => {
     const nextDoor = gameState.currentDoor + 1;
+    console.log("Going to next door:", nextDoor);
     
     // Increased timeout to 1500ms to make transitions smoother and more visible
     setTimeout(() => {
