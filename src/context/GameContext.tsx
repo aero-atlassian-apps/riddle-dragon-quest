@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { Question, GameState } from '../types/game';
 
 interface GameContextProps {
@@ -13,6 +13,12 @@ interface GameContextProps {
   setShowContinueButton: (show: boolean) => void;
 }
 
+interface InitialState {
+  score: number;
+  currentDoor: number;
+  tokensLeft: number;
+}
+
 const initialGameState: GameState = {
   tokensLeft: 3,
   currentDoor: 1,
@@ -24,8 +30,22 @@ const initialGameState: GameState = {
 
 const GameContext = createContext<GameContextProps | undefined>(undefined);
 
-export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [gameState, setGameState] = useState<GameState>(initialGameState);
+export const GameProvider: React.FC<{ children: ReactNode; initialState?: InitialState | null }> = ({ 
+  children, 
+  initialState 
+}) => {
+  const [gameState, setGameState] = useState<GameState>(() => {
+    if (initialState) {
+      console.log("Initializing game with saved state:", initialState);
+      return {
+        ...initialGameState,
+        tokensLeft: initialState.tokensLeft,
+        currentDoor: initialState.currentDoor,
+        score: initialState.score,
+      };
+    }
+    return initialGameState;
+  });
   const [showContinueButton, setShowContinueButton] = useState(false);
 
   const setQuestion = (question: Question) => {

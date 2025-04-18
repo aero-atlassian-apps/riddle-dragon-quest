@@ -95,29 +95,31 @@
   }
 }
 
-/* Dragon animations and effects */
 .dragon-float {
-  animation: float 3s ease-in-out infinite;
-  width: 100%;
-  height: auto;
-  min-height: 180px;
-  display: block;
-}
-
-.dragon-neutral {
-  transition: all 0.5s ease;
-}
-
-.dragon-friendly {
-  animation: friendly-bob 2s ease-in-out infinite;
-}
-
-.dragon-angry {
-  animation: angry-shake 0.5s ease-in-out infinite;
+  animation: float 6s ease-in-out infinite;
 }
 
 .dragon-glow {
-  filter: drop-shadow(0 0 0.5rem rgba(220, 38, 38, 0.5));
+  filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.6));
+}
+
+.dragon-eyes {
+  transition: fill 0.3s ease;
+}
+
+.flame-animation .flame-path {
+  animation: flicker 0.4s ease-in-out infinite alternate;
+}
+
+@keyframes float {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-15px); }
+  100% { transform: translateY(0); }
+}
+
+@keyframes flicker {
+  0% { transform: scale(1); opacity: 0.7; }
+  100% { transform: scale(1.3); opacity: 1; }
 }
 
 .flame-animation {
@@ -171,6 +173,20 @@
 @keyframes door-swing {
   0% { transform: perspective(400px) rotateY(0); }
   100% { transform: perspective(400px) rotateY(-70deg); }
+}
+
+@kteyframes flag-wave {
+  0% { transform: skewX(0) scaleX(1); }
+  25% { transform: skewX(3deg) scaleX(1.05); }
+  50% { transform: skewX(-2deg) scaleX(0.98); }
+  75% { transform: skewX(1deg) scaleX(1.02); }
+  100% { transform: skewX(0) scaleX(1); }
+}
+
+.flag-wave {
+  transform-origin: left center;
+  animation: flag-wave 3s ease-in-out infinite;
+  filter: drop-shadow(1px 1px 1px rgba(0, 0, 0, 0.3));
 }
 
 /* Additional styling for game elements */

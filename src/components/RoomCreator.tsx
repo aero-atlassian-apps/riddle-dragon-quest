@@ -162,10 +162,7 @@ const RoomCreator: React.FC<RoomCreatorProps> = ({ sessionId, onCreateRooms, onC
                       <div className="text-sm text-gray-600 italic">{room.motto}</div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="text-sm text-gray-500 truncate flex-1">
-                      {room.link}
-                    </div>
+                  <div className="flex items-center justify-end gap-2">
                     <Button
                       size="sm"
                       variant="outline"
@@ -173,6 +170,7 @@ const RoomCreator: React.FC<RoomCreatorProps> = ({ sessionId, onCreateRooms, onC
                       onClick={() => copyToClipboard(room.link)}
                     >
                       <Copy className="h-4 w-4" />
+                      <span className="ml-2">Copy Link</span>
                     </Button>
                     <Button
                       size="sm"
@@ -182,6 +180,7 @@ const RoomCreator: React.FC<RoomCreatorProps> = ({ sessionId, onCreateRooms, onC
                     >
                       <a href={room.link} target="_blank" rel="noopener noreferrer">
                         <ExternalLink className="h-4 w-4" />
+                        <span className="ml-2">Open</span>
                       </a>
                     </Button>
                   </div>

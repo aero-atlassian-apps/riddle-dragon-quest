@@ -1,9 +1,8 @@
 
-import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import Dragon from "@/components/Dragon";
 import { Crown, Swords, Trophy } from "lucide-react";
+import GamesShield from "@/components/GamesShield";
 
 const Index = () => {
   return (
@@ -11,16 +10,16 @@ const Index = () => {
       <div className="max-w-4xl w-full mx-auto text-center my-auto">
         <div className="parchment p-8 rounded-xl border-4 border-dragon-gold/30">
           <h1 className="text-5xl md:text-6xl font-bold mb-8 text-dragon-scale dragon-glow font-medieval">
-            Game of <span className="text-dragon-primary">Metrics</span>
+            Games of <span className="text-dragon-primary">Community Of Practice</span>
           </h1>
           
           <div className="mb-8">
             <p className="text-xl text-gray-700 mb-6 font-medieval">
-              "When you play the Game of Metrics, you win or you learn. There is no middle ground."
+              "When you play the Games of Community Of Practice, you win or you learn. There is no middle ground."
             </p>
             
             <div className="my-12 flex justify-center">
-              <Dragon isAwake={true} isSpeaking={false} />
+              <GamesShield className="w-full max-w-3xl" />
             </div>
           </div>
           
@@ -64,7 +63,7 @@ const Index = () => {
       </div>
       
       <footer className="mt-8 text-sm text-dragon-scale/70 text-center font-medieval">
-        &copy; {new Date().getFullYear()} Game of Metrics. All rights reserved by order of the King.
+        &copy; {new Date().getFullYear()} Games of Community Of Practice. All rights reserved by order of the King.
       </footer>
     </div>
   );

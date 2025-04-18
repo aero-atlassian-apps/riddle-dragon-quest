@@ -1,22 +1,74 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Shield } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { GameProvider, useGame } from "@/context/GameContext";
 import Door from "@/components/Door";
-import Dragon from "@/components/Dragon";
 import FeedbackCharacter from "@/components/FeedbackCharacter";
 import RiddleQuestion from "@/components/RiddleQuestion";
+import GamesShield from "@/components/GamesShield";
 import { Question } from "@/types/game";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import SessionTimer from "@/components/SessionTimer";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { getRoom, getRoomDirectCheck } from "@/utils/db";
 
 const GameRoom = () => {
+  const { roomId } = useParams<{ roomId: string }>();
+  const [initialGameState, setInitialGameState] = useState<{
+    score: number;
+    currentDoor: number;
+    tokensLeft: number;
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRoomState = async () => {
+      if (!roomId) return;
+      
+      try {
+        const { data: roomData, error } = await supabase
+          .from('rooms')
+          .select('score, current_door, tokens_left')
+          .eq('id', roomId)
+          .maybeSingle();
+          
+        if (error) {
+          console.error("Error fetching room state:", error);
+          return;
+        }
+        
+        if (roomData) {
+          console.log("Loaded saved room state:", roomData);
+          setInitialGameState({
+            score: roomData.score || 0,
+            currentDoor: roomData.current_door || 1,
+            tokensLeft: roomData.tokens_left || 3
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch room state:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchRoomState();
+  }, [roomId]);
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen p-4 bg-gradient-to-b from-dragon-accent/5 to-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-pulse text-4xl font-medieval mb-4">⚔️</div>
+          <p className="text-xl font-medieval">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <GameProvider>
+    <GameProvider initialState={initialGameState}>
       <RoomContent />
     </GameProvider>
   );
@@ -343,6 +395,10 @@ const RoomContent = () => {
     const isCorrect = submitAnswer(answer);
     console.log("Answer submitted, isCorrect:", isCorrect);
     
+    // Ensure the answer state persists by setting showQuestion to true
+    // This prevents the feedback character from disappearing
+    setShowQuestion(true);
+    
     if (isCorrect) {
       console.log("Correct answer! Setting showContinueButton to true");
       setShowContinueButton(true);
@@ -362,20 +418,36 @@ const RoomContent = () => {
             }
           });
       }
+    } else {
+      // For wrong answers, ensure the Try Again button will show
+      console.log("Wrong answer! Try Again button should appear");
+      
+      // Force a re-render with the correct state to ensure the Try Again button appears
+      // We need to update the local state to match the game context state
+      setQuestion({...gameState.currentQuestion!});
     }
   };
   
   const handleContinue = () => {
     console.log("Continue handler called");
+    // First call goToNextDoor which has its own timeout
     goToNextDoor();
+    // Use a longer timeout to ensure the feedback character remains visible
+    // This matches the 1500ms timeout in goToNextDoor
     setTimeout(() => {
       setShowQuestion(false);
-    }, 1000);
+    }, 1500);
   };
   
   const handleTryAgain = () => {
     console.log("Try again handler called");
-    setQuestion(gameState.currentQuestion!);
+    // Keep the question visible and maintain the showQuestion state
+    // This prevents the feedback character from disappearing
+    setShowQuestion(true);
+    // Reset the answer state but keep the current question
+    // We need to explicitly set isAnswerCorrect to null in the GameContext
+    // This ensures the FeedbackCharacter component will re-render properly
+    setQuestion({...gameState.currentQuestion!});
   };
 
   if (loading) {
@@ -504,10 +576,10 @@ const RoomContent = () => {
         </div>
         
         {sessionStatus === 'pending' ? (
-          <div className="text-center my-16 parchment py-12">
+          <div className="text-center my-16">
             <h2 className="text-3xl font-bold mb-6 font-medieval">Waiting for Session to Start</h2>
             <div className="mb-8 flex justify-center">
-              <Dragon isAwake={false} isSpeaking={false} />
+              <GamesShield className="w-full max-w-3xl" />
             </div>
             <p className="text-xl mb-8 font-medieval">
               The game master has not started the session yet. Please wait...
@@ -561,7 +633,7 @@ const RoomContent = () => {
         ) : (
           <div>
             <div className="my-8 flex justify-center">
-              <Dragon isAwake={true} isSpeaking={false} />
+              <GamesShield className="w-full max-w-3xl" />
             </div>
             
             <h2 className="text-xl font-bold text-center mb-6 font-medieval">

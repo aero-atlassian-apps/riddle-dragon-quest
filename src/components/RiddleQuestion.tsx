@@ -73,12 +73,19 @@ const RiddleQuestion: React.FC<RiddleQuestionProps> = ({
           <span className="font-medium">Aid Tokens:</span>
           <div className="flex space-x-1">
             {Array.from({ length: 3 }).map((_, i) => (
-              <span
-                key={i}
-                className={`inline-block h-6 w-6 rounded-full border ${
-                  i < tokensLeft ? 'bg-dragon-gold border-dragon-scale' : 'bg-gray-200 border-gray-300'
-                }`}
-              />
+              <span key={i} className="inline-block h-6 w-6">
+                {i < tokensLeft ? (
+                  <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6">
+                    <circle cx="12" cy="12" r="10" fill="#FFD700" stroke="#B8860B" strokeWidth="2" />
+                    <ellipse cx="12" cy="16" rx="6" ry="2" fill="#FFF8DC" opacity="0.5" />
+                    <circle cx="12" cy="12" r="6" fill="#FFECB3" opacity="0.7" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6">
+                    <circle cx="12" cy="12" r="10" fill="#E5E7EB" stroke="#D1D5DB" strokeWidth="2" />
+                  </svg>
+                )}
+              </span>
             ))}
           </div>
         </div>

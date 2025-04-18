@@ -422,19 +422,17 @@ const AdminDashboard = () => {
                         <h3 className="font-medieval text-lg text-dragon-primary">{room.name}</h3>
                         <Button
                           size="sm"
-                          variant="ghost"
-                          className="h-8 w-8 p-0"
+                          variant="outline"
+                          className="flex-shrink-0 border-dragon-gold/30"
                           asChild
                         >
                           <a href={room.link} target="_blank" rel="noopener noreferrer">
                             <ExternalLink className="h-4 w-4" />
+                            <span className="ml-2">Open</span>
                           </a>
                         </Button>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="text-sm text-gray-500 truncate flex-1">
-                          {room.link}
-                        </div>
+                      <div className="flex items-center justify-end gap-2">
                         <Button
                           size="sm"
                           variant="outline"
@@ -442,6 +440,7 @@ const AdminDashboard = () => {
                           onClick={() => copyToClipboard(room.link)}
                         >
                           <Copy className="h-4 w-4" />
+                          <span className="ml-2">Copy Link</span>
                         </Button>
                       </div>
                     </div>

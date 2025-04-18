@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import { Question } from '../types/game';
 import Calisy from './Calisy';
 import DoorKeeper from './DoorKeeper';
-import Dragon from './Dragon';
 import { Button } from './ui/button';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -47,6 +46,8 @@ const FeedbackCharacter: React.FC<FeedbackCharacterProps> = ({
   // Force showing Calisy on correct answers
   if (isCorrect === true) {
     console.log("RENDERING CALISY - Correct answer detected!");
+    console.log("onContinue handler exists:", !!onContinue);
+    
     return (
       <div className="relative w-full max-w-md mx-auto">
         <Calisy 
@@ -56,30 +57,32 @@ const FeedbackCharacter: React.FC<FeedbackCharacterProps> = ({
             text: question?.text || "Well done, brave one! You've solved this riddle."
           }}
         />
-        {onContinue && (
-          <div className="mt-4 flex justify-center">
-            <Button 
-              onClick={() => {
-                console.log("Continue button clicked");
+        <div className="mt-4 flex justify-center">
+          <Button 
+            onClick={() => {
+              console.log("Continue button clicked");
+              if (onContinue) {
                 onContinue();
-              }}
-              className="bg-dragon-primary hover:bg-dragon-secondary font-medieval"
-            >
-              Continue
-            </Button>
-          </div>
-        )}
+              } else {
+                console.error("Continue handler is missing!");
+              }
+            }}
+            className="bg-dragon-primary hover:bg-dragon-secondary font-medieval"
+          >
+            Continue to Next Door
+          </Button>
+        </div>
       </div>
     );
   }
   
-  // Wrong answer shows Dragon
+  // Wrong answer shows DoorKeeper with wrong answer message
   if (isCorrect === false) {
     return (
       <div className="relative w-full max-w-md mx-auto">
-        <Dragon 
-          isAwake={true}
-          isSpeaking={isSpeaking}
+        <DoorKeeper 
+          isCorrect={isCorrect} 
+          isSpeaking={true}
           question={{
             ...question,
             text: "Wrong answer, try again!"
