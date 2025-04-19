@@ -193,7 +193,7 @@ const AdminDashboard = () => {
 
   return (
     <div className="container mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-6 font-medieval">Dragon Master Dashboard</h1>
+      <h1 className="text-3xl font-bold mb-6 font-medieval">Games Master Dashboard</h1>
 
       {showCreateForm ? (
         <div className="mb-8">

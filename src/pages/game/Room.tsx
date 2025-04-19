@@ -395,13 +395,19 @@ const RoomContent = () => {
     const isCorrect = submitAnswer(answer);
     console.log("Answer submitted, isCorrect:", isCorrect);
     
-    // Ensure the answer state persists by setting showQuestion to true
-    // This prevents the feedback character from disappearing
+    // Always keep the question visible to show feedback
     setShowQuestion(true);
     
     if (isCorrect) {
       console.log("Correct answer! Setting showContinueButton to true");
       setShowContinueButton(true);
+      
+      // Show success toast
+      toast({
+        title: "Correct Answer!",
+        description: "You've solved the riddle successfully.",
+        variant: "default",
+      });
       
       if (roomId) {
         supabase
@@ -421,6 +427,13 @@ const RoomContent = () => {
     } else {
       // For wrong answers, ensure the Try Again button will show
       console.log("Wrong answer! Try Again button should appear");
+      
+      // Show error toast
+      toast({
+        title: "Incorrect Answer",
+        description: "Try again with a different answer.",
+        variant: "destructive",
+      });
       
       // Force a re-render with the correct state to ensure the Try Again button appears
       // We need to update the local state to match the game context state
@@ -615,7 +628,7 @@ const RoomContent = () => {
                   isSpeaking={true}
                   question={gameState.currentQuestion}
                   onTryAgain={handleTryAgain}
-                  onContinue={gameState.isAnswerCorrect ? handleContinue : undefined}
+                  onContinue={handleContinue}
                 />
               </div>
             </div>

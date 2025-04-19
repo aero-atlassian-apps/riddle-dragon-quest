@@ -3,7 +3,6 @@ import { Question } from '../types/game';
 import Calisy from './Calisy';
 import DoorKeeper from './DoorKeeper';
 import { Button } from './ui/button';
-import { useToast } from '@/components/ui/use-toast';
 
 interface FeedbackCharacterProps {
   isCorrect: boolean | null;
@@ -20,8 +19,6 @@ const FeedbackCharacter: React.FC<FeedbackCharacterProps> = ({
   onTryAgain, 
   onContinue 
 }) => {
-  const { toast } = useToast();
-  
   // Debug logs to track component state
   console.log("FeedbackCharacter render:", { 
     isCorrect, 
@@ -31,22 +28,17 @@ const FeedbackCharacter: React.FC<FeedbackCharacterProps> = ({
     hasOnTryAgain: !!onTryAgain
   });
 
-  // Effect to notify when the correct answer state changes
+  // Effect to log when handlers change
   useEffect(() => {
-    if (isCorrect === true) {
-      console.log("Correct answer detected! Continue button should appear");
-      
-      toast({
-        title: "Correct answer!",
-        description: "You've solved this riddle successfully.",
-      });
-    }
-  }, [isCorrect, toast]);
-  
-  // Force showing Calisy on correct answers
+    console.log("FeedbackCharacter handlers updated:", {
+      hasContinueHandler: !!onContinue,
+      hasOnTryAgain: !!onTryAgain
+    });
+  }, [onContinue, onTryAgain]);
+
+  // Correct answer state - show Calisy with congratulations
   if (isCorrect === true) {
     console.log("RENDERING CALISY - Correct answer detected!");
-    console.log("onContinue handler exists:", !!onContinue);
     
     return (
       <div className="relative w-full max-w-md mx-auto">
@@ -54,34 +46,34 @@ const FeedbackCharacter: React.FC<FeedbackCharacterProps> = ({
           isSpeaking={true} 
           question={{
             ...question,
-            text: question?.text || "Well done, brave one! You've solved this riddle."
+            text: "Well done, brave one! You've solved this riddle."
           }}
         />
-        <div className="mt-4 flex justify-center">
-          <Button 
-            onClick={() => {
-              console.log("Continue button clicked");
-              if (onContinue) {
+        {onContinue && (
+          <div className="mt-4 flex justify-center">
+            <Button 
+              onClick={() => {
+                console.log("Continue button clicked");
                 onContinue();
-              } else {
-                console.error("Continue handler is missing!");
-              }
-            }}
-            className="bg-dragon-primary hover:bg-dragon-secondary font-medieval"
-          >
-            Continue to Next Door
-          </Button>
-        </div>
+              }}
+              className="bg-dragon-primary hover:bg-dragon-secondary font-medieval"
+            >
+              Continue to Next Door
+            </Button>
+          </div>
+        )}
       </div>
     );
   }
   
-  // Wrong answer shows DoorKeeper with wrong answer message
+  // Wrong answer state - show DoorKeeper with error message
   if (isCorrect === false) {
+    console.log("RENDERING DOORKEEPER - Wrong answer detected!");
+    
     return (
       <div className="relative w-full max-w-md mx-auto">
         <DoorKeeper 
-          isCorrect={isCorrect} 
+          isCorrect={false} 
           isSpeaking={true}
           question={{
             ...question,
@@ -105,11 +97,11 @@ const FeedbackCharacter: React.FC<FeedbackCharacterProps> = ({
     );
   }
   
-  // Default state shows DoorKeeper
+  // Initial state - show DoorKeeper with the question
   return (
     <div className="relative w-full max-w-md mx-auto">
       <DoorKeeper 
-        isCorrect={isCorrect} 
+        isCorrect={null} 
         isSpeaking={isSpeaking} 
         question={question} 
       />
