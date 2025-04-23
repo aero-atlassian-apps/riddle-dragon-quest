@@ -58,7 +58,7 @@ const SessionCreator: React.FC<SessionCreatorProps> = ({ onCreateSession }) => {
       console.error('Error:', error);
       toast({
         title: "Error",
-        description: error.message || "An error occurred while creating the session",
+        description: error instanceof Error ? error.message : "An error occurred while creating the session",
         variant: "destructive",
       });
     } finally {
