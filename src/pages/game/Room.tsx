@@ -8,62 +8,18 @@ import { Session, Room as RoomType } from '@/types/game';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from 'react-router-dom';
-import { useUser } from '@supabase/auth-helpers-react';
+import { useUser } from '@/hooks/useUser';
 import Door from '@/components/Door';
 import { Modal } from "@/components/ui/modal";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Copy, Loader2 } from 'lucide-react';
-
-// We'll create these utility functions and components directly in this file
-// Later, we can refactor them into separate files if needed
-const generateRoomId = () => {
-  return Math.random().toString(36).substring(2, 9);
-};
-
-const calculateDoorStates = (tokensLeft = 0) => {
-  return [tokensLeft >= 1, tokensLeft >= 2, tokensLeft >= 3]; 
-};
-
-const Confetti = React.forwardRef((props, ref) => {
-  return <div ref={ref} className="confetti-container" {...props} />;
-});
-Confetti.displayName = "Confetti";
-
-// Modal store - simplified version
-const useModal = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [currentModalId, setCurrentModalId] = useState<string | null>(null);
-
-  const openModal = (modalId: string) => {
-    setCurrentModalId(modalId);
-    setIsOpen(true);
-  };
-
-  const closeModal = () => {
-    setCurrentModalId(null);
-    setIsOpen(false);
-  };
-
-  return { isOpen, currentModalId, openModal, closeModal };
-};
-
-// Confetti store - simplified version
-const useConfettiStore = () => {
-  const [isActive, setIsActive] = useState(false);
-
-  const startConfetti = () => setIsActive(true);
-  const stopConfetti = () => setIsActive(false);
-
-  return { isActive, startConfetti, stopConfetti };
-};
-
-// Game store - simplified version
-const useGameStore = () => {
-  const [roomId, setRoomId] = useState<string | null>(null);
-
-  return { roomId, setRoomId };
-};
+import { generateRoomId } from '@/utils/roomIdGenerator';
+import { useConfettiStore } from '@/store/confettiStore';
+import { useModal } from '@/store/modalStore';
+import { useGameStore } from '@/store/gameStore';
+import { Confetti } from '@/components/Confetti';
+import { calculateDoorStates } from '@/utils/gameLogic';
 
 const Room: React.FC = () => {
   const navigate = useNavigate();
@@ -89,7 +45,7 @@ const Room: React.FC = () => {
   
   const { openModal, closeModal } = useModal();
   const { setRoomId: setStoreRoomId } = useGameStore();
-  const confettiRef = useRef(null);
+  const confettiRef = useRef<HTMLDivElement>(null);
   const user = useUser();
   const { startConfetti, stopConfetti } = useConfettiStore();
 
@@ -158,7 +114,7 @@ const Room: React.FC = () => {
       });
     } finally {
       setIsGeneratingRoom(false);
-      closeModal('newRoomModal');
+      closeModal();
       setIsNewRoomModalOpen(false);
     }
   };
@@ -293,8 +249,8 @@ const Room: React.FC = () => {
         .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' },
           (payload) => {
             console.log('Session status changed!', payload);
-            if (room?.sessionId && payload.new && payload.new.id === room?.sessionId) {
-              setSessionStatus(payload.new.status);
+            if (room?.sessionId && payload.new && (payload.new as any).id === room?.sessionId) {
+              setSessionStatus((payload.new as any).status);
             }
           })
         .subscribe();
@@ -368,7 +324,7 @@ const Room: React.FC = () => {
       <div className="mt-6 flex justify-center">
         {user ? (
           <>
-            <Button onClick={() => openModal('newRoomModal')} className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mr-2">
+            <Button onClick={() => openModal("newRoomModal")} className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mr-2">
               Create New Room
             </Button>
             <Link to="/game/sessions">

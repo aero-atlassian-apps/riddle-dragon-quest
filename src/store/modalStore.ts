@@ -5,16 +5,12 @@ interface ModalState {
   isOpen: boolean;
   currentModalId: string | null;
   openModal: (modalId: string) => void;
-  closeModal: (modalId?: string) => void;
+  closeModal: () => void;
 }
 
 export const useModal = create<ModalState>((set) => ({
   isOpen: false,
   currentModalId: null,
-  openModal: (modalId: string) => set({ isOpen: true, currentModalId: modalId }),
-  closeModal: (modalId?: string) => set((state) => 
-    modalId === undefined || modalId === state.currentModalId 
-      ? { isOpen: false, currentModalId: null } 
-      : state
-  ),
+  openModal: (modalId: string) => set({ currentModalId: modalId, isOpen: true }),
+  closeModal: () => set({ currentModalId: null, isOpen: false }),
 }));
