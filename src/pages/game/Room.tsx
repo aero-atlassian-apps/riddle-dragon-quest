@@ -1,28 +1,78 @@
+
 import React, { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/router';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import { getRoom, getSessionStatus } from '@/utils/db';
 import { supabase } from '@/integrations/supabase/client';
 import { Session, Room as RoomType } from '@/types/game';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from "@/components/ui/skeleton"
-import Link from 'next/link';
+import { Skeleton } from "@/components/ui/skeleton";
+import { Link } from 'react-router-dom';
 import { useUser } from '@supabase/auth-helpers-react';
-import { Door } from '@/components/Door';
-import { calculateDoorStates } from '@/utils/gameLogic';
-import { Confetti } from '@/components/Confetti';
-import { Modal } from "@/components/ui/modal"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { generateRoomId } from '@/utils/roomIdGenerator';
+import Door from '@/components/Door';
+import { Modal } from "@/components/ui/modal";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Copy, Loader2 } from 'lucide-react';
-import { useConfettiStore } from '@/store/confettiStore';
-import { useModal } from '@/store/modalStore';
-import { useGameStore } from '@/store/gameStore';
+
+// We'll create these utility functions and components directly in this file
+// Later, we can refactor them into separate files if needed
+const generateRoomId = () => {
+  return Math.random().toString(36).substring(2, 9);
+};
+
+const calculateDoorStates = (tokensLeft = 0) => {
+  return [tokensLeft >= 1, tokensLeft >= 2, tokensLeft >= 3]; 
+};
+
+const Confetti = React.forwardRef((props, ref) => {
+  return <div ref={ref} className="confetti-container" {...props} />;
+});
+Confetti.displayName = "Confetti";
+
+// Modal store - simplified version
+const useModal = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [currentModalId, setCurrentModalId] = useState<string | null>(null);
+
+  const openModal = (modalId: string) => {
+    setCurrentModalId(modalId);
+    setIsOpen(true);
+  };
+
+  const closeModal = () => {
+    setCurrentModalId(null);
+    setIsOpen(false);
+  };
+
+  return { isOpen, currentModalId, openModal, closeModal };
+};
+
+// Confetti store - simplified version
+const useConfettiStore = () => {
+  const [isActive, setIsActive] = useState(false);
+
+  const startConfetti = () => setIsActive(true);
+  const stopConfetti = () => setIsActive(false);
+
+  return { isActive, startConfetti, stopConfetti };
+};
+
+// Game store - simplified version
+const useGameStore = () => {
+  const [roomId, setRoomId] = useState<string | null>(null);
+
+  return { roomId, setRoomId };
+};
 
 const Room: React.FC = () => {
-  const router = useRouter();
-  const { roomId } = router.query;
+  const navigate = useNavigate();
+  const location = useLocation();
+  const params = useParams();
+  const searchParams = new URLSearchParams(location.search);
+  const roomIdFromQuery = searchParams.get('roomId');
+  const roomId = params.roomId || roomIdFromQuery; // Getting roomId from either params or query
+
   const [room, setRoom] = useState<RoomType | null>(null);
   const [sessionStatus, setSessionStatus] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,11 +86,12 @@ const Room: React.FC = () => {
   const [isDirectlyNavigated, setIsDirectlyNavigated] = useState(false);
   const [isNewRoomModalOpen, setIsNewRoomModalOpen] = useState(false);
   const [newRoomName, setNewRoomName] = useState('');
-	const { openModal, closeModal } = useModal();
-	const { setRoomId: setStoreRoomId } = useGameStore();
+  
+  const { openModal, closeModal } = useModal();
+  const { setRoomId: setStoreRoomId } = useGameStore();
   const confettiRef = useRef(null);
   const user = useUser();
-	const { startConfetti, stopConfetti } = useConfettiStore();
+  const { startConfetti, stopConfetti } = useConfettiStore();
 
   const handleRoomNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNewRoomName(e.target.value);
@@ -90,7 +141,7 @@ const Room: React.FC = () => {
           description: `New room "${newRoomName}" created successfully with ID: ${newRoomId}`,
         });
         setStoreRoomId(newRoomId);
-        router.push(`/game/room?roomId=${newRoomId}`);
+        navigate(`/game/room?roomId=${newRoomId}`);
       } else {
         toast({
           title: "Error",
@@ -135,7 +186,8 @@ const Room: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!router.isReady) return;
+    // Replacing router.isReady with a simple truth check
+    if (!roomId) return;
 
     const fetchRoomData = async () => {
       setIsLoading(true);
@@ -159,7 +211,7 @@ const Room: React.FC = () => {
               description: "Room not found",
               variant: "destructive",
             });
-            router.push('/');
+            navigate('/');
           }
         } else {
           console.warn("Room ID is undefined.");
@@ -178,7 +230,7 @@ const Room: React.FC = () => {
 
     fetchRoomData();
     setIsDirectlyNavigated(true);
-  }, [router.isReady, roomId, router, setStoreRoomId]);
+  }, [roomId, navigate, setStoreRoomId]);
 
   useEffect(() => {
     if (sessionStatus) {
@@ -199,15 +251,15 @@ const Room: React.FC = () => {
 
   useEffect(() => {
     if (isSessionCompleted) {
-			startConfetti();
+      startConfetti();
       setShowConfetti(true);
     } else {
-			stopConfetti();
+      stopConfetti();
       setShowConfetti(false);
     }
 
     return () => {
-			stopConfetti();
+      stopConfetti();
       setShowConfetti(false);
     };
   }, [isSessionCompleted, stopConfetti, startConfetti]);
@@ -220,9 +272,9 @@ const Room: React.FC = () => {
         .channel('room-status-subscription')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` },
           (payload) => {
-            console.log('Change received!', payload)
+            console.log('Change received!', payload);
             if (payload.new) {
-              const updatedRoom = payload.new;
+              const updatedRoom = payload.new as any;
               setRoom({
                 id: updatedRoom.id,
                 sessionId: updatedRoom.session_id,
@@ -234,22 +286,24 @@ const Room: React.FC = () => {
               });
             }
           })
-        .subscribe()
+        .subscribe();
 
       supabase
         .channel('session-status-subscription')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' },
           (payload) => {
-            console.log('Session status changed!', payload)
-            if (room?.sessionId && payload.new.id === room?.sessionId) {
+            console.log('Session status changed!', payload);
+            if (room?.sessionId && payload.new && payload.new.id === room?.sessionId) {
               setSessionStatus(payload.new.status);
             }
           })
-        .subscribe()
+        .subscribe();
 
       return () => {
-        supabase.removeChannel(channel)
-      }
+        if (channel) {
+          supabase.removeChannel(channel);
+        }
+      };
     }
   }, [roomId, sessionStatus, isDirectlyNavigated, room?.sessionId]);
 
@@ -299,11 +353,9 @@ const Room: React.FC = () => {
           <Door
             key={index}
             doorNumber={index + 1}
+            isActive={index + 1 === room.currentDoor}
             isOpen={isOpen}
-            roomId={room.id}
-            currentDoor={room.currentDoor}
-            isSessionActive={isSessionActive}
-            isSessionCompleted={isSessionCompleted}
+            onDoorClick={() => console.log(`Door ${index + 1} clicked`)}
           />
         ))}
       </div>
@@ -319,14 +371,14 @@ const Room: React.FC = () => {
             <Button onClick={() => openModal('newRoomModal')} className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mr-2">
               Create New Room
             </Button>
-            <Link href="/game/sessions" passHref>
+            <Link to="/game/sessions">
               <Button asChild className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
                 Go to Sessions
               </Button>
             </Link>
           </>
         ) : (
-          <Link href="/login" passHref>
+          <Link to="/login">
             <Button asChild className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
               Login to Create Rooms
             </Button>
