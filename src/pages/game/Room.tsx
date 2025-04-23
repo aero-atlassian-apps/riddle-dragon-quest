@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -325,7 +324,7 @@ const RoomContent = () => {
         .from('sessions')
         .select('status')
         .eq('id', roomDetails.sessionId)
-        .maybeSingle();
+        .single();
 
       if (error) {
         console.error("Error checking session status:", error);
@@ -386,10 +385,11 @@ const RoomContent = () => {
         filter: `id=eq.${roomDetails.sessionId}`
       }, (payload) => {
         console.log("Real-time session update received:", payload);
-        if (payload.new && payload.new.status) {
+        if (payload.new && 'status' in payload.new) {
           console.log("New session status from realtime:", payload.new.status);
-          setSessionStatus(payload.new.status);
-          if (payload.new.status === 'active' && (sessionStatus !== 'active')) {
+          setSessionStatus(payload.new.status as string);
+          
+          if (payload.new.status === 'active' && sessionStatus !== 'active') {
             toast({
               title: "Session started",
               description: "The game session has started!",
@@ -484,7 +484,7 @@ const RoomContent = () => {
               .from('sessions')
               .select('status')
               .eq('id', roomDetails.sessionId)
-              .maybeSingle();
+              .single();
               
             if (error) {
               console.error("Direct session check error:", error);
@@ -577,7 +577,7 @@ const RoomContent = () => {
     const duration = 3 * 1000;
     const animationEnd = Date.now() + duration;
     
-    const randomInRange = (min, max) => {
+    const randomInRange = (min: number, max: number) => {
       return Math.random() * (max - min) + min;
     };
     
@@ -650,14 +650,8 @@ const RoomContent = () => {
         }, 1500);
       }, 3000); // 3 seconds delay to allow celebration animation to complete
     } else {
-      // For wrong answers, ensure the Try Again button will show
+      // For wrong answers, just keep the question visible
       console.log("Wrong answer! Try Again button should appear");
-      
-      // Force a re-render with the correct state
-      setGameState(prev => ({
-        ...prev,
-        isAnswerCorrect: false
-      }));
     }
   };
 
@@ -813,10 +807,67 @@ const RoomContent = () => {
                   title: "Checking session status",
                   description: "Manually checking if the session has started...",
                 });
+                
+                // Force a hard cache-busting check
+                const checkWithNoCache = async () => {
+                  if (!roomDetails?.sessionId) return;
+                  
+                  try {
+                    // Add a unique timestamp to bypass any caching
+                    const timestamp = new Date().getTime();
+                    const { data, error } = await supabase.rpc(
+                      'get_fresh_session_status',
+                      { session_id: roomDetails.sessionId, _timestamp: timestamp }
+                    ).single();
+                    
+                    if (!error && data && data !== sessionStatus) {
+                      console.log("Fresh session status:", data);
+                      setSessionStatus(data);
+                      
+                      if (data === 'active') {
+                        toast({
+                          title: "Session is active",
+                          description: "The session has started! Refreshing page...",
+                          duration: 3000,
+                        });
+                        
+                        // Force page reload as last resort
+                        setTimeout(() => {
+                          window.location.reload();
+                        }, 1000);
+                      }
+                    } else if (error) {
+                      console.error("Error in fresh check:", error);
+                    }
+                  } catch (err) {
+                    console.error("Error in cache-busting check:", err);
+                  }
+                };
+                
+                // Try a direct DB call with no cache
+                checkWithNoCache();
               }}
               className="mt-4 font-medieval"
             >
               Check Session Status
+            </Button>
+            
+            {/* Complete reset button for when things are really stuck */}
+            <Button 
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                toast({
+                  title: "Hard refresh",
+                  description: "Performing a complete page reload...",
+                });
+                setTimeout(() => {
+                  window.location.reload();
+                }, 1000);
+              }}
+              className="mt-2 font-medieval text-red-500"
+            >
+              Force Refresh
             </Button>
           </div>
         ) : gameState.isGameComplete ? (
