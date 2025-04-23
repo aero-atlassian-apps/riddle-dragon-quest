@@ -82,7 +82,7 @@ const DoorKeeper: React.FC<DoorKeeperProps> = ({ isCorrect, isSpeaking, question
           <div className="parchment rounded-lg border-2 border-dragon-gold/50 p-4 relative shadow-lg">
             <div className="mb-3 text-center">
               <h3 className="text-xl font-bold text-dragon-scale font-medieval">
-                {isCorrect === null ? "Riddle me this:" : "Wrong! Try again!"}
+                {isCorrect === null ? "Résolvez cette énigme:" : "Faux ! Essayez encore !"}
               </h3>
               <p className="mt-3 text-dragon-scale font-serif italic">{question.text}</p>
             </div>
@@ -90,7 +90,7 @@ const DoorKeeper: React.FC<DoorKeeperProps> = ({ isCorrect, isSpeaking, question
               <div className="mt-4 flex justify-center">
                 <img 
                   src={`/images/${question.image}`} 
-                  alt="Riddle hint" 
+                  alt="Indice d'énigme" 
                   className="max-h-32 rounded-md border-2 border-dragon-gold/30 shadow-lg"
                 />
               </div>

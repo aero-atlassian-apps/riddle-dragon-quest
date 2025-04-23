@@ -38,13 +38,13 @@ const NotFound = () => {
         
         <h1 className="text-4xl font-bold mb-4">404</h1>
         <p className="text-xl mb-8">
-          Oops! The dragon seems to have misplaced this page.
+          Oups ! Le dragon semble avoir égaré cette page.
         </p>
         
         <Link to="/">
           <Button className="bg-dragon-primary hover:bg-dragon-secondary">
             <Home className="h-4 w-4 mr-2" />
-            Return to the Castle
+            Retour au Château
           </Button>
         </Link>
       </div>

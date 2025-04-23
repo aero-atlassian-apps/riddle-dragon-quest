@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { GameProvider, useGame } from "@/context/GameContext";
 import Door from "@/components/Door";
-import FeedbackCharacter from "@/components/FeedbackCharacter";
+import DoorKeeper from "@/components/DoorKeeper";
 import RiddleQuestion from "@/components/RiddleQuestion";
 import GamesShield from "@/components/GamesShield";
 import { Question } from "@/types/game";
@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import SessionTimer from "@/components/SessionTimer";
 import { useIsMobile } from "@/hooks/use-mobile";
+import confetti from "canvas-confetti";
 
 const GameRoom = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -146,13 +147,16 @@ const RoomContent = () => {
           });
           
           if (roomData.session_id) {
-            const { data: sessionData } = await supabase
+            const { data: sessionData, error: sessionError } = await supabase
               .from('sessions')
               .select('start_time, status')
               .eq('id', roomData.session_id)
               .maybeSingle();
             
             console.log("Session data:", sessionData);
+            if (sessionError) {
+              console.error("Error fetching session data:", sessionError);
+            }
               
             if (sessionData) {
               setRoomDetails(prev => ({
@@ -162,6 +166,8 @@ const RoomContent = () => {
               }));
               
               setSessionStatus(sessionData.status || 'pending');
+            } else {
+              console.warn("Session ID exists but no session data found for ID:", roomData.session_id);
             }
             
             const { data: questionsData, error: questionsError } = await supabase
@@ -221,13 +227,17 @@ const RoomContent = () => {
               });
               
               if (matchingRoom.session_id) {
-                const { data: sessionData } = await supabase
+                const { data: sessionData, error: sessionError } = await supabase
                   .from('sessions')
                   .select('start_time, status')
                   .eq('id', matchingRoom.session_id)
                   .maybeSingle();
                   
                 console.log("Session data (alternate path):", sessionData);
+                
+                if (sessionError) {
+                  console.error("Error fetching session data (alternate path):", sessionError);
+                }
                   
                 if (sessionData) {
                   setRoomDetails(prev => ({
@@ -237,6 +247,8 @@ const RoomContent = () => {
                   }));
                   
                   setSessionStatus(sessionData.status || 'pending');
+                } else {
+                  console.warn("Session ID exists but no session data found for ID (alternate path):", matchingRoom.session_id);
                 }
                 
                 const { data: questionsData } = await supabase
@@ -292,53 +304,129 @@ const RoomContent = () => {
     fetchRoomAndQuestions();
   }, [roomId, toast]);
   
+  // Define the checkSessionStatus function at the component level
+  const checkSessionStatus = async () => {
+    if (!roomDetails?.sessionId || checkingSession) return;
+
+    try {
+      setCheckingSession(true);
+      console.log("Checking session status...");
+
+      const { data: sessionData, error } = await supabase
+        .from('sessions')
+        .select('status')
+        .eq('id', roomDetails.sessionId)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Error checking session status:", error);
+        return;
+      }
+
+      if (sessionData && sessionData.status) {
+        console.log("Session status:", sessionData.status);
+        // Only show toast notification if status changed from pending to active
+        if (sessionStatus !== 'active' && sessionData.status === 'active') {
+          toast({
+            title: "Session started",
+            description: "The game session has started!",
+          });
+        }
+        setSessionStatus(sessionData.status);
+      }
+    } catch (error) {
+      console.error("Error checking session status:", error);
+    } finally {
+      setCheckingSession(false);
+    }
+  };
+
+  // Main effect for session status monitoring
   useEffect(() => {
-    if (!roomDetails?.sessionId || sessionStatus === 'active' || sessionStatus === 'completed') {
+    if (!roomDetails?.sessionId) {
       return;
     }
-    
-    const checkSessionStatus = async () => {
-      if (checkingSession) return;
-      
-      try {
-        setCheckingSession(true);
-        console.log("Checking session status...");
-        
-        const { data: sessionData, error } = await supabase
-          .from('sessions')
-          .select('status')
-          .eq('id', roomDetails.sessionId)
-          .maybeSingle();
-          
-        if (error) {
-          console.error("Error checking session status:", error);
-          return;
-        }
-        
-        if (sessionData && sessionData.status) {
-          console.log("Session status:", sessionData.status);
-          setSessionStatus(sessionData.status);
-          
-          if (sessionData.status === 'active') {
+
+    // Initial check
+    checkSessionStatus();
+
+    // Set up real-time subscription
+    const subscription = supabase
+      .channel(`session-${roomDetails.sessionId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'sessions',
+        filter: `id=eq.${roomDetails.sessionId}`
+      }, (payload) => {
+        console.log("Real-time session update received:", payload);
+        if (payload.new && payload.new.status) {
+          console.log("New session status:", payload.new.status);
+          setSessionStatus(payload.new.status);
+          if (payload.new.status === 'active' && (sessionStatus !== 'active' || document.visibilityState !== 'visible')) {
             toast({
               title: "Session started",
               description: "The game session has started!",
+              duration: 5000,
             });
           }
         }
-      } catch (error) {
-        console.error("Error polling session status:", error);
-      } finally {
-        setCheckingSession(false);
+      })
+      .subscribe((status) => {
+        console.log("Subscription status:", status);
+        if (status === 'SUBSCRIBED') {
+          console.log("Subscription established, checking current status");
+          checkSessionStatus();
+        }
+      });
+
+    // Set up backup polling intervals
+    const backupPollInterval = setInterval(() => {
+      checkSessionStatus();
+    }, 5000);
+
+    const initialPollInterval = setInterval(() => {
+      if (sessionStatus !== 'active') {
+        console.log("Initial aggressive polling check");
+        checkSessionStatus();
+      } else {
+        clearInterval(initialPollInterval);
       }
+    }, 2000);
+
+    const clearInitialPollingTimeout = setTimeout(() => {
+      clearInterval(initialPollInterval);
+    }, 60000);
+
+    // Clean up function
+    return () => {
+      subscription.unsubscribe();
+      clearInterval(backupPollInterval);
+      clearInterval(initialPollInterval);
+      clearTimeout(clearInitialPollingTimeout);
     };
-    
-    checkSessionStatus();
-    
-    const intervalId = setInterval(checkSessionStatus, 5000);
-    
-    return () => clearInterval(intervalId);
-  }, [roomDetails?.sessionId, sessionStatus, toast, checkingSession]);
+  }, [roomDetails?.sessionId, toast, sessionStatus]);
+  
+  // Additional effect to ensure session status is checked when the component is focused
+  useEffect(() => {
+    if (roomDetails?.sessionId) {
+      // Define the visibility change handler
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible' && roomDetails?.sessionId) {
+          console.log("Tab became visible, checking session status");
+          checkSessionStatus();
+        }
+      };
+      
+      // Add event listener for visibility changes
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      
+      // Clean up the event listener
+      return () => {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      };
+    }
+  }, [roomDetails?.sessionId])
   
   const setDefaultQuestions = () => {
     console.log("No questions found, using default questions");
@@ -385,10 +473,48 @@ const RoomContent = () => {
     if (questions.length > 0 && gameState.currentDoor <= questions.length) {
       setQuestion(questions[gameState.currentDoor - 1]);
     }
-  }, [gameState.currentDoor, questions, setQuestion]);
+  }, [gameState.currentDoor, questions]);
   
   const handleDoorClick = () => {
     setShowQuestion(true);
+  };
+  
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [scoreAnimation, setScoreAnimation] = useState({
+    show: false,
+    prevScore: 0,
+    newScore: 0
+  });
+  
+  const launchCoinAnimation = () => {
+    const duration = 3 * 1000;
+    const animationEnd = Date.now() + duration;
+    
+    const randomInRange = (min, max) => {
+      return Math.random() * (max - min) + min;
+    };
+    
+    const interval = setInterval(() => {
+      const timeLeft = animationEnd - Date.now();
+      
+      if (timeLeft <= 0) {
+        return clearInterval(interval);
+      }
+      
+      const particleCount = 30 * (timeLeft / duration);
+      
+      // Create gold coins falling from top
+      confetti({
+        particleCount: Math.floor(randomInRange(10, 20)),
+        angle: randomInRange(80, 100),
+        spread: randomInRange(50, 70),
+        origin: { x: randomInRange(0.3, 0.7), y: 0 },
+        gravity: 1.2,
+        colors: ['#FFD700', '#FFC000', '#FFAE00', '#FFD700'],
+        shapes: ['circle'],
+        scalar: randomInRange(0.8, 1.2)
+      });
+    }, 250);
   };
   
   const handleSubmitAnswer = (answer: string) => {
@@ -401,13 +527,17 @@ const RoomContent = () => {
     if (isCorrect) {
       console.log("Correct answer! Setting showContinueButton to true");
       setShowContinueButton(true);
+      setShowCelebration(true);
       
-      // Show success toast
-      toast({
-        title: "Correct Answer!",
-        description: "You've solved the riddle successfully.",
-        variant: "default",
+      // Animate score
+      setScoreAnimation({
+        show: true,
+        prevScore: gameState.score - (100 - (10 * (3 - gameState.tokensLeft))),
+        newScore: gameState.score
       });
+      
+      // Launch coin animation
+      launchCoinAnimation();
       
       if (roomId) {
         supabase
@@ -424,44 +554,30 @@ const RoomContent = () => {
             }
           });
       }
+      
+      // Automatically navigate to doors list after celebration animation
+      setTimeout(() => {
+        console.log("Auto-navigating to doors list after correct answer");
+        goToNextDoor();
+        setTimeout(() => {
+          setShowQuestion(false);
+        }, 1500);
+      }, 3000); // 3 seconds delay to allow celebration animation to complete
     } else {
       // For wrong answers, ensure the Try Again button will show
       console.log("Wrong answer! Try Again button should appear");
       
-      // Show error toast
-      toast({
-        title: "Incorrect Answer",
-        description: "Try again with a different answer.",
-        variant: "destructive",
-      });
-      
-      // Force a re-render with the correct state to ensure the Try Again button appears
-      // We need to update the local state to match the game context state
-      setQuestion({...gameState.currentQuestion!});
+      // Force a re-render with the correct state
+      setGameState(prev => ({
+        ...prev,
+        isAnswerCorrect: false
+      }));
     }
   };
   
-  const handleContinue = () => {
-    console.log("Continue handler called");
-    // First call goToNextDoor which has its own timeout
-    goToNextDoor();
-    // Use a longer timeout to ensure the feedback character remains visible
-    // This matches the 1500ms timeout in goToNextDoor
-    setTimeout(() => {
-      setShowQuestion(false);
-    }, 1500);
-  };
+    // handleContinue function removed - now handled automatically in handleSubmitAnswer
   
-  const handleTryAgain = () => {
-    console.log("Try again handler called");
-    // Keep the question visible and maintain the showQuestion state
-    // This prevents the feedback character from disappearing
-    setShowQuestion(true);
-    // Reset the answer state but keep the current question
-    // We need to explicitly set isAnswerCorrect to null in the GameContext
-    // This ensures the FeedbackCharacter component will re-render properly
-    setQuestion({...gameState.currentQuestion!});
-  };
+    // handleTryAgain function removed - now handled automatically with submit button coloring and sound
 
   if (loading) {
     return (
@@ -622,18 +738,35 @@ const RoomContent = () => {
         ) : showQuestion ? (
           <div className="my-8">
             <div className="mb-8 flex justify-center relative">
-              <div className="w-full max-w-xl px-16">
-                <FeedbackCharacter
+              <div className="w-full max-w-xl px-16 relative">
+                {/* Door Keeper for both question and feedback */}
+                <DoorKeeper
                   isCorrect={gameState.isAnswerCorrect}
                   isSpeaking={true}
-                  question={gameState.currentQuestion}
-                  onTryAgain={handleTryAgain}
-                  onContinue={handleContinue}
+                  question={gameState.isAnswerCorrect === true ? {
+                    ...gameState.currentQuestion!,
+                    text: "Well done, brave one! You've solved this riddle. The door unlocks!"
+                  } : gameState.isAnswerCorrect === false ? {
+                    ...gameState.currentQuestion!,
+                    text: "That's not quite right. The dragon's riddle remains unsolved. Try again!"
+                  } : gameState.currentQuestion}
                 />
+                
+                {/* Celebration effects for correct answer */}
+                {showCelebration && (
+                  <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                    {/* Animated score increase */}
+                    <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-full animate-bounce-in">
+                      <div className="text-3xl font-medieval text-dragon-gold font-bold">+{scoreAnimation.newScore - scoreAnimation.prevScore}</div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Action buttons removed - now handled automatically */}
               </div>
             </div>
             
-            {gameState.currentQuestion && (
+            {gameState.currentQuestion && !gameState.isAnswerCorrect && (
               <RiddleQuestion
                 question={gameState.currentQuestion}
                 tokensLeft={gameState.tokensLeft}

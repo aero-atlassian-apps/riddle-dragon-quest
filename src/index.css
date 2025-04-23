@@ -171,16 +171,86 @@
 }
 
 @keyframes door-swing {
-  0% { transform: perspective(400px) rotateY(0); }
-  100% { transform: perspective(400px) rotateY(-70deg); }
+  0% { transform: perspective(400px) rotateY(0); filter: brightness(1); }
+  30% { transform: perspective(400px) rotateY(-30deg); filter: brightness(1.2); }
+  100% { transform: perspective(400px) rotateY(-70deg); filter: brightness(1.5); }
 }
 
-@kteyframes flag-wave {
+@keyframes flag-wave {
   0% { transform: skewX(0) scaleX(1); }
   25% { transform: skewX(3deg) scaleX(1.05); }
   50% { transform: skewX(-2deg) scaleX(0.98); }
   75% { transform: skewX(1deg) scaleX(1.02); }
   100% { transform: skewX(0) scaleX(1); }
+}
+
+/* Score and celebration animations */
+@keyframes bounce-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-100%) scale(0.8);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(25%) scale(1.2);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pulse-gold {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(255, 215, 0, 0);
+  }
+}
+
+@keyframes door-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 3px rgba(245, 158, 11, 0.5));
+  }
+  50% {
+    filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.8));
+  }
+}
+
+@keyframes magical-sparkle {
+  0% {
+    opacity: 0.2;
+    transform: scale(0.8) rotate(0deg);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.2) rotate(180deg);
+  }
+  100% {
+    opacity: 0.2;
+    transform: scale(0.8) rotate(360deg);
+  }
+}
+
+.animate-bounce-in {
+  animation: bounce-in 1s ease-out forwards;
+}
+
+.animate-pulse-gold {
+  animation: pulse-gold 2s infinite;
+}
+
+.animate-door-glow {
+  animation: door-glow 2s infinite;
+}
+
+.animate-magical-sparkle {
+  animation: magical-sparkle 3s infinite linear;
+}
+
+.scale-115 {
+  transform: scale(1.15);
 }
 
 .flag-wave {

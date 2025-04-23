@@ -1,0 +1,46 @@
+{
+    "questions": [
+      {
+        "id": 1,
+        "text": "En analysant le graphique de suivi des cycles, calculez la durée médiane en jours (1 jour = 24h).",
+        "hint": "Cherchez l'indicateur central qui représente 50% des cycles terminés, sans être influencé par les valeurs extrêmes.",
+        "answer": "4.33",
+        "style": "direct"
+      },
+      {
+        "id": 2,
+        "text": "Quelle est la densité de défauts parmi les 16 tickets suivis ?",
+        "hint": "Considérez le rapport entre les anomalies confirmées et l'ensemble des tickets traités.",
+        "answer": "0.0625",
+        "style": "metric_calculation"
+      },
+      {
+        "id": 3,
+        "text": "L'équipe a livré 28 points cette itération, dont 8 points consacrés à des tâches techniques. Quel est le ratio de dette technique ?",
+        "hint": "Prenez en compte les tâches identifiées comme techniques et comparez-les à l'effort total livré.",
+        "answer": "0.286",
+        "style": "technical_debt"
+      },
+      {
+        "id": 4,
+        "text": "Quel pourcentage de défauts a franchi l'ensemble de nos barrières qualité ?",
+        "hint": "Évaluez les anomalies qui ont traversé tous les contrôles jusqu'à la production.",
+        "answer": "7",
+        "style": "percentage"
+      },
+      {
+        "id": 5,
+        "text": "En examinant le tableau kanban actuel, évaluez la charge totale de travail en cours (WIP).",
+        "hint": "Considérez l'ensemble des tickets qui ne sont ni en attente ni terminés dans votre calcul.",
+        "answer": "18",
+        "style": "work_analysis"
+      },
+      {
+        "id": 6,
+        "text": "Selon les mesures de cycle time, quel est l'écart entre la durée maximale observée et la durée minimale (en semaines) ?",
+        "hint": "Analysez la dispersion des données en comparant les deux extrêmes du dataset.",
+        "answer": "26",
+        "style": "range_calculation"
+      }
+    ]
+  }
