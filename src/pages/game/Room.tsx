@@ -1,972 +1,391 @@
-import { useState, useEffect, useRef } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
-import { GameProvider, useGame } from "@/context/GameContext";
-import Door from "@/components/Door";
-import DoorKeeper from "@/components/DoorKeeper";
-import RiddleQuestion from "@/components/RiddleQuestion";
-import GamesShield from "@/components/GamesShield";
-import { Question } from "@/types/game";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
-import SessionTimer from "@/components/SessionTimer";
-import { useIsMobile } from "@/hooks/use-mobile";
-import confetti from "canvas-confetti";
+import React, { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/router';
+import { toast } from '@/components/ui/use-toast';
+import { getRoom, getSessionStatus } from '@/utils/db';
+import { supabase } from '@/integrations/supabase/client';
+import { Session, Room as RoomType } from '@/types/game';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from "@/components/ui/skeleton"
+import Link from 'next/link';
+import { useUser } from '@supabase/auth-helpers-react';
+import { Door } from '@/components/Door';
+import { calculateDoorStates } from '@/utils/gameLogic';
+import { Confetti } from '@/components/Confetti';
+import { Modal } from "@/components/ui/modal"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { generateRoomId } from '@/utils/roomIdGenerator';
+import { Copy, Loader2 } from 'lucide-react';
+import { useConfettiStore } from '@/store/confettiStore';
+import { useModal } from '@/store/modalStore';
+import { useGameStore } from '@/store/gameStore';
 
-const GameRoom = () => {
-  const { roomId } = useParams<{ roomId: string }>();
-  const [initialGameState, setInitialGameState] = useState<{
-    score: number;
-    currentDoor: number;
-    tokensLeft: number;
-  } | null>(null);
-  const [loading, setLoading] = useState(true);
+const Room: React.FC = () => {
+  const router = useRouter();
+  const { roomId } = router.query;
+  const [room, setRoom] = useState<RoomType | null>(null);
+  const [sessionStatus, setSessionStatus] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSessionActive, setIsSessionActive] = useState(false);
+  const [isSessionCompleted, setIsSessionCompleted] = useState(false);
+  const [doorStates, setDoorStates] = useState<boolean[]>([false, false, false]);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [isGeneratingRoom, setIsGeneratingRoom] = useState(false);
+  const [generatedRoomId, setGeneratedRoomId] = useState<string | null>(null);
+  const [isCopied, setIsCopied] = useState(false);
+  const [isDirectlyNavigated, setIsDirectlyNavigated] = useState(false);
+  const [isNewRoomModalOpen, setIsNewRoomModalOpen] = useState(false);
+  const [newRoomName, setNewRoomName] = useState('');
+	const { openModal, closeModal } = useModal();
+	const { setRoomId: setStoreRoomId } = useGameStore();
+  const confettiRef = useRef(null);
+  const user = useUser();
+	const { startConfetti, stopConfetti } = useConfettiStore();
 
-  useEffect(() => {
-    const fetchRoomState = async () => {
-      if (!roomId) return;
-      
-      try {
-        const { data: roomData, error } = await supabase
-          .from('rooms')
-          .select('score, current_door, tokens_left')
-          .eq('id', roomId)
-          .maybeSingle();
-          
-        if (error) {
-          console.error("Error fetching room state:", error);
-          return;
-        }
-        
-        if (roomData) {
-          console.log("Loaded saved room state:", roomData);
-          setInitialGameState({
-            score: roomData.score || 0,
-            currentDoor: roomData.current_door || 1,
-            tokensLeft: roomData.tokens_left || 3
-          });
-        }
-      } catch (err) {
-        console.error("Failed to fetch room state:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchRoomState();
-  }, [roomId]);
-  
-  if (loading) {
-    return (
-      <div className="min-h-screen p-4 bg-gradient-to-b from-dragon-accent/5 to-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-pulse text-4xl font-medieval mb-4">⚔️</div>
-          <p className="text-xl font-medieval">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <GameProvider initialState={initialGameState}>
-      <RoomContent />
-    </GameProvider>
-  );
-};
-
-const RoomContent = () => {
-  const { roomId } = useParams<{ roomId: string }>();
-  const { gameState, setQuestion, submitAnswer, useToken, goToNextDoor, showContinueButton, setShowContinueButton } = useGame();
-  const { toast } = useToast();
-  const navigate = useNavigate();
-  const isMobile = useIsMobile();
-  
-  const [showQuestion, setShowQuestion] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [roomDetails, setRoomDetails] = useState<{
-    name: string, 
-    sessionId: string,
-    sigil?: string,
-    motto?: string,
-    sessionStartTime?: string,
-    sessionStatus?: string
-  } | null>(null);
-  const [roomNotFound, setRoomNotFound] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-  const [debugInfo, setDebugInfo] = useState<string[]>([]);
-  const [debugMode, setDebugMode] = useState<boolean>(false);
-  const [allRooms, setAllRooms] = useState<any[]>([]);
-  const [sessionStatus, setSessionStatus] = useState<string>('pending');
-  const [checkingSession, setCheckingSession] = useState<boolean>(false);
-  
-  const getHouseIcon = (name: string): string => {
-    if (name.includes('Stark')) return '🐺';
-    if (name.includes('Lannister')) return '🦁';
-    if (name.includes('Targaryen')) return '🐉';
-    if (name.includes('Baratheon')) return '🦌';
-    if (name.includes('Greyjoy')) return '🦑';
-    return '🛡️';
-  };
-  
-  useEffect(() => {
-    const fetchRoomAndQuestions = async () => {
-      if (!roomId) {
-        console.error("No room ID in URL parameters");
-        setRoomNotFound(true);
-        setErrorMessage("Missing room identifier in the URL");
-        setLoading(false);
-        return;
-      }
-      
-      try {
-        setLoading(true);
-        setDebugInfo(prev => [...prev, `Attempting to find room: ${roomId}`]);
-        console.log("[ROOM PAGE] Attempting to fetch room with ID:", roomId);
-
-        const { data: roomData, error: roomError } = await supabase
-          .from('rooms')
-          .select('*')
-          .eq('id', roomId)
-          .maybeSingle();
-
-        if (roomError) {
-          setDebugInfo(prev => [...prev, `Error with direct DB query: ${roomError.message}`]);
-          console.error("Direct room query error:", roomError);
-        } 
-        
-        if (roomData) {
-          setDebugInfo(prev => [...prev, `Room found with direct DB query: ${roomData.name}`]);
-          console.log("Room found with direct query:", roomData);
-          
-          setRoomDetails({
-            name: roomData.name,
-            sessionId: roomData.session_id,
-            sigil: getHouseIcon(roomData.name)
-          });
-          
-          if (roomData.session_id) {
-            const { data: sessionData, error: sessionError } = await supabase
-              .from('sessions')
-              .select('start_time, status')
-              .eq('id', roomData.session_id)
-              .maybeSingle();
-            
-            console.log("Session data:", sessionData);
-            if (sessionError) {
-              console.error("Error fetching session data:", sessionError);
-            }
-              
-            if (sessionData) {
-              setRoomDetails(prev => ({
-                ...prev!,
-                sessionStartTime: sessionData.start_time,
-                sessionStatus: sessionData.status
-              }));
-              
-              // Update session status directly from DB
-              if (sessionData.status === 'active') {
-                console.log("Setting session status to active from initial fetch");
-                setSessionStatus('active');
-              }
-            } else {
-              console.warn("Session ID exists but no session data found for ID:", roomData.session_id);
-            }
-            
-            const { data: questionsData, error: questionsError } = await supabase
-              .from('questions')
-              .select('*')
-              .eq('session_id', roomData.session_id);
-              
-            if (questionsError) {
-              console.error("Error fetching questions:", questionsError);
-              setDefaultQuestions();
-            } else if (questionsData && questionsData.length > 0) {
-              const formattedQuestions: Question[] = questionsData.map(q => ({
-                id: q.id,
-                text: q.text,
-                image: q.image,
-                answer: q.answer
-              }));
-              
-              setQuestions(formattedQuestions);
-              console.log("Questions loaded:", formattedQuestions.length);
-            } else {
-              setDefaultQuestions();
-            }
-          } else {
-            setDefaultQuestions();
-          }
-          
-          setLoading(false);
-          return;
-        } else {
-          setDebugInfo(prev => [...prev, "Room not found with direct DB query"]);
-        }
-        
-        const { data: allRoomsData, error: allRoomsError } = await supabase
-          .from('rooms')
-          .select('*');
-          
-        if (allRoomsError) {
-          console.error("Error fetching all rooms:", allRoomsError);
-          setDebugInfo(prev => [...prev, `Error fetching all rooms: ${allRoomsError.message}`]);
-        } else {
-          setAllRooms(allRoomsData || []);
-          const roomCount = allRoomsData?.length || 0;
-          console.log(`Found ${roomCount} rooms directly from database`);
-          setDebugInfo(prev => [...prev, `Found ${roomCount} rooms directly from database`]);
-          
-          if (allRoomsData && allRoomsData.length > 0) {
-            const matchingRoom = allRoomsData.find(r => r.id === roomId);
-            if (matchingRoom) {
-              console.log("Room found in all rooms list:", matchingRoom);
-              setDebugInfo(prev => [...prev, `Room found in all rooms list: ${matchingRoom.name}`]);
-              
-              setRoomDetails({
-                name: matchingRoom.name,
-                sessionId: matchingRoom.session_id,
-                sigil: getHouseIcon(matchingRoom.name)
-              });
-              
-              if (matchingRoom.session_id) {
-                const { data: sessionData, error: sessionError } = await supabase
-                  .from('sessions')
-                  .select('start_time, status')
-                  .eq('id', matchingRoom.session_id)
-                  .maybeSingle();
-                  
-                console.log("Session data (alternate path):", sessionData);
-                
-                if (sessionError) {
-                  console.error("Error fetching session data (alternate path):", sessionError);
-                }
-                  
-                if (sessionData) {
-                  setRoomDetails(prev => ({
-                    ...prev!,
-                    sessionStartTime: sessionData.start_time,
-                    sessionStatus: sessionData.status
-                  }));
-                  
-                  // Update session status directly from DB
-                  if (sessionData.status === 'active') {
-                    console.log("Setting session status to active from alternate fetch");
-                    setSessionStatus('active');
-                  }
-                } else {
-                  console.warn("Session ID exists but no session data found for ID (alternate path):", matchingRoom.session_id);
-                }
-                
-                const { data: questionsData } = await supabase
-                  .from('questions')
-                  .select('*')
-                  .eq('session_id', matchingRoom.session_id);
-                  
-                if (questionsData && questionsData.length > 0) {
-                  const formattedQuestions: Question[] = questionsData.map(q => ({
-                    id: q.id,
-                    text: q.text,
-                    image: q.image,
-                    answer: q.answer
-                  }));
-                  
-                  setQuestions(formattedQuestions);
-                } else {
-                  setDefaultQuestions();
-                }
-                
-                setLoading(false);
-                return;
-              }
-            } else {
-              console.log(`Room with ID ${roomId} not found in database`);
-              setDebugInfo(prev => [...prev, `Room with ID ${roomId} NOT found in all rooms list`]);
-              if (allRoomsData.length > 0) {
-                setDebugInfo(prev => [...prev, `Available rooms: ${allRoomsData.map(r => `${r.name} (${r.id})`).join(', ')}`]);
-              }
-            }
-          }
-        }
-        
-        setDebugInfo(prev => [...prev, "Room not found via any method"]);
-        setRoomNotFound(true);
-        setErrorMessage("This game room doesn't exist or has been removed");
-        toast({
-          title: "Room not found",
-          description: "This game room doesn't exist or has been removed",
-          variant: "destructive",
-        });
-        
-      } catch (error) {
-        console.error("Error fetching room and questions:", error);
-        setErrorMessage(`Failed to load room data: ${error.message || "Unknown error"}`);
-        setDebugInfo(prev => [...prev, `Error: ${error.message || "Unknown error"}`]);
-        setRoomNotFound(true);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchRoomAndQuestions();
-  }, [roomId, toast]);
-  
-  // Define the checkSessionStatus function with improved error handling
-  const checkSessionStatus = async () => {
-    if (!roomDetails?.sessionId || checkingSession) return;
-
-    try {
-      setCheckingSession(true);
-      console.log("Checking session status for session ID:", roomDetails.sessionId);
-
-      const { data: sessionData, error } = await supabase
-        .from('sessions')
-        .select('status')
-        .eq('id', roomDetails.sessionId)
-        .single();
-
-      if (error) {
-        console.error("Error checking session status:", error);
-        return;
-      }
-
-      if (sessionData && sessionData.status) {
-        console.log("Session status from direct check:", sessionData.status);
-        // Only show toast notification if status changed from pending to active
-        if (sessionStatus !== 'active' && sessionData.status === 'active') {
-          console.log("Session status changed to active, showing toast");
-          toast({
-            title: "Session started",
-            description: "The game session has started!",
-          });
-          
-          // Force refresh the page to ensure we get the latest state
-          if (document.visibilityState === 'visible') {
-            console.log("Refreshing session data after status change");
-          }
-        }
-        setSessionStatus(sessionData.status);
-      }
-    } catch (error) {
-      console.error("Error checking session status:", error);
-    } finally {
-      setCheckingSession(false);
-    }
+  const handleRoomNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewRoomName(e.target.value);
   };
 
-  // Create a helper function to verify subscription status
-  const verifyRealtimeSubscription = () => {
-    if (roomDetails?.sessionId) {
-      // Manually check session status if we're stuck in pending
-      if (sessionStatus === 'pending') {
-        console.log("Manually checking session status as we're still in pending state");
-        checkSessionStatus();
-      }
-    }
-  };
-
-  // Main effect for session status monitoring with improved subscription
-  useEffect(() => {
-    if (!roomDetails?.sessionId) {
+  const handleCreateRoom = async () => {
+    if (!room?.sessionId) {
+      toast({
+        title: "Error",
+        description: "Session ID is missing. Cannot create a new room without a session.",
+        variant: "destructive",
+      });
       return;
     }
-    
-    // Log current sessionId we're subscribing to
-    console.log("Setting up realtime subscription for session:", roomDetails.sessionId);
 
-    // Set up real-time subscription with more robust handling
-    const channel = supabase
-      .channel(`session-${roomDetails.sessionId}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'sessions',
-        filter: `id=eq.${roomDetails.sessionId}`
-      }, (payload) => {
-        console.log("Real-time session update received:", payload);
-        if (payload.new && 'status' in payload.new) {
-          console.log("New session status from realtime:", payload.new.status);
-          setSessionStatus(payload.new.status as string);
-          
-          if (payload.new.status === 'active' && sessionStatus !== 'active') {
-            toast({
-              title: "Session started",
-              description: "The game session has started!",
-              duration: 5000,
-            });
-            
-            // Force a manual check to ensure we have the latest data
-            setTimeout(() => {
-              if (sessionStatus !== 'active') {
-                checkSessionStatus();
-              }
-            }, 500);
-          }
-        }
-      })
-      .subscribe((status) => {
-        console.log("Subscription status:", status);
-        if (status === 'SUBSCRIBED') {
-          console.log("Subscription established, checking current status");
-          checkSessionStatus();
-        }
+    if (!newRoomName.trim()) {
+      toast({
+        title: "Error",
+        description: "Room name cannot be empty.",
+        variant: "destructive",
       });
-    
-    // Initial status check
-    checkSessionStatus();
-
-    // Set up backup polling intervals
-    const backupPollInterval = setInterval(() => {
-      checkSessionStatus();
-    }, 5000);
-
-    // More aggressive polling for pending sessions
-    const pendingPollInterval = setInterval(() => {
-      if (sessionStatus !== 'active') {
-        console.log("Pending state poll check");
-        checkSessionStatus();
-        
-        // After 10 seconds, verify our subscription is working
-        setTimeout(verifyRealtimeSubscription, 10000);
-      }
-    }, 3000);
-
-    // Clear aggressive polling after reasonable time
-    const clearPendingPollTimeout = setTimeout(() => {
-      clearInterval(pendingPollInterval);
-    }, 60000);
-
-    // Clean up function
-    return () => {
-      supabase.removeChannel(channel);
-      clearInterval(backupPollInterval);
-      clearInterval(pendingPollInterval);
-      clearTimeout(clearPendingPollTimeout);
-    };
-  }, [roomDetails?.sessionId, toast]);
-  
-  // Additional effect to ensure session status is checked when the component is focused
-  useEffect(() => {
-    if (roomDetails?.sessionId) {
-      // Define the visibility change handler
-      const handleVisibilityChange = () => {
-        if (document.visibilityState === 'visible' && roomDetails?.sessionId) {
-          console.log("Tab became visible, checking session status");
-          checkSessionStatus();
-        }
-      };
-      
-      // Add event listener for visibility changes
-      document.addEventListener('visibilitychange', handleVisibilityChange);
-      
-      // Clean up the event listener
-      return () => {
-        document.removeEventListener('visibilitychange', handleVisibilityChange);
-      };
+      return;
     }
-  }, [roomDetails?.sessionId]);
 
-  // Add a special handler to detect and fix unresponsive subscriptions
+    setIsGeneratingRoom(true);
+    try {
+      const newRoomId = generateRoomId();
+      setGeneratedRoomId(newRoomId);
+
+      const response = await fetch('/api/createRoom', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sessionId: room.sessionId,
+          roomName: newRoomName,
+          roomId: newRoomId,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: `New room "${newRoomName}" created successfully with ID: ${newRoomId}`,
+        });
+        setStoreRoomId(newRoomId);
+        router.push(`/game/room?roomId=${newRoomId}`);
+      } else {
+        toast({
+          title: "Error",
+          description: data.message || 'Failed to create room',
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error('Error creating room:', error);
+      toast({
+        title: "Error",
+        description: error.message || 'Failed to create room',
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingRoom(false);
+      closeModal('newRoomModal');
+      setIsNewRoomModalOpen(false);
+    }
+  };
+
+  const handleCopyRoomId = () => {
+    if (generatedRoomId) {
+      navigator.clipboard.writeText(generatedRoomId)
+        .then(() => {
+          setIsCopied(true);
+          toast({
+            title: "Copied!",
+            description: "Room ID copied to clipboard.",
+          });
+          setTimeout(() => setIsCopied(false), 3000);
+        })
+        .catch(err => {
+          console.error("Could not copy room ID: ", err);
+          toast({
+            title: "Error",
+            description: "Failed to copy room ID to clipboard.",
+            variant: "destructive",
+          });
+        });
+    }
+  };
+
   useEffect(() => {
-    let subscriptionTimeoutCheck: number;
-    
-    if (roomDetails?.sessionId && sessionStatus === 'pending') {
-      // If we're still pending after 15 seconds, manually check DB directly
-      subscriptionTimeoutCheck = window.setTimeout(() => {
-        console.log("Running subscription health check - session still pending");
-        
-        // Directly check the database status, bypassing cached state
-        const checkDatabaseDirectly = async () => {
-          try {
-            console.log("Direct database check for session status");
-            const { data, error } = await supabase
-              .from('sessions')
-              .select('status')
-              .eq('id', roomDetails.sessionId)
-              .single();
-              
-            if (error) {
-              console.error("Direct session check error:", error);
-              return;
+    if (!router.isReady) return;
+
+    const fetchRoomData = async () => {
+      setIsLoading(true);
+      try {
+        if (roomId) {
+          const currentRoom = await getRoom(roomId as string);
+          if (currentRoom) {
+            setRoom(currentRoom);
+            setStoreRoomId(currentRoom.id);
+
+            if (currentRoom.sessionId) {
+              const status = await getSessionStatus(currentRoom.sessionId);
+              setSessionStatus(status);
+            } else {
+              console.warn("Room does not have a session ID.");
+              setSessionStatus(null);
             }
-            
-            if (data && data.status === 'active' && sessionStatus !== 'active') {
-              console.log("Session found active directly from DB but state shows pending - fixing state");
-              setSessionStatus('active');
-              toast({
-                title: "Session started",
-                description: "The game session has started! (recovered state)",
+          } else {
+            toast({
+              title: "Error",
+              description: "Room not found",
+              variant: "destructive",
+            });
+            router.push('/');
+          }
+        } else {
+          console.warn("Room ID is undefined.");
+        }
+      } catch (error) {
+        console.error("Error fetching room data:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load room data",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchRoomData();
+    setIsDirectlyNavigated(true);
+  }, [router.isReady, roomId, router, setStoreRoomId]);
+
+  useEffect(() => {
+    if (sessionStatus) {
+      setIsSessionActive(sessionStatus === "active");
+      setIsSessionCompleted(sessionStatus === "completed");
+    } else {
+      setIsSessionActive(false);
+      setIsSessionCompleted(false);
+    }
+  }, [sessionStatus]);
+
+  useEffect(() => {
+    if (room) {
+      const calculatedDoorStates = calculateDoorStates(room.tokensLeft);
+      setDoorStates(calculatedDoorStates);
+    }
+  }, [room]);
+
+  useEffect(() => {
+    if (isSessionCompleted) {
+			startConfetti();
+      setShowConfetti(true);
+    } else {
+			stopConfetti();
+      setShowConfetti(false);
+    }
+
+    return () => {
+			stopConfetti();
+      setShowConfetti(false);
+    };
+  }, [isSessionCompleted, stopConfetti, startConfetti]);
+
+  useEffect(() => {
+    let channel: any;
+
+    if (roomId && isDirectlyNavigated) {
+      channel = supabase
+        .channel('room-status-subscription')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` },
+          (payload) => {
+            console.log('Change received!', payload)
+            if (payload.new) {
+              const updatedRoom = payload.new;
+              setRoom({
+                id: updatedRoom.id,
+                sessionId: updatedRoom.session_id,
+                name: updatedRoom.name,
+                tokensLeft: updatedRoom.tokens_left,
+                currentDoor: updatedRoom.current_door,
+                score: updatedRoom.score,
+                sessionStatus: sessionStatus || null
               });
             }
-          } catch (err) {
-            console.error("Error in direct session check:", err);
-          }
-        };
-        
-        checkDatabaseDirectly();
-      }, 15000);
-    }
-    
-    return () => {
-      if (subscriptionTimeoutCheck) {
-        clearTimeout(subscriptionTimeoutCheck);
-      }
-    };
-  }, [roomDetails?.sessionId, sessionStatus]);
-  
-  const setDefaultQuestions = () => {
-    console.log("No questions found, using default questions");
-    setQuestions([
-      {
-        id: 1,
-        text: "What has keys but can't open locks?",
-        answer: "piano",
-      },
-      {
-        id: 2,
-        text: "What gets wetter as it dries?",
-        answer: "towel",
-      },
-      {
-        id: 3,
-        text: "What has a head and a tail but no body?",
-        answer: "coin",
-      },
-      {
-        id: 4,
-        text: "What has one eye but cannot see?",
-        answer: "needle",
-      },
-      {
-        id: 5,
-        text: "What can travel around the world while staying in a corner?",
-        answer: "stamp",
-      },
-      {
-        id: 6,
-        text: "What has legs but doesn't walk?",
-        answer: "table",
-      },
-    ]);
-    
-    toast({
-      title: "No questions found",
-      description: "Using default questions instead",
-    });
-  };
-  
-  useEffect(() => {
-    if (questions.length > 0 && gameState.currentDoor <= questions.length) {
-      setQuestion(questions[gameState.currentDoor - 1]);
-    }
-  }, [gameState.currentDoor, questions]);
-  
-  const handleDoorClick = () => {
-    setShowQuestion(true);
-  };
-  
-  const [showCelebration, setShowCelebration] = useState(false);
-  const [scoreAnimation, setScoreAnimation] = useState({
-    show: false,
-    prevScore: 0,
-    newScore: 0
-  });
-  
-  const launchCoinAnimation = () => {
-    const duration = 3 * 1000;
-    const animationEnd = Date.now() + duration;
-    
-    const randomInRange = (min: number, max: number) => {
-      return Math.random() * (max - min) + min;
-    };
-    
-    const interval = setInterval(() => {
-      const timeLeft = animationEnd - Date.now();
-      
-      if (timeLeft <= 0) {
-        return clearInterval(interval);
-      }
-      
-      const particleCount = 30 * (timeLeft / duration);
-      
-      // Create gold coins falling from top
-      confetti({
-        particleCount: Math.floor(randomInRange(10, 20)),
-        angle: randomInRange(80, 100),
-        spread: randomInRange(50, 70),
-        origin: { x: randomInRange(0.3, 0.7), y: 0 },
-        colors: ['#FFD700', '#FFC000', '#FFAE00', '#FFD700'],
-        shapes: ['circle'],
-        scalar: randomInRange(0.8, 1.2)
-      });
-    }, 250);
-  };
-  
-  const handleSubmitAnswer = (answer: string) => {
-    const isCorrect = submitAnswer(answer);
-    console.log("Answer submitted, isCorrect:", isCorrect);
-    
-    // Always keep the question visible to show feedback
-    setShowQuestion(true);
-    
-    if (isCorrect) {
-      console.log("Correct answer! Setting showContinueButton to true");
-      setShowContinueButton(true);
-      setShowCelebration(true);
-      
-      // Animate score
-      setScoreAnimation({
-        show: true,
-        prevScore: gameState.score - (100 - (10 * (3 - gameState.tokensLeft))),
-        newScore: gameState.score
-      });
-      
-      // Launch coin animation
-      launchCoinAnimation();
-      
-      if (roomId) {
-        supabase
-          .from('rooms')
-          .update({ 
-            score: gameState.score, 
-            current_door: gameState.currentDoor + 1,
-            tokens_left: gameState.tokensLeft 
           })
-          .eq('id', roomId)
-          .then(({ error }) => {
-            if (error) {
-              console.error("Error updating room score:", error);
-            }
-          });
-      }
-      
-      // Automatically navigate to doors list after celebration animation
-      setTimeout(() => {
-        console.log("Auto-navigating to doors list after correct answer");
-        goToNextDoor();
-        setTimeout(() => {
-          setShowQuestion(false);
-        }, 1500);
-      }, 3000); // 3 seconds delay to allow celebration animation to complete
-    } else {
-      // For wrong answers, just keep the question visible
-      console.log("Wrong answer! Try Again button should appear");
-    }
-  };
+        .subscribe()
 
-  if (loading) {
+      supabase
+        .channel('session-status-subscription')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' },
+          (payload) => {
+            console.log('Session status changed!', payload)
+            if (room?.sessionId && payload.new.id === room?.sessionId) {
+              setSessionStatus(payload.new.status);
+            }
+          })
+        .subscribe()
+
+      return () => {
+        supabase.removeChannel(channel)
+      }
+    }
+  }, [roomId, sessionStatus, isDirectlyNavigated, room?.sessionId]);
+
+  if (isLoading) {
     return (
-      <div className="min-h-screen p-4 bg-gradient-to-b from-dragon-accent/5 to-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-pulse text-4xl font-medieval mb-4">⚔️</div>
-          <p className="text-xl font-medieval">Loading...</p>
+      <div className="flex flex-col items-center justify-center h-screen">
+        <Skeleton className="w-[300px] h-[40px] mb-4" />
+        <div className="space-y-2">
+          <Skeleton className="w-[200px] h-[30px]" />
+          <Skeleton className="w-[250px] h-[30px]" />
+          <Skeleton className="w-[150px] h-[30px]" />
         </div>
       </div>
     );
   }
 
-  if (roomNotFound) {
-    return (
-      <div className="min-h-screen p-4 bg-gradient-to-b from-dragon-accent/5 to-white flex items-center justify-center">
-        <div className="text-center parchment p-8 max-w-md">
-          <h2 className="text-2xl font-bold font-medieval mb-4">Room Not Found</h2>
-          <p className="mb-6 font-medieval">{errorMessage || "This game room doesn't exist or has been removed."}</p>
-          
-          <div className="mb-6 text-sm text-left bg-gray-100 p-4 rounded overflow-auto max-h-60">
-            <h3 className="font-bold mb-2">Debug Information:</h3>
-            {debugInfo.map((info, index) => (
-              <p key={index} className="mb-1">{info}</p>
-            ))}
-            
-            {allRooms.length > 0 && (
-              <div className="mt-3">
-                <p className="font-bold">Available rooms in database:</p>
-                <ul className="list-disc ml-4 mt-1">
-                  {allRooms.slice(0, 10).map((room) => (
-                    <li key={room.id} className="mb-1">
-                      {room.name} (ID: {room.id})
-                    </li>
-                  ))}
-                  {allRooms.length > 10 && <li>...and {allRooms.length - 10} more</li>}
-                </ul>
-              </div>
-            )}
-            
-            <p className="mt-2 font-bold">Room ID from URL: {roomId}</p>
-            
-            <div className="mt-4">
-              <Button 
-                onClick={() => setDebugMode(!debugMode)}
-                variant="outline"
-                size="sm"
-                className="text-xs"
-              >
-                {debugMode ? "Hide Technical Details" : "Show Technical Details"}
-              </Button>
-              
-              {debugMode && (
-                <pre className="mt-2 text-xs overflow-auto max-h-40 p-2 bg-gray-200 rounded">
-                  Database connection info:
-                  Project URL: {process.env.SUPABASE_URL || 'Not Set'}
-                  {JSON.stringify(allRooms, null, 2)}
-                </pre>
-              )}
-            </div>
-          </div>
-          
-          <div className="flex flex-col gap-3">
-            <Link to="/">
-              <Button className="w-full bg-dragon-primary hover:bg-dragon-secondary font-medieval">
-                Return Home
+  if (!room) {
+    return <div className="text-center">Room not found.</div>;
+  }
+
+  return (
+    <div className="container mx-auto p-4 relative">
+      {showConfetti && <Confetti ref={confettiRef} />}
+
+      <h1 className="text-2xl font-bold text-center mb-4 font-medieval">Welcome to {room.name}</h1>
+
+      {sessionStatus === "active" && (
+        <div className="mb-4 text-center text-green-500">
+          Session is Active!
+        </div>
+      )}
+
+      {sessionStatus === "pending" && (
+        <div className="mb-4 text-center text-yellow-500">
+          Session is Pending...
+        </div>
+      )}
+
+      {sessionStatus === "completed" && (
+        <div className="mb-4 text-center text-blue-500">
+          Session Completed!
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {doorStates.map((isOpen, index) => (
+          <Door
+            key={index}
+            doorNumber={index + 1}
+            isOpen={isOpen}
+            roomId={room.id}
+            currentDoor={room.currentDoor}
+            isSessionActive={isSessionActive}
+            isSessionCompleted={isSessionCompleted}
+          />
+        ))}
+      </div>
+
+      <div className="mt-4 text-center">
+        <p>Tokens Left: {room.tokensLeft}</p>
+        <p>Current Score: {room.score}</p>
+      </div>
+
+      <div className="mt-6 flex justify-center">
+        {user ? (
+          <>
+            <Button onClick={() => openModal('newRoomModal')} className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mr-2">
+              Create New Room
+            </Button>
+            <Link href="/game/sessions" passHref>
+              <Button asChild className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                Go to Sessions
               </Button>
             </Link>
-          </div>
-        </div>
+          </>
+        ) : (
+          <Link href="/login" passHref>
+            <Button asChild className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+              Login to Create Rooms
+            </Button>
+          </Link>
+        )}
       </div>
-    );
-  }
-  
-  return (
-    <div className="min-h-screen p-4 bg-gradient-to-b from-dragon-accent/5 to-white">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-6 bg-dragon-scroll/20 border-2 border-dragon-gold/30 rounded-lg p-4">
-          <div className="flex flex-col sm:flex-row items-center justify-between">
-            <div className="flex items-center mb-4 sm:mb-0">
-              <div className="flex-shrink-0 mr-3 flex items-center justify-center bg-dragon-accent/10 w-12 h-12 rounded-full">
-                <span className="text-3xl" role="img" aria-label="House Sigil">
-                  {roomDetails?.sigil || '🛡️'}
-                </span>
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold font-medieval text-dragon-primary">
-                  {roomDetails?.name || "Dragon's Lair"}
-                </h1>
-                <p className="text-sm text-gray-600 italic">
-                  {roomDetails?.motto || "Battle the dragon's riddles"}
-                </p>
-              </div>
-            </div>
-            <SessionTimer 
-              startTime={roomDetails?.sessionStartTime} 
-              className="font-medieval text-dragon-scale"
+
+      <Modal title="Create a New Room" description="Enter the details for your new room." modalId="newRoomModal">
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="roomName">Room Name</Label>
+            <Input
+              type="text"
+              id="roomName"
+              placeholder="Enter room name"
+              value={newRoomName}
+              onChange={handleRoomNameChange}
             />
           </div>
         </div>
-        
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center">
-            <Link to="/" className="mr-4">
-              <Button variant="ghost" size="sm" className="font-medieval">
-                <ArrowLeft className="h-4 w-4 mr-1" /> Exit Game
-              </Button>
-            </Link>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            <div className="text-right">
-              <div className="text-lg font-bold font-medieval">{gameState.score}</div>
-              <div className="text-xs text-gray-500 font-medieval">Points</div>
-            </div>
-            
-            <div className="border-l h-10 border-gray-300"></div>
-            
-            <div className="text-right">
-              <div className="text-lg font-bold font-medieval">
-                {gameState.currentDoor}/{questions.length || gameState.totalDoors}
-              </div>
-              <div className="text-xs text-gray-500 font-medieval">Door</div>
-            </div>
-          </div>
+        <Button onClick={handleCreateRoom} disabled={isGeneratingRoom}>
+          {isGeneratingRoom ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creating...
+            </>
+          ) : (
+            'Create Room'
+          )}
+        </Button>
+      </Modal>
+
+      {generatedRoomId && (
+        <div className="fixed bottom-0 left-0 w-full bg-gray-100 p-4 flex items-center justify-between border-t border-gray-200">
+          <span className="text-sm text-gray-700">
+            New Room ID: <span className="font-medium">{generatedRoomId}</span>
+          </span>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleCopyRoomId}
+            disabled={isCopied}
+          >
+            {isCopied ? (
+              <>
+                <Copy className="mr-2 h-4 w-4" />
+                Copied!
+              </>
+            ) : (
+              <>
+                <Copy className="mr-2 h-4 w-4" />
+                Copy Room ID
+              </>
+            )}
+          </Button>
         </div>
-        
-        {sessionStatus === 'pending' ? (
-          <div className="text-center my-16">
-            <h2 className="text-3xl font-bold mb-6 font-medieval">Waiting for Session to Start</h2>
-            <div className="mb-8 flex justify-center">
-              <GamesShield className="w-full max-w-3xl" />
-            </div>
-            <p className="text-xl mb-8 font-medieval">
-              The game master has not started the session yet. Please wait...
-            </p>
-            <div className="animate-pulse flex justify-center">
-              <div className="w-16 h-16 border-4 border-dragon-gold border-t-transparent rounded-full animate-spin"></div>
-            </div>
-            <p className="mt-8 text-sm text-gray-500 font-medieval">
-              The page will automatically update when the session begins
-            </p>
-            
-            {/* Add a manual refresh button for cases where realtime fails */}
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => {
-                console.log("Manual refresh requested");
-                checkSessionStatus();
-                toast({
-                  title: "Checking session status",
-                  description: "Manually checking if the session has started...",
-                });
-                
-                // Force a hard cache-busting check
-                const checkWithNoCache = async () => {
-                  if (!roomDetails?.sessionId) return;
-                  
-                  try {
-                    // Add a unique timestamp to bypass any caching
-                    const timestamp = new Date().getTime();
-                    const { data, error } = await supabase.rpc(
-                      'get_fresh_session_status',
-                      { session_id: roomDetails.sessionId, _timestamp: timestamp }
-                    ).single();
-                    
-                    if (!error && data && data !== sessionStatus) {
-                      console.log("Fresh session status:", data);
-                      setSessionStatus(data);
-                      
-                      if (data === 'active') {
-                        toast({
-                          title: "Session is active",
-                          description: "The session has started! Refreshing page...",
-                          duration: 3000,
-                        });
-                        
-                        // Force page reload as last resort
-                        setTimeout(() => {
-                          window.location.reload();
-                        }, 1000);
-                      }
-                    } else if (error) {
-                      console.error("Error in fresh check:", error);
-                    }
-                  } catch (err) {
-                    console.error("Error in cache-busting check:", err);
-                  }
-                };
-                
-                // Try a direct DB call with no cache
-                checkWithNoCache();
-              }}
-              className="mt-4 font-medieval"
-            >
-              Check Session Status
-            </Button>
-            
-            {/* Complete reset button for when things are really stuck */}
-            <Button 
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                toast({
-                  title: "Hard refresh",
-                  description: "Performing a complete page reload...",
-                });
-                setTimeout(() => {
-                  window.location.reload();
-                }, 1000);
-              }}
-              className="mt-2 font-medieval text-red-500"
-            >
-              Force Refresh
-            </Button>
-          </div>
-        ) : gameState.isGameComplete ? (
-          <div className="text-center my-16 parchment py-12">
-            <h2 className="text-3xl font-bold mb-6 font-medieval">Quest Complete!</h2>
-            <p className="text-xl mb-8 font-medieval">
-              You've solved all the dragon's riddles and opened all doors!
-            </p>
-            <p className="text-2xl font-bold mb-8 font-medieval">
-              Final Score: {gameState.score}
-            </p>
-            <Link to="/leaderboard">
-              <Button size="lg" className="bg-dragon-gold hover:bg-dragon-gold/80 font-medieval">
-                View Leaderboard
-              </Button>
-            </Link>
-          </div>
-        ) : showQuestion ? (
-          <div className="my-8">
-            <div className="mb-8 flex justify-center relative">
-              <div className="w-full max-w-xl px-16 relative">
-                {/* Door Keeper for both question and feedback */}
-                <DoorKeeper
-                  isCorrect={gameState.isAnswerCorrect}
-                  isSpeaking={true}
-                  question={gameState.isAnswerCorrect === true ? {
-                    ...gameState.currentQuestion!,
-                    text: "Well done, brave one! You've solved this riddle. The door unlocks!"
-                  } : gameState.isAnswerCorrect === false ? {
-                    ...gameState.currentQuestion!,
-                    text: "That's not quite right. The dragon's riddle remains unsolved. Try again!"
-                  } : gameState.currentQuestion}
-                />
-                
-                {/* Celebration effects for correct answer */}
-                {showCelebration && (
-                  <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                    {/* Animated score increase */}
-                    <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-full animate-bounce-in">
-                      <div className="text-3xl font-medieval text-dragon-gold font-bold">+{scoreAnimation.newScore - scoreAnimation.prevScore}</div>
-                    </div>
-                  </div>
-                )}
-                
-                {/* Action buttons removed - now handled automatically */}
-              </div>
-            </div>
-            
-            {gameState.currentQuestion && !gameState.isAnswerCorrect && (
-              <RiddleQuestion
-                question={gameState.currentQuestion}
-                tokensLeft={gameState.tokensLeft}
-                onSubmitAnswer={handleSubmitAnswer}
-                onUseToken={useToken}
-                isCorrect={gameState.isAnswerCorrect}
-              />
-            )}
-          </div>
-        ) : (
-          <div>
-            <div className="my-8 flex justify-center">
-              <GamesShield className="w-full max-w-3xl" />
-            </div>
-            
-            <h2 className="text-xl font-bold text-center mb-6 font-medieval">
-              Choose a door to face the dragon's challenge
-            </h2>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 max-w-2xl mx-auto">
-              {Array.from({ length: questions.length || gameState.totalDoors }).map((_, i) => (
-                <div
-                  key={i}
-                  className="flex justify-center"
-                  onClick={i + 1 === gameState.currentDoor ? handleDoorClick : undefined}
-                >
-                  <Door
-                    doorNumber={i + 1}
-                    isActive={i + 1 === gameState.currentDoor}
-                    isOpen={i + 1 < gameState.currentDoor}
-                  />
-                </div>
-              ))}
-            </div>
-            
-            {gameState.currentDoor > 1 && (
-              <div className="text-center mt-12">
-                <p className="text-dragon-scale font-medieval">
-                  You've successfully unlocked {gameState.currentDoor - 1} door(s)!
-                </p>
-                <p className="text-dragon-scale font-medieval">
-                  Current score: {gameState.score} points
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 };
 
-export default GameRoom;
+export default Room;
