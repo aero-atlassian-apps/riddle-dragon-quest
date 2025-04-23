@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Session, Question, Room, Score } from "@/types/game";
 
@@ -72,14 +73,19 @@ export const getRoom = async (roomId: string): Promise<Room | null> => {
     
     let sessionStatus = null;
     if (data.session_id) {
+      // Use no-cache option to always get fresh data
       const { data: sessionData, error: sessionError } = await supabase
         .from('sessions')
         .select('status')
         .eq('id', data.session_id)
+        .options({
+          cache: 'no-store' 
+        })
         .maybeSingle();
         
       if (!sessionError && sessionData) {
         sessionStatus = sessionData.status;
+        console.log('Session status fetched (fresh):', sessionStatus);
       }
     }
     
@@ -109,6 +115,9 @@ export const getRoomDirectCheck = async (roomId: string): Promise<{exists: boole
       .from('rooms')
       .select('*')
       .eq('id', roomId)
+      .options({
+        cache: 'no-store'  // Bypass cache to get fresh data
+      })
       .single();
       
     if (error) {
@@ -312,6 +321,9 @@ export const getSessionStatus = async (sessionId: string): Promise<string | null
     .from('sessions')
     .select('status')
     .eq('id', sessionId)
+    .options({
+      cache: 'no-store'  // Bypass cache to get fresh data
+    })
     .maybeSingle();
   
   if (error || !data) {
@@ -319,5 +331,6 @@ export const getSessionStatus = async (sessionId: string): Promise<string | null
     return null;
   }
   
+  console.log('Session status fetched (fresh):', data.status);
   return data.status;
 };

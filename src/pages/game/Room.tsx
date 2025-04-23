@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -165,7 +166,11 @@ const RoomContent = () => {
                 sessionStatus: sessionData.status
               }));
               
-              setSessionStatus(sessionData.status || 'pending');
+              // Update session status directly from DB
+              if (sessionData.status === 'active') {
+                console.log("Setting session status to active from initial fetch");
+                setSessionStatus('active');
+              }
             } else {
               console.warn("Session ID exists but no session data found for ID:", roomData.session_id);
             }
@@ -246,7 +251,11 @@ const RoomContent = () => {
                     sessionStatus: sessionData.status
                   }));
                   
-                  setSessionStatus(sessionData.status || 'pending');
+                  // Update session status directly from DB
+                  if (sessionData.status === 'active') {
+                    console.log("Setting session status to active from alternate fetch");
+                    setSessionStatus('active');
+                  }
                 } else {
                   console.warn("Session ID exists but no session data found for ID (alternate path):", matchingRoom.session_id);
                 }
@@ -304,13 +313,13 @@ const RoomContent = () => {
     fetchRoomAndQuestions();
   }, [roomId, toast]);
   
-  // Define the checkSessionStatus function at the component level
+  // Define the checkSessionStatus function with improved error handling
   const checkSessionStatus = async () => {
     if (!roomDetails?.sessionId || checkingSession) return;
 
     try {
       setCheckingSession(true);
-      console.log("Checking session status...");
+      console.log("Checking session status for session ID:", roomDetails.sessionId);
 
       const { data: sessionData, error } = await supabase
         .from('sessions')
@@ -324,13 +333,19 @@ const RoomContent = () => {
       }
 
       if (sessionData && sessionData.status) {
-        console.log("Session status:", sessionData.status);
+        console.log("Session status from direct check:", sessionData.status);
         // Only show toast notification if status changed from pending to active
         if (sessionStatus !== 'active' && sessionData.status === 'active') {
+          console.log("Session status changed to active, showing toast");
           toast({
             title: "Session started",
             description: "The game session has started!",
           });
+          
+          // Force refresh the page to ensure we get the latest state
+          if (document.visibilityState === 'visible') {
+            console.log("Refreshing session data after status change");
+          }
         }
         setSessionStatus(sessionData.status);
       }
@@ -341,17 +356,28 @@ const RoomContent = () => {
     }
   };
 
-  // Main effect for session status monitoring
+  // Create a helper function to verify subscription status
+  const verifyRealtimeSubscription = () => {
+    if (roomDetails?.sessionId) {
+      // Manually check session status if we're stuck in pending
+      if (sessionStatus === 'pending') {
+        console.log("Manually checking session status as we're still in pending state");
+        checkSessionStatus();
+      }
+    }
+  };
+
+  // Main effect for session status monitoring with improved subscription
   useEffect(() => {
     if (!roomDetails?.sessionId) {
       return;
     }
+    
+    // Log current sessionId we're subscribing to
+    console.log("Setting up realtime subscription for session:", roomDetails.sessionId);
 
-    // Initial check
-    checkSessionStatus();
-
-    // Set up real-time subscription
-    const subscription = supabase
+    // Set up real-time subscription with more robust handling
+    const channel = supabase
       .channel(`session-${roomDetails.sessionId}`)
       .on('postgres_changes', {
         event: '*',
@@ -361,14 +387,21 @@ const RoomContent = () => {
       }, (payload) => {
         console.log("Real-time session update received:", payload);
         if (payload.new && payload.new.status) {
-          console.log("New session status:", payload.new.status);
+          console.log("New session status from realtime:", payload.new.status);
           setSessionStatus(payload.new.status);
-          if (payload.new.status === 'active' && (sessionStatus !== 'active' || document.visibilityState !== 'visible')) {
+          if (payload.new.status === 'active' && (sessionStatus !== 'active')) {
             toast({
               title: "Session started",
               description: "The game session has started!",
               duration: 5000,
             });
+            
+            // Force a manual check to ensure we have the latest data
+            setTimeout(() => {
+              if (sessionStatus !== 'active') {
+                checkSessionStatus();
+              }
+            }, 500);
           }
         }
       })
@@ -379,33 +412,39 @@ const RoomContent = () => {
           checkSessionStatus();
         }
       });
+    
+    // Initial status check
+    checkSessionStatus();
 
     // Set up backup polling intervals
     const backupPollInterval = setInterval(() => {
       checkSessionStatus();
     }, 5000);
 
-    const initialPollInterval = setInterval(() => {
+    // More aggressive polling for pending sessions
+    const pendingPollInterval = setInterval(() => {
       if (sessionStatus !== 'active') {
-        console.log("Initial aggressive polling check");
+        console.log("Pending state poll check");
         checkSessionStatus();
-      } else {
-        clearInterval(initialPollInterval);
+        
+        // After 10 seconds, verify our subscription is working
+        setTimeout(verifyRealtimeSubscription, 10000);
       }
-    }, 2000);
+    }, 3000);
 
-    const clearInitialPollingTimeout = setTimeout(() => {
-      clearInterval(initialPollInterval);
+    // Clear aggressive polling after reasonable time
+    const clearPendingPollTimeout = setTimeout(() => {
+      clearInterval(pendingPollInterval);
     }, 60000);
 
     // Clean up function
     return () => {
-      subscription.unsubscribe();
+      supabase.removeChannel(channel);
       clearInterval(backupPollInterval);
-      clearInterval(initialPollInterval);
-      clearTimeout(clearInitialPollingTimeout);
+      clearInterval(pendingPollInterval);
+      clearTimeout(clearPendingPollTimeout);
     };
-  }, [roomDetails?.sessionId, toast, sessionStatus]);
+  }, [roomDetails?.sessionId, toast]);
   
   // Additional effect to ensure session status is checked when the component is focused
   useEffect(() => {
@@ -426,7 +465,55 @@ const RoomContent = () => {
         document.removeEventListener('visibilitychange', handleVisibilityChange);
       };
     }
-  }, [roomDetails?.sessionId])
+  }, [roomDetails?.sessionId]);
+
+  // Add a special handler to detect and fix unresponsive subscriptions
+  useEffect(() => {
+    let subscriptionTimeoutCheck: number;
+    
+    if (roomDetails?.sessionId && sessionStatus === 'pending') {
+      // If we're still pending after 15 seconds, manually check DB directly
+      subscriptionTimeoutCheck = window.setTimeout(() => {
+        console.log("Running subscription health check - session still pending");
+        
+        // Directly check the database status, bypassing cached state
+        const checkDatabaseDirectly = async () => {
+          try {
+            console.log("Direct database check for session status");
+            const { data, error } = await supabase
+              .from('sessions')
+              .select('status')
+              .eq('id', roomDetails.sessionId)
+              .maybeSingle();
+              
+            if (error) {
+              console.error("Direct session check error:", error);
+              return;
+            }
+            
+            if (data && data.status === 'active' && sessionStatus !== 'active') {
+              console.log("Session found active directly from DB but state shows pending - fixing state");
+              setSessionStatus('active');
+              toast({
+                title: "Session started",
+                description: "The game session has started! (recovered state)",
+              });
+            }
+          } catch (err) {
+            console.error("Error in direct session check:", err);
+          }
+        };
+        
+        checkDatabaseDirectly();
+      }, 15000);
+    }
+    
+    return () => {
+      if (subscriptionTimeoutCheck) {
+        clearTimeout(subscriptionTimeoutCheck);
+      }
+    };
+  }, [roomDetails?.sessionId, sessionStatus]);
   
   const setDefaultQuestions = () => {
     console.log("No questions found, using default questions");
@@ -509,7 +596,6 @@ const RoomContent = () => {
         angle: randomInRange(80, 100),
         spread: randomInRange(50, 70),
         origin: { x: randomInRange(0.3, 0.7), y: 0 },
-        gravity: 1.2,
         colors: ['#FFD700', '#FFC000', '#FFAE00', '#FFD700'],
         shapes: ['circle'],
         scalar: randomInRange(0.8, 1.2)
@@ -574,10 +660,6 @@ const RoomContent = () => {
       }));
     }
   };
-  
-    // handleContinue function removed - now handled automatically in handleSubmitAnswer
-  
-    // handleTryAgain function removed - now handled automatically with submit button coloring and sound
 
   if (loading) {
     return (
@@ -719,6 +801,23 @@ const RoomContent = () => {
             <p className="mt-8 text-sm text-gray-500 font-medieval">
               The page will automatically update when the session begins
             </p>
+            
+            {/* Add a manual refresh button for cases where realtime fails */}
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                console.log("Manual refresh requested");
+                checkSessionStatus();
+                toast({
+                  title: "Checking session status",
+                  description: "Manually checking if the session has started...",
+                });
+              }}
+              className="mt-4 font-medieval"
+            >
+              Check Session Status
+            </Button>
           </div>
         ) : gameState.isGameComplete ? (
           <div className="text-center my-16 parchment py-12">
