@@ -55,9 +55,11 @@ const QuestionUploader: React.FC<QuestionUploaderProps> = ({ sessionId, onUpload
       }
 
       // Format questions to be stored in the database (explicitly excluding image field)
-      const questionsToAdd = parsedData.questions.map((q: any) => ({
+      // Assign door numbers sequentially
+      const questionsToAdd = parsedData.questions.map((q: any, index: number) => ({
         text: q.text,
-        answer: q.answer
+        answer: q.answer,
+        door_number: index + 1 // Assign door numbers sequentially starting from 1
       }));
       
       // Store questions in the database
@@ -143,7 +145,8 @@ const QuestionUploader: React.FC<QuestionUploaderProps> = ({ sessionId, onUpload
   "questions": [
     {
       "text": "What has keys but can't open locks?",
-      "answer": "piano"
+      "answer": "piano",
+      "door_number": 1 // Optional: door numbers will be assigned automatically if not provided
     },
     {
       "text": "What gets wetter as it dries?",

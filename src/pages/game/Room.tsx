@@ -20,6 +20,8 @@ import { useModal } from '@/store/modalStore';
 import { useGameStore } from '@/store/gameStore';
 import { Confetti } from '@/components/Confetti';
 import { calculateDoorStates } from '@/utils/gameLogic';
+import RiddleQuestion from '@/components/RiddleQuestion';
+import { useGame } from '@/context/GameContext';
 
 const Room: React.FC = () => {
   const navigate = useNavigate();
@@ -42,8 +44,10 @@ const Room: React.FC = () => {
   const [isDirectlyNavigated, setIsDirectlyNavigated] = useState(false);
   const [isNewRoomModalOpen, setIsNewRoomModalOpen] = useState(false);
   const [newRoomName, setNewRoomName] = useState('');
+  const [showQuestion, setShowQuestion] = useState(false);
   
   const { openModal, closeModal } = useModal();
+  const { gameState, setQuestion, submitAnswer, useToken } = useGame();
   const { setRoomId: setStoreRoomId } = useGameStore();
   const confettiRef = useRef<HTMLDivElement>(null);
   const user = useUser();
@@ -156,12 +160,20 @@ const Room: React.FC = () => {
 
             if (currentRoom.sessionId) {
               const status = await getSessionStatus(currentRoom.sessionId);
-              setSessionStatus(status);
+              // Only set the session status if we got a valid response
+              if (status) {
+                setSessionStatus(status);
+                console.log('Session status set to:', status);
+              } else {
+                console.warn("Invalid session status received");
+                setSessionStatus(null);
+              }
             } else {
               console.warn("Room does not have a session ID.");
               setSessionStatus(null);
             }
           } else {
+            console.error("Room not found");
             toast({
               title: "Error",
               description: "Room not found",
@@ -200,8 +212,14 @@ const Room: React.FC = () => {
 
   useEffect(() => {
     if (room) {
-      const calculatedDoorStates = calculateDoorStates(room.tokensLeft);
-      setDoorStates(calculatedDoorStates);
+      // Calculate door states based on current door and total doors
+      const totalDoors = 6; // Total number of doors in the game
+      const newDoorStates = Array(totalDoors).fill(false).map((_, index) => {
+        // A door is considered open if its number is less than the current door
+        // This means the player has already completed this door
+        return index + 1 < room.currentDoor;
+      });
+      setDoorStates(newDoorStates);
     }
   }, [room]);
 
@@ -284,23 +302,35 @@ const Room: React.FC = () => {
     <div className="container mx-auto p-4 relative">
       {showConfetti && <Confetti ref={confettiRef} />}
 
-      <h1 className="text-2xl font-bold text-center mb-4 font-medieval">Welcome to {room.name}</h1>
+      <div className="relative mb-8 text-center">
+        <div className="absolute inset-0 bg-cover bg-center opacity-10" style={{ backgroundImage: `url('/emblems/${room.name.toLowerCase().replace(/\s+/g, '-')}.svg')` }} />
+        <h1 className="text-3xl font-bold font-medieval relative z-10 mb-2">Welcome to</h1>
+        <h2 className="text-4xl font-bold font-medieval relative z-10 text-dragon-primary">{room.name}</h2>
+      </div>
 
-      {sessionStatus === "active" && (
-        <div className="mb-4 text-center text-green-500">
-          Session is Active!
+      {sessionStatus === "active" ? (
+        <div className="mb-8 text-center p-6 border-4 border-green-500/30 rounded-xl bg-green-500/5 shadow-lg transform hover:scale-[1.02] transition-transform duration-300 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-green-500/10 to-green-600/10 animate-pulse" />
+          <h2 className="text-2xl font-medieval mb-3 text-green-500 relative z-10">✧ Session Active ✧</h2>
+          <p className="text-green-400 text-lg relative z-10">You can now proceed with the game!</p>
         </div>
-      )}
-
-      {sessionStatus === "pending" && (
-        <div className="mb-4 text-center text-yellow-500">
-          Session is Pending...
+      ) : sessionStatus === "pending" ? (
+        <div className="mb-8 text-center p-6 border-4 border-yellow-500/30 rounded-xl bg-yellow-500/5 shadow-lg transform hover:scale-[1.02] transition-transform duration-300 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-yellow-600/10 animate-pulse" />
+          <h2 className="text-2xl font-medieval mb-3 text-yellow-500 relative z-10">✧ Waiting for Session to Start ✧</h2>
+          <p className="text-yellow-400 text-lg relative z-10">The Game Master will start the session soon. Please wait...</p>
         </div>
-      )}
-
-      {sessionStatus === "completed" && (
-        <div className="mb-4 text-center text-blue-500">
-          Session Completed!
+      ) : sessionStatus === "completed" ? (
+        <div className="mb-8 text-center p-6 border-4 border-blue-500/30 rounded-xl bg-blue-500/5 shadow-lg transform hover:scale-[1.02] transition-transform duration-300 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-blue-600/10 animate-pulse" />
+          <h2 className="text-2xl font-medieval mb-3 text-blue-500 relative z-10">✧ Session Completed! ✧</h2>
+          <p className="text-blue-400 text-lg relative z-10">Congratulations on completing all the challenges!</p>
+        </div>
+      ) : (
+        <div className="mb-8 text-center p-6 border-4 border-red-500/30 rounded-xl bg-red-500/5 shadow-lg transform hover:scale-[1.02] transition-transform duration-300 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-red-500/10 to-red-600/10 animate-pulse" />
+          <h2 className="text-2xl font-medieval mb-3 text-red-500 relative z-10">✧ Session Not Available ✧</h2>
+          <p className="text-red-400 text-lg relative z-10">Unable to connect to the game session. Please check your room link.</p>
         </div>
       )}
 
@@ -311,10 +341,88 @@ const Room: React.FC = () => {
             doorNumber={index + 1}
             isActive={index + 1 === room.currentDoor}
             isOpen={isOpen}
-            onDoorClick={() => console.log(`Door ${index + 1} clicked`)}
+            sessionStatus={sessionStatus}
+            onDoorClick={async () => {
+              if (sessionStatus === 'active' && index + 1 === room.currentDoor && !isOpen) {
+                try {
+                  console.log('Fetching question for door:', index + 1, 'session:', room.sessionId);
+                  
+                  // Fetch the question for this door from the database
+                  const { data: questionData, error } = await supabase
+                    .from('questions')
+                    .select('*')
+                    .eq('session_id', room.sessionId)
+                    .eq('door_number', index + 1)
+                    .single();
+
+                  console.log('Question data received:', questionData, 'Error:', error);
+
+                  if (error) {
+                    console.error('Database error:', error);
+                    throw error;
+                  }
+
+                  if (!questionData) {
+                    console.warn('No question data found for door:', index + 1);
+                    toast({
+                      title: "Error",
+                      description: "No question available for this door.",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+
+                  // Validate question data
+                  if (!questionData.text || !questionData.answer) {
+                    console.error('Invalid question data:', questionData);
+                    toast({
+                      title: "Error",
+                      description: "The question data is incomplete.",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+
+                  // When setting the question data, change image_url to image
+                  setQuestion({
+                    id: questionData.id,
+                    text: questionData.text,
+                    answer: questionData.answer,
+                    image: questionData.image, // Changed from image_url to image
+                    doorNumber: questionData.door_number
+                  });
+                  setShowQuestion(true);
+                  console.log('Question set successfully:', questionData.id);
+                } catch (error: any) {
+                  console.error('Error fetching question:', error);
+                  toast({
+                    title: "Error",
+                    description: "Failed to load the question.",
+                    variant: "destructive",
+                  });
+                }
+              }
+            }}
           />
         ))}
       </div>
+
+      {(showQuestion || gameState.currentQuestion) && (
+        <div className="mt-6 mb-6">
+          <RiddleQuestion
+            question={gameState.currentQuestion}
+            tokensLeft={gameState.tokensLeft}
+            onSubmitAnswer={(answer) => {
+              submitAnswer(answer);
+              if (gameState.isAnswerCorrect) {
+                setShowQuestion(false);
+              }
+            }}
+            onUseToken={useToken}
+            isCorrect={gameState.isAnswerCorrect}
+          />
+        </div>
+      )}
 
       <div className="mt-4 text-center">
         <p>Tokens Left: {room.tokensLeft}</p>
@@ -322,24 +430,15 @@ const Room: React.FC = () => {
       </div>
 
       <div className="mt-6 flex justify-center">
-        {user ? (
+        {user?.isAdmin ? (
           <>
-            <Button onClick={() => openModal("newRoomModal")} className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mr-2">
-              Create New Room
-            </Button>
             <Link to="/game/sessions">
               <Button asChild className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                Go to Sessions
+                Manage Sessions
               </Button>
             </Link>
           </>
-        ) : (
-          <Link to="/login">
-            <Button asChild className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-              Login to Create Rooms
-            </Button>
-          </Link>
-        )}
+        ) : null}
       </div>
 
       <Modal title="Create a New Room" description="Enter the details for your new room." modalId="newRoomModal">

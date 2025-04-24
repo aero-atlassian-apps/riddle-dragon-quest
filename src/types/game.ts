@@ -4,6 +4,7 @@ export interface Question {
   text: string;
   image?: string;
   answer: string;
+  doorNumber?: number;
 }
 
 export interface Session {

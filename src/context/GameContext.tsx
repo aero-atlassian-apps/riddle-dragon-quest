@@ -48,7 +48,17 @@ export const GameProvider: React.FC<{ children: ReactNode; initialState?: Initia
   });
   const [showContinueButton, setShowContinueButton] = useState(false);
 
-  const setQuestion = (question: Question) => {
+  const setQuestion = (question: Question | undefined) => {
+    if (!question) {
+      console.error('Attempted to set undefined question');
+      return;
+    }
+
+    if (!question.text || !question.answer) {
+      console.error('Invalid question format:', question);
+      return;
+    }
+
     setGameState((prev) => ({
       ...prev,
       currentQuestion: question,
