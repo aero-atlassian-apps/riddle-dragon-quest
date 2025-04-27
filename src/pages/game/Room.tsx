@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import DoorKeeper from '@/components/DoorKeeper';
 import { toast } from '@/components/ui/use-toast';
 import { getRoom, getSessionStatus } from '@/utils/db';
 import { supabase } from '@/integrations/supabase/client';
@@ -203,7 +204,7 @@ const Room: React.FC = () => {
   useEffect(() => {
     if (sessionStatus) {
       setIsSessionActive(sessionStatus === "active");
-      setIsSessionCompleted(sessionStatus === "completed");
+      setIsSessionCompleted(sessionStatus === "terminée");
     } else {
       setIsSessionActive(false);
       setIsSessionCompleted(false);
@@ -216,7 +217,7 @@ const Room: React.FC = () => {
       const totalDoors = 6; // Total number of doors in the game
       const newDoorStates = Array(totalDoors).fill(false).map((_, index) => {
         // A door is considered open if its number is less than the current door
-        // This means the player has already completed this door
+        // This means the player has already terminée this door
         return index + 1 < room.currentDoor;
       });
       setDoorStates(newDoorStates);
@@ -299,135 +300,254 @@ const Room: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto p-4 relative">
+    <div className="container mx-auto p-4 relative min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 bg-[url('/textures/stone-pattern.svg')] bg-repeat bg-opacity-50 before:absolute before:inset-0 before:bg-[url('/terminal-bg.png')] before:opacity-10 before:pointer-events-none after:absolute after:inset-0 after:bg-[radial-gradient(circle_at_center,rgba(0,255,0,0.1)_0%,transparent_70%)] after:pointer-events-none">
       {showConfetti && <Confetti ref={confettiRef} />}
+      <div className="mb-8 text-center p-6 bg-black/90 border-2 border-green-500 rounded-lg font-mono relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('/textures/stone-pattern.svg')] opacity-5" />
+        <div className="absolute inset-0 bg-[url('/terminal-bg.png')] opacity-10" />
+        <div className="absolute inset-0 bg-cover bg-center opacity-5" style={{ backgroundImage: `url('/emblems/${room?.name?.toLowerCase().replace(/\s+/g, '-')}.svg')` }} />
+        <div className="relative z-10">
+          <h1 className="text-3xl font-bold font-medieval mb-4 text-green-400">{room?.name || 'Loading...'}</h1>
+          
+          {room?.sigil && room?.motto && (
+            <div className="mb-4 p-3 bg-black/30 rounded-lg border border-green-500/20">
+              <p className="text-xl text-green-400 font-medieval mb-1">{room.sigil}</p>
+              <p className="text-md text-green-400/80 font-medieval italic">"{room.motto}"</p>
+            </div>
+          )}
+          
+          <div className="flex items-center justify-center space-x-6 mb-4">
+            <div className="flex items-center bg-black/50 px-4 py-2 rounded-lg border border-amber-500/30">
+              <span className="w-3 h-3 rounded-full bg-amber-500 animate-pulse mr-2" />
+              <span className="text-2xl text-amber-500 font-pixel">{room?.tokensLeft} Jetons</span>
+            </div>
+            <div className="flex items-center bg-black/50 px-4 py-2 rounded-lg border border-green-500/30">
+              <span className="w-3 h-3 rounded-full bg-green-500 animate-pulse mr-2" />
+              <span className="text-2xl text-green-500 font-pixel">{room?.score} Points</span>
+            </div>
+          </div>
 
-      <div className="relative mb-8 text-center">
-        <div className="absolute inset-0 bg-cover bg-center opacity-10" style={{ backgroundImage: `url('/emblems/${room.name.toLowerCase().replace(/\s+/g, '-')}.svg')` }} />
-        <h1 className="text-3xl font-bold font-medieval relative z-10 mb-2">Welcome to</h1>
-        <h2 className="text-4xl font-bold font-medieval relative z-10 text-dragon-primary">{room.name}</h2>
+          {room?.sigil && room?.motto && (
+            <div className="mb-4 p-3 bg-black/30 rounded-lg border border-green-500/20">
+              <p className="text-xl text-green-400 font-medieval mb-1">{room.sigil}</p>
+              <p className="text-md text-green-400/80 font-medieval italic">"{room.motto}"</p>
+            </div>
+          )}
+
+          <div className="flex items-center justify-center mb-3">
+            {sessionStatus === "active" && (
+              <>
+                <span className="w-3 h-3 rounded-full bg-green-500 animate-pulse mr-2" />
+                <h3 className="text-2xl text-green-500 font-pixel glitch">[ SESSION DE JEU: ACTIVE ]</h3>
+              </>
+            )}
+            {sessionStatus === "en attente" && (
+              <>
+                <span className="w-3 h-3 rounded-full bg-yellow-500 animate-pulse mr-2" />
+                <h3 className="text-2xl text-yellow-500 font-pixel glitch">[ SESSION DE JEU: EN ATTENTE ]</h3>
+              </>
+            )}
+            {sessionStatus === "terminée" && (
+              <>
+                <span className="w-3 h-3 rounded-full bg-blue-500 animate-pulse mr-2" />
+                <h3 className="text-2xl text-blue-500 font-pixel glitch">[ SESSION DE JEU: TERMINÉE ]</h3>
+              </>
+            )}
+            {!sessionStatus && (
+              <>
+                <span className="w-3 h-3 rounded-full bg-red-500 animate-pulse mr-2" />
+                <h3 className="text-2xl text-red-500 font-pixel glitch">[ ERREUR: SESSION_NON_TROUVÉE ]</h3>
+              </>
+            )}
+          </div>
+
+          <div className="text-sm font-pixel typing-effect mt-2">
+            {sessionStatus === "active" && (
+              <p className="text-green-400">$ PRÊT POUR L'AVENTURE ....</p>
+            )}
+            {sessionStatus === "en attente" && (
+              <>
+                <p className="text-yellow-400">$ EN ATTENTE DE L'INITIALISATION DU MAÎTRE DU JEU...</p>
+                <p className="text-yellow-400">$ MODE VEILLE DU SYSTÈME ACTIVÉ.</p>
+              </>
+            )}
+            {sessionStatus === "terminée" && (
+              <>
+                <p className="text-blue-400">$ MISSION ACCOMPLIE. TOUS LES DÉFIS RELEVÉS.</p>
+                <p className="text-blue-400">$ FÉLICITATIONS, BRAVE AVENTURIER !</p>
+              </>
+            )}
+            {!sessionStatus && (
+              <>
+                <p className="text-red-400">$ ÉCHEC DE LA CONNEXION. IMPOSSIBLE D'ÉTABLIR LE LIEN.</p>
+                <p className="text-red-400">$ VEUILLEZ VÉRIFIER LES IDENTIFIANTS DE LA SALLE ET RÉESSAYER.</p>
+              </>
+            )}
+          </div>
+        </div>
       </div>
 
-      {sessionStatus === "active" ? (
-        <div className="mb-8 text-center p-6 border-4 border-green-500/30 rounded-xl bg-green-500/5 shadow-lg transform hover:scale-[1.02] transition-transform duration-300 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-green-500/10 to-green-600/10 animate-pulse" />
-          <h2 className="text-2xl font-medieval mb-3 text-green-500 relative z-10">✧ Session Active ✧</h2>
-          <p className="text-green-400 text-lg relative z-10">You can now proceed with the game!</p>
-        </div>
-      ) : sessionStatus === "pending" ? (
-        <div className="mb-8 text-center p-6 border-4 border-yellow-500/30 rounded-xl bg-yellow-500/5 shadow-lg transform hover:scale-[1.02] transition-transform duration-300 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-yellow-600/10 animate-pulse" />
-          <h2 className="text-2xl font-medieval mb-3 text-yellow-500 relative z-10">✧ Waiting for Session to Start ✧</h2>
-          <p className="text-yellow-400 text-lg relative z-10">The Game Master will start the session soon. Please wait...</p>
-        </div>
-      ) : sessionStatus === "completed" ? (
-        <div className="mb-8 text-center p-6 border-4 border-blue-500/30 rounded-xl bg-blue-500/5 shadow-lg transform hover:scale-[1.02] transition-transform duration-300 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-blue-600/10 animate-pulse" />
-          <h2 className="text-2xl font-medieval mb-3 text-blue-500 relative z-10">✧ Session Completed! ✧</h2>
-          <p className="text-blue-400 text-lg relative z-10">Congratulations on completing all the challenges!</p>
+      {!showQuestion ? (
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-16 place-items-center">
+            {doorStates.map((isOpen, index) => (
+              <div key={index} className="flex flex-col items-center transform hover:scale-105 transition-transform duration-300">
+                <Door
+                  doorNumber={index + 1}
+                  isActive={index + 1 === room.currentDoor}
+                  isOpen={isOpen}
+                  sessionStatus={sessionStatus}
+                  onDoorClick={async () => {
+                    if (sessionStatus === 'active' && index + 1 === room.currentDoor && !isOpen) {
+                      try {
+                        console.log('Fetching question for door:', index + 1, 'session:', room.sessionId);
+                        
+                        const { data: questionData, error } = await supabase
+                          .from('questions')
+                          .select('*')
+                          .eq('session_id', room.sessionId)
+                          .eq('door_number', index + 1)
+                          .maybeSingle();
+
+                        console.log('Question data received:', questionData, 'Error:', error);
+
+                        if (error && error.code !== 'PGRST116') {
+                          console.error('Database error:', error);
+                          throw error;
+                        }
+
+                        if (!questionData) {
+                          console.warn('No question data found for door:', index + 1);
+                          toast({
+                            title: "Error",
+                            description: "No question available for this door.",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+
+                        if (!questionData.text || !questionData.answer) {
+                          console.error('Invalid question data:', questionData);
+                          toast({
+                            title: "Error",
+                            description: "The question data is incomplete.",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+
+                        const questionToSet = {
+                          id: questionData.id,
+                          text: questionData.text,
+                          answer: questionData.answer,
+                          image: questionData.image,
+                          doorNumber: questionData.door_number
+                        };
+                        setQuestion(questionToSet);
+                        setShowQuestion(true);
+                        console.log('Question set successfully:', questionData.id);
+                        gameState.currentQuestion = questionToSet;
+                      } catch (error: any) {
+                        console.error('Error fetching question:', error);
+                        toast({
+                          title: "Error",
+                          description: "Failed to load the question.",
+                          variant: "destructive",
+                        });
+                      }
+                    }
+                  }}
+                />
+              </div>
+            ))}
+          </div>
         </div>
       ) : (
-        <div className="mb-8 text-center p-6 border-4 border-red-500/30 rounded-xl bg-red-500/5 shadow-lg transform hover:scale-[1.02] transition-transform duration-300 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-red-500/10 to-red-600/10 animate-pulse" />
-          <h2 className="text-2xl font-medieval mb-3 text-red-500 relative z-10">✧ Session Not Available ✧</h2>
-          <p className="text-red-400 text-lg relative z-10">Unable to connect to the game session. Please check your room link.</p>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {doorStates.map((isOpen, index) => (
-          <Door
-            key={index}
-            doorNumber={index + 1}
-            isActive={index + 1 === room.currentDoor}
-            isOpen={isOpen}
-            sessionStatus={sessionStatus}
-            onDoorClick={async () => {
-              if (sessionStatus === 'active' && index + 1 === room.currentDoor && !isOpen) {
+        <div className="mt-6 mb-6">
+          <DoorKeeper
+            isCorrect={gameState.isAnswerCorrect}
+            isSpeaking={true}
+            question={gameState.currentQuestion}
+          />
+          <div className="mt-6">
+            <RiddleQuestion
+              question={gameState.currentQuestion}
+              tokensLeft={room.tokensLeft}
+              onSubmitAnswer={async (answer: string) => {
                 try {
-                  console.log('Fetching question for door:', index + 1, 'session:', room.sessionId);
+                  if (!gameState.currentQuestion || !room) {
+                    throw new Error('Missing question or room data');
+                  }
+
+                  const isCorrect = answer.toLowerCase() === gameState.currentQuestion.answer.toLowerCase();
+                  gameState.isAnswerCorrect = isCorrect;
                   
-                  // Fetch the question for this door from the database
-                  const { data: questionData, error } = await supabase
-                    .from('questions')
-                    .select('*')
-                    .eq('session_id', room.sessionId)
-                    .eq('door_number', index + 1)
-                    .single();
+                  if (isCorrect) {
+                    // Calculate points based on tokens used and question points
+                    const tokensUsed = 3 - room.tokensLeft;
+                    const questionPoints = gameState.currentQuestion.points || 100; // Use question points or default to 100
+                    const pointsEarned = Math.max(Math.floor(questionPoints * (1 - (0.1 * tokensUsed))), Math.floor(questionPoints * 0.6));
+                    
+                    // Start a transaction to update the room state
+                    const { data: updatedRoom, error: updateError } = await supabase
+                      .from('rooms')
+                      .update({ 
+                        score: room.score + pointsEarned,
+                        current_door: room.currentDoor + 1
+                      })
+                      .eq('id', room.id)
+                      .select()
+                      .single();
+                    
+                    if (updateError) {
+                      console.error('Failed to update room:', updateError);
+                      toast({
+                        title: "Error",
+                        description: "Failed to update room progress. Please try again.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
 
-                  console.log('Question data received:', questionData, 'Error:', error);
-
-                  if (error) {
-                    console.error('Database error:', error);
-                    throw error;
-                  }
-
-                  if (!questionData) {
-                    console.warn('No question data found for door:', index + 1);
-                    toast({
-                      title: "Error",
-                      description: "No question available for this door.",
-                      variant: "destructive",
+                    // Update local states only after successful database update
+                    const newDoorStates = [...doorStates];
+                    newDoorStates[gameState.currentQuestion.doorNumber - 1] = true;
+                    setDoorStates(newDoorStates);
+                    
+                    setRoom({
+                      ...room,
+                      score: updatedRoom.score,
+                      currentDoor: updatedRoom.current_door
                     });
-                    return;
-                  }
 
-                  // Validate question data
-                  if (!questionData.text || !questionData.answer) {
-                    console.error('Invalid question data:', questionData);
-                    toast({
-                      title: "Error",
-                      description: "The question data is incomplete.",
-                      variant: "destructive",
-                    });
-                    return;
+                    // Trigger celebration effects
+                    setShowConfetti(true);
+                    const audio = new Audio('/sounds/success.mp3');
+                    await audio.play().catch(console.error); // Handle audio play error gracefully
+                    
+                    // Reset game state after celebration
+                    setTimeout(() => {
+                      setShowConfetti(false);
+                      setShowQuestion(false);
+                      gameState.currentQuestion = null;
+                      gameState.isAnswerCorrect = null;
+                    }, 3000);
                   }
-
-                  // When setting the question data, change image_url to image
-                  setQuestion({
-                    id: questionData.id,
-                    text: questionData.text,
-                    answer: questionData.answer,
-                    image: questionData.image, // Changed from image_url to image
-                    doorNumber: questionData.door_number
-                  });
-                  setShowQuestion(true);
-                  console.log('Question set successfully:', questionData.id);
-                } catch (error: any) {
-                  console.error('Error fetching question:', error);
+                } catch (error) {
+                  console.error('Error submitting answer:', error);
                   toast({
                     title: "Error",
-                    description: "Failed to load the question.",
+                    description: "Failed to submit answer",
                     variant: "destructive",
                   });
                 }
-              }
-            }}
-          />
-        ))}
-      </div>
-
-      {(showQuestion || gameState.currentQuestion) && (
-        <div className="mt-6 mb-6">
-          <RiddleQuestion
-            question={gameState.currentQuestion}
-            tokensLeft={gameState.tokensLeft}
-            onSubmitAnswer={(answer) => {
-              submitAnswer(answer);
-              if (gameState.isAnswerCorrect) {
-                setShowQuestion(false);
-              }
-            }}
-            onUseToken={useToken}
-            isCorrect={gameState.isAnswerCorrect}
-          />
+              }}
+              onUseToken={useToken}
+              isCorrect={gameState.isAnswerCorrect}
+            />
+          </div>
         </div>
       )}
-
-      <div className="mt-4 text-center">
-        <p>Tokens Left: {room.tokensLeft}</p>
-        <p>Current Score: {room.score}</p>
-      </div>
 
       <div className="mt-6 flex justify-center">
         {user?.isAdmin ? (

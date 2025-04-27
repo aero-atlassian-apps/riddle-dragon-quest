@@ -5,6 +5,8 @@ export interface Question {
   image?: string;
   answer: string;
   doorNumber?: number;
+  points?: number;
+  style?: string;
 }
 
 export interface Session {
@@ -25,6 +27,8 @@ export interface Room {
   score: number;
   sessionStatus?: string;
   link?: string;
+  sigil?: string;
+  motto?: string;
 }
 
 export interface Score {

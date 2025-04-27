@@ -2,38 +2,111 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, RefreshCw } from "lucide-react";
 import LeaderboardTable from "@/components/LeaderboardTable";
 import { Score } from "@/types/game";
 import confetti from "canvas-confetti";
-
-// Mock data for demonstration purposes
-const mockScores: Score[] = [
-  { roomId: "room1", sessionId: "session1", totalScore: 580, roomName: "Team Alpha" },
-  { roomId: "room2", sessionId: "session1", totalScore: 490, roomName: "Team Beta" },
-  { roomId: "room3", sessionId: "session1", totalScore: 520, roomName: "Team Gamma" },
-  { roomId: "room4", sessionId: "session2", totalScore: 600, roomName: "Team Delta" },
-  { roomId: "room5", sessionId: "session2", totalScore: 430, roomName: "Team Epsilon" },
-];
+import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Leaderboard = () => {
   const [scores, setScores] = useState<Score[]>([]);
-  
-  useEffect(() => {
-    // In a real app, this would fetch from Supabase
-    setScores(mockScores);
-    
-    // Launch confetti for the winning team
-    if (mockScores.length > 0) {
-      const highestScore = [...mockScores].sort((a, b) => b.totalScore - a.totalScore)[0];
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [sessions, setSessions] = useState<{ id: string; name: string }[]>([]);
+
+  const fetchSessions = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('sessions')
+        .select('id, name, status')
+        .eq('status', 'active')
+        .order('start_time', { ascending: false });
+
+      if (error) throw error;
       
-      if (highestScore.totalScore >= 500) {
-        setTimeout(() => {
-          launchConfetti();
-        }, 500);
+      // Set sessions and handle currentSessionId
+      if (data && data.length > 0) {
+        setSessions(data);
+        if (!currentSessionId || !data.find(session => session.id === currentSessionId)) {
+          setCurrentSessionId(data[0].id);
+        }
+      } else {
+        setSessions([]);
+        setCurrentSessionId(null);
       }
+    } catch (error) {
+      console.error('Error fetching sessions:', error);
+      setSessions([]);
+      setCurrentSessionId(null);
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const fetchScores = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('rooms')
+        .select('id, name, session_id, score')
+        .eq('session_id', currentSessionId)
+        .order('score', { ascending: false });
+
+      if (error) throw error;
+
+      const formattedScores: Score[] = data.map(room => ({
+        roomId: room.id,
+        sessionId: room.session_id,
+        totalScore: room.score || 0,
+        roomName: room.name
+      }));
+
+      setScores(formattedScores);
+      
+      // Launch confetti for the winning team if score >= 500
+      if (formattedScores.length > 0 && formattedScores[0].totalScore >= 500) {
+        setTimeout(launchConfetti, 500);
+      }
+    } catch (error) {
+      console.error('Error fetching scores:', error);
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchScores();
+  };
+
+  useEffect(() => {
+    fetchSessions();
   }, []);
+
+  useEffect(() => {
+    if (currentSessionId) {
+      fetchScores();
+
+      // Subscribe to real-time updates
+      const subscription = supabase
+        .channel('room_updates')
+        .on('postgres_changes', 
+          { event: '*', schema: 'public', table: 'rooms' }, 
+          () => {
+            fetchScores();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        subscription.unsubscribe();
+      };
+    }
+  }, [currentSessionId]);
   
   const launchConfetti = () => {
     const duration = 5 * 1000;
@@ -58,7 +131,7 @@ const Leaderboard = () => {
         angle: randomInRange(55, 125),
         spread: randomInRange(50, 70),
         origin: { x: randomInRange(0.1, 0.3), y: 0 },
-        colors: ['#8B5CF6', '#D6BCFA', '#F59E0B', '#DC2626', '#1A1F2C'],
+        colors: ['#00FF00', '#00CC00', '#009900', '#006600', '#003300'],
       });
       
       confetti({
@@ -66,29 +139,65 @@ const Leaderboard = () => {
         angle: randomInRange(55, 125),
         spread: randomInRange(50, 70),
         origin: { x: randomInRange(0.7, 0.9), y: 0 },
-        colors: ['#8B5CF6', '#D6BCFA', '#F59E0B', '#DC2626', '#1A1F2C'],
+        colors: ['#00FF00', '#00CC00', '#009900', '#006600', '#003300'],
       });
     }, 250);
   };
   
   return (
-    <div className="min-h-screen p-4 bg-gradient-to-b from-dragon-accent/5 to-white">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex items-center mb-8">
-          <Link to="/" className="mr-4">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-1" /> Back to Home
+    <div className="min-h-screen p-4 bg-[#1A1F2C] bg-opacity-95 bg-[url('/grid.svg')] bg-repeat font-mono">
+      <div className="max-w-4xl mx-auto relative after:absolute after:top-0 after:left-0 after:w-full after:h-full after:bg-[radial-gradient(circle,rgba(0,255,0,0.1)_0%,transparent_70%)] after:pointer-events-none">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center">
+            <Link to="/" className="mr-4">
+              <Button variant="ghost" size="sm" className="text-[#00FF00]/80 hover:text-[#00FF00] hover:bg-[#00FF00]/10 font-mono">
+                <ArrowLeft className="h-4 w-4 mr-1" /> retour
+              </Button>
+            </Link>
+            
+            <h1 className="text-3xl font-bold text-[#00FF00] animate-pulse">> meilleurs_joueurs.exe_</h1>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <select
+              value={currentSessionId || ''}
+              onChange={(e) => setCurrentSessionId(e.target.value)}
+              className="bg-[#1A1F2C] text-[#00FF00] border border-[#00FF00]/30 rounded px-3 py-1 text-sm focus:outline-none focus:border-[#00FF00]/60 hover:border-[#00FF00]/60 transition-colors"
+            >
+              <option value="">Choisir une session</option>
+              {sessions.map((session) => (
+                <option key={session.id} value={session.id}>
+                  {session.name}
+                </option>
+              ))}
+            </select>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="text-[#00FF00]/80 hover:text-[#00FF00] hover:bg-[#00FF00]/10 font-mono"
+            >
+              <RefreshCw className={`h-4 w-4 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
+              actualiser
             </Button>
-          </Link>
-          
-          <h1 className="text-3xl font-bold">Leaderboard</h1>
+          </div>
         </div>
         
-        <LeaderboardTable scores={scores} currentSessionId="session1" />
+        {isLoading ? (
+          <div className="space-y-4">
+            <Skeleton className="h-12 w-full bg-[#00FF00]/5" />
+            <Skeleton className="h-12 w-full bg-[#00FF00]/5" />
+            <Skeleton className="h-12 w-full bg-[#00FF00]/5" />
+          </div>
+        ) : (
+          <LeaderboardTable scores={scores} currentSessionId={currentSessionId || undefined} />
+        )}
         
         <div className="mt-12 text-center">
           <Link to="/">
-            <Button>Back to Home</Button>
+            <Button className="bg-[#00FF00]/20 hover:bg-[#00FF00]/30 text-[#00FF00] border border-[#00FF00]/50 transition-all hover:shadow-[0_0_10px_rgba(0,255,0,0.3)] font-mono">quitter</Button>
           </Link>
         </div>
       </div>

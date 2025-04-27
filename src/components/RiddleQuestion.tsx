@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { HelpCircle } from "lucide-react";
+import { HelpCircle, X } from "lucide-react";
 
 interface RiddleQuestionProps {
   question: Question;
@@ -25,6 +25,7 @@ const RiddleQuestion = ({
   const [answer, setAnswer] = useState("");
   const [hintRevealed, setHintRevealed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
   
   // Extract first letter of the answer as a hint
   const firstLetterHint = question.answer ? question.answer.charAt(0).toUpperCase() : "";
@@ -60,12 +61,12 @@ const RiddleQuestion = ({
   };
   
   return (
-    <div className="max-w-2xl mx-auto parchment p-6 rounded-lg relative overflow-hidden">
+    <div className="max-w-2xl mx-auto p-6 rounded-lg relative overflow-hidden">
       <style>
         {`
         @keyframes success-pulse {
-          0%, 100% { box-shadow: 0 0 0 rgba(34, 197, 94, 0); }
-          50% { box-shadow: 0 0 20px rgba(34, 197, 94, 0.6); }
+          0%, 100% { box-shadow: 0 0 0 rgba(16, 185, 129, 0); }
+          50% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.6); }
         }
         
         @keyframes error-shake {
@@ -83,32 +84,64 @@ const RiddleQuestion = ({
         .animate-error-shake {
           animation: error-shake 0.6s ease;
         }
+
+        .terminal-input {
+          background: #1a1a1a;
+          border: 1px solid #10b981;
+          color: #10b981;
+          font-family: monospace;
+          padding: 0.5rem;
+          width: 100%;
+          transition: all 0.3s ease;
+        }
+
+        .terminal-input:focus {
+          outline: none;
+          box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+        }
         `}
       </style>
       
-      <Card className={`border-2 border-dragon-accent/20 p-6 ${getCardAnimation()}`}>
-        <h3 className="text-lg sm:text-xl font-medieval mb-4 text-center">The Dragon's Riddle</h3>
-        
+      <Card className={`bg-black/90 backdrop-blur-sm border-2 border-emerald-400/30 p-6 ${getCardAnimation()}`}>        
         {question.image && (
           <div className="mb-4 flex justify-center">
             <img 
               src={question.image} 
-              alt="Riddle image" 
-              className="max-h-48 rounded-md border border-gray-300"
+              alt="Image de l'énigme" 
+              className="max-h-48 rounded-md border border-gray-300 cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => setShowImageModal(true)}
             />
           </div>
         )}
-        
-        <p className="mb-6 text-base sm:text-lg font-medieval text-center">{question.text}</p>
+
+        {/* Image Modal */}
+        {showImageModal && question.image && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="relative max-w-4xl w-full bg-black/90 border-2 border-emerald-400/30 rounded-lg p-4">
+              <Button
+                onClick={() => setShowImageModal(false)}
+                className="absolute -top-2 -right-2 bg-black border border-emerald-400 text-emerald-400 rounded-full p-1 hover:bg-emerald-400/20"
+                size="icon"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+              <img
+                src={question.image}
+                alt="Image de l'énigme (plein écran)"
+                className="w-full h-auto rounded-md"
+              />
+            </div>
+          </div>
+        )}
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex">
             <Input 
               value={answer} 
               onChange={(e) => setAnswer(e.target.value)} 
-              placeholder="Your answer..." 
+              placeholder="Entrez votre réponse..." 
               disabled={isCorrect === true || isSubmitting}
-              className="font-medieval"
+              className="terminal-input font-mono text-emerald-400 placeholder:text-emerald-700"
             />
             
             <TooltipProvider>
@@ -118,37 +151,33 @@ const RiddleQuestion = ({
                     type="button" 
                     variant="outline" 
                     size="icon" 
-                    className="ml-2"
+                    className="ml-2 border-emerald-400 hover:bg-emerald-400/20 text-emerald-400"
                     onClick={handleUseToken}
                     disabled={tokensLeft <= 0 || hintRevealed || isCorrect === true}
                   >
                     <HelpCircle className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>
-                  <p>Use a token for a hint ({tokensLeft} left)</p>
+                <TooltipContent className="bg-black/90 border-emerald-400 text-emerald-400">
+                  <p>Utiliser un jeton pour un indice - {tokensLeft} restant{tokensLeft > 1 ? 's' : ''}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>
           
           {hintRevealed && (
-            <div className="text-sm text-dragon-primary italic p-2 bg-dragon-gold/10 rounded">
-              <span className="font-bold">Hint:</span> The answer starts with the letter "{firstLetterHint}"
+            <div className="text-sm text-emerald-400 font-mono p-2 bg-emerald-900/20 border border-emerald-400/30 rounded mt-4">
+              <span className="font-bold text-emerald-300">INDICE:</span> La réponse commence par "{firstLetterHint}"
             </div>
           )}
           
-          <div className="flex justify-between items-center">
-            <div className="text-sm text-gray-500">
-              {tokensLeft} {tokensLeft === 1 ? 'token' : 'tokens'} remaining
-            </div>
-            
+          <div className="flex justify-end mt-4">
             <Button 
               type="submit" 
-              className="bg-dragon-primary hover:bg-dragon-secondary font-medieval"
+              className="bg-emerald-400/20 hover:bg-emerald-400/30 text-emerald-400 border border-emerald-400/50 font-mono"
               disabled={answer.trim() === '' || isCorrect === true || isSubmitting}
             >
-              {isSubmitting ? 'Checking...' : isCorrect === false ? 'Try Again' : 'Submit Answer'}
+              {isSubmitting ? '> Traitement...' : isCorrect === false ? '> Réessayer' : '> Soumettre la réponse'}
             </Button>
           </div>
         </form>

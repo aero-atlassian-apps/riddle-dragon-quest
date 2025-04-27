@@ -28,7 +28,7 @@ const QuestionUploader: React.FC<QuestionUploaderProps> = ({ sessionId, onUpload
 
   const handleUpload = async () => {
     if (!file) {
-      setError('Please select a file to upload');
+      setError('Veuillez sélectionner un fichier à télécharger');
       return;
     }
 
@@ -40,35 +40,76 @@ const QuestionUploader: React.FC<QuestionUploaderProps> = ({ sessionId, onUpload
       
       // Validate the structure of the JSON data
       if (!parsedData.questions || !Array.isArray(parsedData.questions)) {
-        setError('Invalid JSON format: missing "questions" array');
+        setError('Format JSON invalide : tableau "questions" manquant');
         setIsLoading(false);
         return;
       }
       
       // Validate each question
       for (const question of parsedData.questions) {
-        if (!question.text || !question.answer) {
-          setError('Invalid question format: each question must have text and answer fields');
+        if (!question.text || !question.answer || typeof question.text !== 'string' || typeof question.answer !== 'string') {
+          setError('Format de question invalide : chaque question doit avoir un texte et une réponse sous forme de chaînes de caractères');
+          setIsLoading(false);
+          return;
+        }
+        
+        // Validate optional fields
+        if (question.hint && typeof question.hint !== 'string') {
+          setError('Format de question invalide : l\'indice doit être une chaîne de caractères');
+          setIsLoading(false);
+          return;
+        }
+        
+        if (question.style && typeof question.style !== 'string') {
+          setError('Format de question invalide : le style doit être une chaîne de caractères');
+          setIsLoading(false);
+          return;
+        }
+
+        if (question.points && typeof question.points !== 'number') {
+          setError('Format de question invalide : les points doivent être un nombre');
           setIsLoading(false);
           return;
         }
       }
 
       // Format questions to be stored in the database (explicitly excluding image field)
-      // Assign door numbers sequentially
-      const questionsToAdd = parsedData.questions.map((q: any, index: number) => ({
-        text: q.text,
-        answer: q.answer,
-        door_number: index + 1 // Assign door numbers sequentially starting from 1
-      }));
+      // Track used door numbers to ensure uniqueness
+      const usedDoorNumbers = new Set<number>();
+      const questionsToAdd = parsedData.questions.map((q: any, index: number) => {
+        // Use provided door_number if valid, otherwise assign sequentially
+        let doorNumber = q.door_number;
+        if (!doorNumber || typeof doorNumber !== 'number' || doorNumber < 1) {
+          // Find the next available door number
+          doorNumber = index + 1;
+          while (usedDoorNumbers.has(doorNumber)) {
+            doorNumber++;
+          }
+        }
+
+        // Validate door number is unique
+        if (usedDoorNumbers.has(doorNumber)) {
+          throw new Error(`Numéro de porte en double trouvé : ${doorNumber}`);
+        }
+        usedDoorNumbers.add(doorNumber);
+
+        return {
+          text: q.text,
+          answer: q.answer,
+          door_number: doorNumber,
+          hint: q.hint || null,
+          style: q.style || null,
+          points: q.points || 1 // Default to 1 point if not specified
+        };
+      });
       
       // Store questions in the database
       const success = await addQuestionsToSession(sessionId, questionsToAdd);
       
       if (success) {
         toast({
-          title: "Questions uploaded successfully",
-          description: `${questionsToAdd.length} questions have been added to the session`,
+          title: "Questions téléchargées avec succès",
+          description: `${questionsToAdd.length} questions ont été ajoutées à la session`,
         });
         
         // Pass the questions to the parent component
@@ -84,17 +125,17 @@ const QuestionUploader: React.FC<QuestionUploaderProps> = ({ sessionId, onUpload
         }
       } else {
         toast({
-          title: "Error",
-          description: "Failed to store questions in the database",
+          title: "Erreur",
+          description: "Échec de l'enregistrement des questions dans la base de données",
           variant: "destructive",
         });
       }
       
     } catch (err) {
-      setError('Failed to parse JSON file. Please check the format.');
+      setError('Échec de l\'analyse du fichier JSON. Veuillez vérifier le format.');
       toast({
-        title: "Error",
-        description: "Failed to parse JSON file",
+        title: "Erreur",
+        description: "Échec de l'analyse du fichier JSON",
         variant: "destructive",
       });
     } finally {
@@ -103,61 +144,70 @@ const QuestionUploader: React.FC<QuestionUploaderProps> = ({ sessionId, onUpload
   };
 
   return (
-    <div className="max-w-md mx-auto parchment">
-      <h2 className="text-xl font-bold mb-6 text-center font-medieval">Upload Questions</h2>
-      
-      <div className="space-y-6">
-        <div className="space-y-2">
-          <Label htmlFor="question-file" className="font-medieval">Questions JSON File</Label>
-          <Input
-            id="question-file"
-            type="file"
-            accept=".json"
-            onChange={handleFileChange}
-            className="border-dragon-gold/30"
-            disabled={isLoading}
-          />
-          {error && <p className="text-red-500 text-sm">{error}</p>}
+    <div className="max-w-md mx-auto bg-black/90 border-2 border-green-500 rounded-lg p-6 relative overflow-hidden">
+      <div className="absolute inset-0 bg-[url('/textures/stone-pattern.svg')] opacity-5" />
+      <div className="absolute inset-0 bg-[url('/terminal-bg.png')] opacity-10" />
+      <div className="relative z-10">
+        <h2 className="text-xl font-bold mb-6 text-center font-pixel text-green-400">$ TELECHARGER_QUESTIONS</h2>
+        
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="question-file" className="font-mono text-green-400">$ FICHIER_QUESTIONS:</Label>
+            <Input
+              id="question-file"
+              type="file"
+              accept=".json"
+              onChange={handleFileChange}
+              className="bg-black/50 border-green-500/50 text-green-400 font-mono focus:border-green-400 focus:ring-green-400/20"
+              disabled={isLoading}
+            />
+            {error && <p className="text-red-500 font-mono text-sm">{error}</p>}
+          </div>
+          
+          <div>
+            <Button 
+              onClick={handleUpload} 
+              disabled={!file || isLoading}
+              className="w-full bg-green-500 hover:bg-green-600 text-black font-pixel disabled:opacity-50"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  TELECHARGEMENT...
+                </>
+              ) : (
+                '$ TELECHARGER_QUESTIONS'
+              )}
+            </Button>
+          </div>
         </div>
         
-        <div>
-          <Button 
-            onClick={handleUpload} 
-            disabled={!file || isLoading}
-            className="w-full bg-dragon-primary hover:bg-dragon-secondary font-medieval"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Uploading...
-              </>
-            ) : (
-              'Upload Questions'
-            )}
-          </Button>
-        </div>
-      </div>
-      
-      <div className="mt-6 border-t border-dragon-gold/30 pt-4">
-        <h3 className="text-sm font-medium mb-2 font-medieval">Expected JSON Format:</h3>
-        <pre className="text-xs bg-gray-100 p-2 rounded overflow-x-auto">
+        <div className="mt-6 border-t border-green-500/30 pt-4">
+          <h3 className="text-sm font-medium mb-2 font-mono text-green-400">$ FORMAT_ATTENDU:</h3>
+          <pre className="text-xs bg-black/50 border border-green-500/30 p-2 rounded overflow-x-auto text-green-400 font-mono">
 {`{
   "questions": [
     {
-      "text": "What has keys but can't open locks?",
+      "text": "Qu'est-ce qui a des touches mais ne peut pas ouvrir de serrures ?",
       "answer": "piano",
-      "door_number": 1 // Optional: door numbers will be assigned automatically if not provided
+      "door_number": 1, // Optionnel : les numéros de porte seront attribués automatiquement si non fournis
+      "points": 2, // Optionnel : nombre de points pour la question (par défaut: 1)
+      "hint": "Pensez aux instruments de musique", // Optionnel : indice pour la question
+      "style": "enigme" // Optionnel : style de la question
     },
     {
-      "text": "What gets wetter as it dries?",
-      "answer": "towel"
+      "text": "Qu'est-ce qui devient plus mouillé en séchant ?",
+      "answer": "serviette",
+      "hint": "Pensez aux objets du quotidien",
+      "style": "logique"
     }
   ]
 }`}
-        </pre>
-        <p className="mt-2 text-xs text-gray-500">
-          Note: You can add images to questions in the next step.
-        </p>
+          </pre>
+          <p className="mt-2 text-xs text-gray-500">
+            Note : Vous pourrez ajouter des images aux questions à l'étape suivante.
+          </p>
+        </div>
       </div>
     </div>
   );

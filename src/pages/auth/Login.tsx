@@ -99,9 +99,9 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-dragon-accent/5 to-white p-4">
-      <div className="w-full max-w-md parchment">
-        <h1 className="text-2xl font-bold text-center mb-6">Admin Login</h1>
+    <div className="min-h-screen flex items-center justify-center bg-[#1A1F2C] bg-opacity-95 bg-[url('/grid.svg')] bg-repeat p-4">
+      <div className="w-full max-w-md border-2 border-[#00FF00]/20 bg-black/50 backdrop-blur-sm rounded-lg shadow-[0_0_15px_rgba(0,255,0,0.1)] relative after:absolute after:top-0 after:left-0 after:w-full after:h-full after:bg-[radial-gradient(circle,rgba(0,255,0,0.1)_0%,transparent_70%)] after:pointer-events-none">
+        <h1 className="text-2xl font-bold text-center mb-6 font-mono text-[#00FF00] animate-pulse">> Login du Maître du jeu_</h1>
         
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
@@ -111,7 +111,7 @@ const Login = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="border-dragon-gold/30"
+              className="bg-black/30 border-[#00FF00]/30 text-[#00FF00] placeholder:text-[#00FF00]/50"
             />
           </div>
           
@@ -122,22 +122,22 @@ const Login = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="border-dragon-gold/30"
+              className="bg-black/30 border-[#00FF00]/30 text-[#00FF00] placeholder:text-[#00FF00]/50"
             />
           </div>
           
           <Button 
             type="submit" 
-            className="w-full bg-dragon-primary hover:bg-dragon-secondary"
+            className="w-full bg-[#00FF00]/20 hover:bg-[#00FF00]/30 text-[#00FF00] border border-[#00FF00]/50 transition-all hover:shadow-[0_0_10px_rgba(0,255,0,0.3)]"
             disabled={loading}
           >
             {loading ? 'Logging in...' : 'Login'}
           </Button>
           
-          <div className="text-center text-sm text-gray-600 mt-4">
-            <p>Demo credentials:</p>
+          <div className="text-center text-sm text-[#00FF00]/70 font-mono mt-4">
+            <p>VALEURS TMP:</p>
             <p>Email: {TEMP_EMAIL}</p>
-            <p>Password: {TEMP_PASSWORD}</p>
+            <p>Mot de passe: {TEMP_PASSWORD}</p>
           </div>
         </form>
       </div>

@@ -26,7 +26,8 @@ export const createSession = async (name: string): Promise<Session | null> => {
 export const getSessions = async (): Promise<Session[]> => {
   const { data, error } = await supabase
     .from('sessions')
-    .select('*, questions(*)');
+    .select('*, questions(*)')
+    .order('created_at', { ascending: false });
 
   if (error) {
     console.error('Error fetching sessions:', error);
@@ -130,16 +131,20 @@ export const getRoomDirectCheck = async (roomId: string): Promise<{exists: boole
   }
 };
 
-export const createRoom = async (sessionId: string, roomName: string, roomId?: string): Promise<Room | null> => {
+export const createRoom = async (sessionId: string, roomName: string, roomId?: string, sigil?: string, motto?: string): Promise<Room | null> => {
   console.log(`[ROOM DEBUG] Creating room with name: ${roomName}, sessionId: ${sessionId}, roomId: ${roomId || 'auto-generated'}`);
   
   const roomData: {
     session_id: string;
     name: string;
     id?: string;
+    sigil: string;
+    motto: string;
   } = {
     session_id: sessionId,
     name: roomName,
+    sigil: sigil || '🏰', // Default sigil if none provided
+    motto: motto || 'House Motto' // Default motto if none provided
   };
 
   if (roomId) {
@@ -165,7 +170,9 @@ export const createRoom = async (sessionId: string, roomName: string, roomId?: s
     name: data.name,
     tokensLeft: data.tokens_left,
     currentDoor: data.current_door,
-    score: data.score
+    score: data.score,
+    sigil: data.sigil,
+    motto: data.motto
   };
 };
 
@@ -173,10 +180,16 @@ export const addQuestionsToSession = async (sessionId: string, questions: Omit<Q
   const { error } = await supabase
     .from('questions')
     .insert(
-      questions.map(q => ({
+      questions.map((q, index) => ({
         session_id: sessionId,
         text: q.text,
         answer: q.answer,
+        door_number: index + 1,
+        hint: q.hint,
+        points: q.points || 100,
+        style: q.style,
+        style: q.style,
+        points: q.points,
       }))
     );
 
@@ -295,7 +308,7 @@ export const deleteSession = async (sessionId: string): Promise<boolean> => {
   return true;
 };
 
-export const updateSessionStatus = async (sessionId: string, status: 'pending' | 'active' | 'completed'): Promise<boolean> => {
+export const updateSessionStatus = async (sessionId: string, status: 'en attente' | 'active' | 'terminée'): Promise<boolean> => {
   const { error } = await supabase
     .from('sessions')
     .update({ status })

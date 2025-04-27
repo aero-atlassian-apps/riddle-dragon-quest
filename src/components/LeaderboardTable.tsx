@@ -13,42 +13,68 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({ scores, currentSess
   const sortedScores = [...scores].sort((a, b) => b.totalScore - a.totalScore);
 
   return (
-    <div className="parchment max-w-3xl mx-auto">
-      <h2 className="text-2xl font-bold text-center mb-6 text-dragon-scale">Leaderboard</h2>
+    <div className="max-w-3xl mx-auto bg-[#1A1F2C]/80 border border-[#00FF00]/30 rounded-lg p-6 font-mono relative overflow-hidden">
+      <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
+      <h2 className="text-2xl font-bold text-center mb-6 text-[#00FF00] animate-pulse">_classement.exe</h2>
       
-      <div className="overflow-x-auto">
-        <table className="w-full">
+      <div className="overflow-x-auto relative z-10">
+        <table className="w-full border-collapse">
           <thead>
-            <tr className="border-b-2 border-dragon-gold/30">
-              <th className="px-4 py-3 text-left">Rank</th>
-              <th className="px-4 py-3 text-left">Room</th>
-              <th className="px-4 py-3 text-right">Score</th>
+            <tr className="border-b-2 border-[#00FF00]/30">
+              <th className="px-4 py-3 text-left text-[#00FF00]/80">Rang</th>
+              <th className="px-4 py-3 text-left text-[#00FF00]/80">Troupe</th>
+              <th className="px-4 py-3 text-right text-[#00FF00]/80">Score</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="text-[#00FF00]">
             {sortedScores.map((score, index) => {
               const isCurrentSession = score.sessionId === currentSessionId;
               
               return (
                 <tr 
                   key={score.roomId} 
-                  className={`border-b border-dragon-gold/20 ${
-                    isCurrentSession ? 'bg-dragon-accent/10' : ''
-                  } ${index === 0 ? 'relative' : ''}`}
+                  className={`border-b border-[#00FF00]/20 transition-colors ${
+                    isCurrentSession ? 'bg-[#00FF00]/5' : ''
+                  } hover:bg-[#00FF00]/10 ${index === 0 ? 'relative' : ''}`}
                 >
                   <td className="px-4 py-4 text-left">
                     <div className="flex items-center">
-                      {index === 0 && <Trophy className="mr-1 text-dragon-gold trophy-shine h-6 w-6" />}
-                      {index === 1 && <Medal className="mr-1 text-gray-400 h-5 w-5" />}
-                      {index === 2 && <Award className="mr-1 text-amber-700 h-5 w-5" />}
-                      {index > 2 && <span className="ml-1 w-5 inline-block text-center">{index + 1}</span>}
+                      {index === 0 && (
+                        <Trophy 
+                          className="mr-2 text-[#FFD700] h-6 w-6 animate-pulse shadow-glow-gold" 
+                          style={{
+                            filter: 'drop-shadow(0 0 8px rgba(255, 215, 0, 0.6))'
+                          }}
+                        />
+                      )}
+                      {index === 1 && (
+                        <Medal 
+                          className="mr-2 text-[#C0C0C0] h-5 w-5 shadow-glow-silver" 
+                          style={{
+                            filter: 'drop-shadow(0 0 6px rgba(192, 192, 192, 0.5))'
+                          }}
+                        />
+                      )}
+                      {index === 2 && (
+                        <Award 
+                          className="mr-2 text-[#CD7F32] h-5 w-5 shadow-glow-bronze" 
+                          style={{
+                            filter: 'drop-shadow(0 0 6px rgba(205, 127, 50, 0.5))'
+                          }}
+                        />
+                      )}
+                      {index > 2 && <span className="ml-1 w-5 inline-block text-center opacity-50">{index + 1}</span>}
                     </div>
                   </td>
                   <td className="px-4 py-4 text-left font-medium">
-                    {score.roomName}
-                    {isCurrentSession && <span className="ml-2 text-xs bg-dragon-accent/30 px-2 py-1 rounded-full">Current</span>}
+                    <span className="text-[#00FF00]">{score.roomName}</span>
+                    {isCurrentSession && (
+                      <span className="ml-2 text-xs bg-[#00FF00]/10 border border-[#00FF00]/30 px-2 py-1 rounded-full animate-pulse">
+                        Actuel
+                      </span>
+                    )}
                   </td>
-                  <td className="px-4 py-4 text-right font-bold">
+                  <td className="px-4 py-4 text-right font-bold font-glitch">
                     {score.totalScore}
                   </td>
                 </tr>
@@ -57,8 +83,8 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({ scores, currentSess
             
             {scores.length === 0 && (
               <tr>
-                <td colSpan={3} className="px-4 py-8 text-center text-gray-500">
-                  No scores available yet
+                <td colSpan={3} className="px-4 py-8 text-center text-[#00FF00]/50">
+                  > Aucun score disponible pour le moment_
                 </td>
               </tr>
             )}

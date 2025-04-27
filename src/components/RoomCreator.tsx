@@ -7,11 +7,15 @@ import { Plus, Minus, Copy, ExternalLink } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
 const HOUSE_NAMES = [
-  { name: "House Stark", sigil: "🐺", motto: "Winter is Coming" },
-  { name: "House Lannister", sigil: "🦁", motto: "Hear Me Roar" },
-  { name: "House Targaryen", sigil: "🐉", motto: "Fire and Blood" },
-  { name: "House Baratheon", sigil: "🦌", motto: "Ours is the Fury" },
-  { name: "House Greyjoy", sigil: "🦑", motto: "We Do Not Sow" },
+  { name: "Stark", sigil: "🐺", motto: "Winter is Coming" },
+  { name: "Lannister", sigil: "🦁", motto: "Hear Me Roar" },
+  { name: "Targaryen", sigil: "🐉", motto: "Fire and Blood" },
+  { name: "Baratheon", sigil: "🦌", motto: "Ours is the Fury" },
+  { name: "Greyjoy", sigil: "🦑", motto: "We Do Not Sow" },
+  { name: "Tyrell", sigil: "🌹", motto: "Growing Strong" },
+  { name: "Martell", sigil: "🌞", motto: "Unbowed, Unbent, Unbroken" },
+  { name: "Tully", sigil: "🐟", motto: "Family, Duty, Honor" },
+  { name: "Arryn", sigil: "🦅", motto: "As High as Honor" }
 ];
 
 interface RoomCreatorProps {
@@ -68,11 +72,11 @@ const RoomCreator: React.FC<RoomCreatorProps> = ({ sessionId, onCreateRooms, onC
     createRoomsInDatabase(generatedRooms);
   };
 
-  const createRoomsInDatabase = async (rooms: {name: string, id: string}[]) => {
+  const createRoomsInDatabase = async (rooms: {name: string, id: string, sigil: string, motto: string}[]) => {
     const { createRoom } = await import('@/utils/db');
     
     for (const room of rooms) {
-      const result = await createRoom(sessionId, room.name, room.id);
+      const result = await createRoom(sessionId, room.name, room.id, room.sigil, room.motto);
       
       if (!result) {
         toast({
@@ -103,105 +107,109 @@ const RoomCreator: React.FC<RoomCreatorProps> = ({ sessionId, onCreateRooms, onC
   };
 
   return (
-    <div className="parchment max-w-md mx-auto">
-      <h2 className="text-xl font-bold mb-6 text-center font-medieval">Create Great Houses</h2>
-      
-      {!showLinks ? (
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-4">
-            <Label className="mb-3 block text-lg font-medieval">Number of Houses (2-5)</Label>
-            
-            <div className="flex items-center justify-center space-x-4">
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={decrementRooms}
-                disabled={numberOfRooms <= 2}
-                className="border-dragon-gold/30 hover:bg-dragon-accent/10"
-              >
-                <Minus className="h-4 w-4" />
-              </Button>
+    <div className="max-w-md mx-auto bg-black/90 border-2 border-green-500 rounded-lg p-6 relative overflow-hidden">
+      <div className="absolute inset-0 bg-[url('/textures/stone-pattern.svg')] opacity-5" />
+      <div className="absolute inset-0 bg-[url('/terminal-bg.png')] opacity-10" />
+      <div className="relative z-10">
+        <h2 className="text-xl font-bold mb-6 text-center font-pixel text-green-400">$ INITIALISER_MAISONS</h2>
+        
+        {!showLinks ? (
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-4">
+              <Label className="mb-3 block text-lg font-mono text-green-400">$ NOMBRE_DE_MAISONS (2-5):</Label>
               
-              <span className="text-2xl font-medieval w-8 text-center">{numberOfRooms}</span>
+              <div className="flex items-center justify-center space-x-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={decrementRooms}
+                  disabled={numberOfRooms <= 2}
+                  className="border-green-500/50 text-green-400 hover:bg-green-500/20 disabled:opacity-50"
+                >
+                  <Minus className="h-4 w-4" />
+                </Button>
+                
+                <span className="text-2xl font-mono text-green-400 w-8 text-center">{numberOfRooms}</span>
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={incrementRooms}
+                  disabled={numberOfRooms >= 5}
+                  className="border-green-500/50 text-green-400 hover:bg-green-500/20 disabled:opacity-50"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
               
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={incrementRooms}
-                disabled={numberOfRooms >= 5}
-                className="border-dragon-gold/30 hover:bg-dragon-accent/10"
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
+              <div className="pt-4">
+                <Button 
+                  type="submit" 
+                  className="w-full bg-green-500 hover:bg-green-600 text-black font-pixel"
+                >
+                  $ CRÉER_MAISONS
+                </Button>
+              </div>
+            </div>
+          </form>
+        ) : (
+          <div className="space-y-6">
+            <div>
+              <h3 className="font-mono text-xl mb-3 text-green-400">$ MAISONS_INITIALISÉES:</h3>
+              
+              <div className="space-y-4">
+                {createdRooms.map((room, index) => (
+                  <div key={index} className="border-2 border-green-500/30 rounded-md p-4 bg-black/50">
+                    <div className="flex items-center gap-3 mb-2">
+                      <span className="text-2xl">{room.sigil}</span>
+                      <div>
+                        <div className="font-pixel text-lg text-green-400">{room.name}</div>
+                        <div className="text-sm text-green-500/70 font-mono">{room.motto}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-shrink-0 border-green-500/50 text-green-400 hover:bg-green-500/20"
+                        onClick={() => copyToClipboard(room.link)}
+                      >
+                        <Copy className="h-4 w-4" />
+                        <span className="ml-2">COPIER_LIEN</span>
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-shrink-0 border-green-500/50 text-green-400 hover:bg-green-500/20"
+                        asChild
+                      >
+                        <a href={room.link} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="h-4 w-4" />
+                          <span className="ml-2">OUVRIR</span>
+                        </a>
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
             
             <div className="pt-4">
               <Button 
-                type="submit" 
-                className="w-full bg-dragon-primary hover:bg-dragon-secondary font-medieval"
+                onClick={finishSetup}
+                className="w-full bg-green-500 hover:bg-green-600 text-black font-pixel"
               >
-                Create Houses
+                $ TERMINER_CONFIGURATION
               </Button>
             </div>
           </div>
-        </form>
-      ) : (
-        <div className="space-y-6">
-          <div>
-            <h3 className="font-medieval text-xl mb-3">Your Great Houses</h3>
-            
-            <div className="space-y-4">
-              {createdRooms.map((room, index) => (
-                <div key={index} className="border-2 border-dragon-gold/30 rounded-md p-4 bg-dragon-scroll/20">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="text-2xl">{room.sigil}</span>
-                    <div>
-                      <div className="font-medieval text-lg text-dragon-primary">{room.name}</div>
-                      <div className="text-sm text-gray-600 italic">{room.motto}</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-end gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex-shrink-0 border-dragon-gold/30"
-                      onClick={() => copyToClipboard(room.link)}
-                    >
-                      <Copy className="h-4 w-4" />
-                      <span className="ml-2">Copy Link</span>
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex-shrink-0 border-dragon-gold/30"
-                      asChild
-                    >
-                      <a href={room.link} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-4 w-4" />
-                        <span className="ml-2">Open</span>
-                      </a>
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          <div className="pt-4">
-            <Button 
-              onClick={finishSetup}
-              className="w-full bg-dragon-primary hover:bg-dragon-secondary font-medieval"
-            >
-              Finish Setup
-            </Button>
-          </div>
+        )}
+        
+        <div className="mt-6 border-t border-green-500/30 pt-4 text-sm text-center text-green-400/70 font-mono">
+          <p>$ Chaque maison recevra une URL unique pour l'accès des membres_</p>
         </div>
-      )}
-      
-      <div className="mt-6 border-t border-dragon-gold/30 pt-4 text-sm text-center text-gray-500 font-medieval">
-        <p>Each house will receive a unique URL for their members to join</p>
       </div>
     </div>
   );

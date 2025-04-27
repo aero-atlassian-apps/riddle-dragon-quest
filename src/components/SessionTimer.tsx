@@ -46,8 +46,8 @@ const SessionTimer: React.FC<SessionTimerProps> = ({ startTime, className }) => 
   
   return (
     <div className={`flex items-center gap-2 ${className}`}>
-      <Clock className="h-4 w-4 text-dragon-gold" />
-      <span className="font-medieval">{elapsedTime}</span>
+      <Clock className="h-4 w-4 text-green-400" />
+      <span className="font-mono text-green-400">{elapsedTime}</span>
     </div>
   );
 };

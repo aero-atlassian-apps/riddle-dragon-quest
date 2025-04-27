@@ -53,7 +53,7 @@ const AdminDashboard = () => {
   };
 
   const handleUploadQuestions = (questions: Question[]) => {
-    setCreationStep("images"); // Add new step for image management
+    setCreationStep("images");
   };
 
   const handleQuestionsWithImagesComplete = () => {
@@ -61,8 +61,6 @@ const AdminDashboard = () => {
   };
 
   const handleCreateRooms = async (roomNames: string[]) => {
-    // Note: Room creation is now handled directly in the RoomCreator component
-    
     toast({
       title: "Rooms created successfully",
       description: `${roomNames.length} rooms have been created`,
@@ -106,7 +104,7 @@ const AdminDashboard = () => {
     setDeleteSessionId(null);
   };
 
-  const handleSessionStatusChange = async (sessionId: string, status: 'pending' | 'active' | 'completed') => {
+  const handleSessionStatusChange = async (sessionId: string, status: 'en attente' | 'active' | 'terminée') => {
     const success = await updateSessionStatus(sessionId, status);
     
     if (success) {
@@ -114,7 +112,7 @@ const AdminDashboard = () => {
         session.id === sessionId ? { ...session, status } : session
       ));
       
-      const statusMessage = status === 'active' ? 'started' : status === 'completed' ? 'ended' : 'reset';
+      const statusMessage = status === 'active' ? 'started' : status === 'terminée' ? 'ended' : 'reset';
       
       toast({
         title: `Session ${statusMessage}`,
@@ -123,7 +121,7 @@ const AdminDashboard = () => {
     } else {
       toast({
         title: "Error",
-        description: `Failed to ${status === 'active' ? 'start' : status === 'completed' ? 'end' : 'reset'} the session`,
+        description: `Failed to ${status === 'active' ? 'start' : status === 'terminée' ? 'end' : 'reset'} the session`,
         variant: "destructive",
       });
     }
@@ -134,13 +132,11 @@ const AdminDashboard = () => {
     setShowRoomsDialog(true);
     
     try {
-      // Find the session name
       const session = sessions.find(s => s.id === sessionId);
       if (session) {
         setCurrentSessionName(session.name);
       }
       
-      // Fetch rooms for this session
       const { data, error } = await supabase
         .from('rooms')
         .select('*')
@@ -192,269 +188,308 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-6 font-medieval">Games Master Dashboard</h1>
+    <div className="container mx-auto p-4 relative min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 bg-[url('/textures/stone-pattern.svg')] bg-repeat bg-opacity-50 before:absolute before:inset-0 before:bg-[url('/terminal-bg.png')] before:opacity-10 before:pointer-events-none after:absolute after:inset-0 after:bg-[radial-gradient(circle_at_center,rgba(0,255,0,0.1)_0%,transparent_70%)] after:pointer-events-none">
+      <div className="mb-8 text-center p-6 bg-black/90 border-2 border-green-500 rounded-lg font-mono relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('/textures/stone-pattern.svg')] opacity-5" />
+        <div className="absolute inset-0 bg-[url('/terminal-bg.png')] opacity-10" />
+        <div className="relative z-10">
+          <h1 className="text-3xl font-bold font-medieval mb-6 text-green-400">Espace du Maître des Jeux</h1>
+          <div className="flex items-center justify-center mb-3">
+            <span className="w-3 h-3 rounded-full bg-green-500 animate-pulse mr-2" />
+            <h3 className="text-2xl text-green-500 font-pixel glitch">[ CONSOLE DE CONTRÔLE ]</h3>
+          </div>
+          <p className="text-green-400 font-pixel typing-effect">$ Système initialisé et prêt à recevoir des commandes...</p>
+        </div>
+      </div>
 
       {showCreateForm ? (
-        <div className="mb-8">
-          <div className="mb-4 flex justify-between items-center">
-            <h2 className="text-xl font-bold font-medieval">Create New Game Session</h2>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowCreateForm(false);
-                setCreationStep("session");
-                setRoomCreationSessionId(null);
-              }}
-            >
-              Cancel
-            </Button>
-          </div>
+        <div className="mb-8 bg-black/90 border-2 border-green-500 rounded-lg p-6 relative overflow-hidden">
+          <div className="absolute inset-0 bg-[url('/textures/stone-pattern.svg')] opacity-5" />
+          <div className="absolute inset-0 bg-[url('/terminal-bg.png')] opacity-10" />
+          <div className="relative z-10">
+            <div className="mb-4 flex justify-between items-center">
+              <h2 className="text-xl font-bold font-medieval text-green-400">$ INITIALISER_NOUVELLE_SESSION</h2>
+              <Button
+                variant="outline"
+                className="border-green-500 text-green-400 hover:bg-green-500/20"
+                onClick={() => {
+                  setShowCreateForm(false);
+                  setCreationStep("session");
+                  setRoomCreationSessionId(null);
+                }}
+              >
+                <X className="mr-2" size={18} />
+                ANNULER
+              </Button>
+            </div>
 
-          {creationStep === "session" && (
-            <SessionCreator onCreateSession={handleCreateSession} />
-          )}
-          
-          {creationStep === "questions" && roomCreationSessionId && (
-            <QuestionUploader
-              sessionId={roomCreationSessionId}
-              onUpload={handleUploadQuestions}
-            />
-          )}
-          
-          {creationStep === "images" && roomCreationSessionId && (
-            <QuestionManager
-              sessionId={roomCreationSessionId}
-              onComplete={handleQuestionsWithImagesComplete}
-            />
-          )}
-          
-          {creationStep === "rooms" && roomCreationSessionId && (
-            <RoomCreator
-              sessionId={roomCreationSessionId}
-              onCreateRooms={handleCreateRooms}
-              onContinue={handleFinishCreation}
-            />
-          )}
+            {creationStep === "session" && (
+              <SessionCreator onCreateSession={handleCreateSession} />
+            )}
+            
+            {creationStep === "questions" && roomCreationSessionId && (
+              <QuestionUploader
+                sessionId={roomCreationSessionId}
+                onUpload={handleUploadQuestions}
+              />
+            )}
+            
+            {creationStep === "images" && roomCreationSessionId && (
+              <QuestionManager
+                sessionId={roomCreationSessionId}
+                onComplete={handleQuestionsWithImagesComplete}
+              />
+            )}
+            
+            {creationStep === "rooms" && roomCreationSessionId && (
+              <RoomCreator
+                sessionId={roomCreationSessionId}
+                onCreateRooms={handleCreateRooms}
+                onContinue={handleFinishCreation}
+              />
+            )}
+          </div>
         </div>
       ) : (
         <div className="mb-8">
           <Button
-            className="bg-dragon-primary hover:bg-dragon-secondary font-medieval"
+            className="bg-green-500 hover:bg-green-600 text-black font-pixel"
             onClick={() => setShowCreateForm(true)}
           >
             <PlusCircle className="mr-2" size={18} />
-            Create New Session
+            $ NOUVELLE_SESSION
           </Button>
         </div>
       )}
 
       {!showCreateForm && (
-        <div className="mt-8">
-          <Tabs defaultValue="active" className="w-full">
-            <TabsList className="w-full mb-6 font-medieval">
-              <TabsTrigger value="all" className="flex-1">
-                All Sessions
-              </TabsTrigger>
-              <TabsTrigger value="active" className="flex-1">
-                Active Sessions
-              </TabsTrigger>
-              <TabsTrigger value="pending" className="flex-1">
-                Pending Sessions
-              </TabsTrigger>
-              <TabsTrigger value="completed" className="flex-1">
-                Completed Sessions
-              </TabsTrigger>
-            </TabsList>
+        <div className="mt-8 bg-black/90 border-2 border-green-500 rounded-lg p-6 relative overflow-hidden">
+          <div className="absolute inset-0 bg-[url('/textures/stone-pattern.svg')] opacity-5" />
+          <div className="absolute inset-0 bg-[url('/terminal-bg.png')] opacity-10" />
+          <div className="relative z-10">
+            <Tabs defaultValue="active" className="w-full">
+              <TabsList className="w-full mb-6 font-pixel bg-black border-2 border-green-500">
+                <TabsTrigger value="all" className="flex-1 text-green-400 data-[state=active]:bg-green-500 data-[state=active]:text-black">
+                  TOUTES_SESSIONS
+                </TabsTrigger>
+                <TabsTrigger value="active" className="flex-1 text-green-400 data-[state=active]:bg-green-500 data-[state=active]:text-black">
+                  SESSIONS_ACTIVES
+                </TabsTrigger>
+                <TabsTrigger value="en attente" className="flex-1 text-green-400 data-[state=active]:bg-green-500 data-[state=active]:text-black">
+                  SESSIONS_EN_ATTENTE
+                </TabsTrigger>
+                <TabsTrigger value="terminée" className="flex-1 text-green-400 data-[state=active]:bg-green-500 data-[state=active]:text-black">
+                  SESSIONS_TERMINEES
+                </TabsTrigger>
+              </TabsList>
 
-            {["all", "active", "pending", "completed"].map((tab) => (
-              <TabsContent key={tab} value={tab} className="mt-0">
-                {isLoading ? (
-                  <div className="text-center py-8">Loading sessions...</div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {sessions
-                      .filter((session) => 
-                        tab === "all" || 
-                        (tab === "active" && session.status === "active") || 
-                        (tab === "pending" && session.status === "pending") || 
-                        (tab === "completed" && session.status === "completed")
-                      )
-                      .map((session) => (
-                        <div
-                          key={session.id}
-                          className="bg-white border-2 border-dragon-gold/30 rounded-lg p-4 shadow"
-                        >
-                          <div className="flex justify-between items-start mb-2">
-                            <h3 className="text-lg font-bold font-medieval text-dragon-primary">
-                              {session.name}
-                            </h3>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-gray-500 hover:text-red-500"
-                              onClick={() => handleDeleteSession(session.id)}
-                            >
-                              <Trash2 size={18} />
-                            </Button>
-                          </div>
+              {["all", "active", "en attente", "terminée"].map((tab) => (
+                <TabsContent key={tab} value={tab} className="mt-0">
+                  {isLoading ? (
+                    <div className="text-center py-8 text-green-400 font-pixel">
+                      <span className="animate-pulse">Chargement des sessions...</span>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {sessions
+                        .filter((session) => 
+                          tab === "all" || 
+                          (tab === "active" && session.status === "active") || 
+                          (tab === "en attente" && session.status === "en attente") || 
+                          (tab === "terminée" && session.status === "terminée")
+                        )
+                        .map((session) => (
+                          <div
+                            key={session.id}
+                            className="bg-black/90 border-2 border-green-500 rounded-lg p-4 relative overflow-hidden"
+                          >
+                            <div className="absolute inset-0 bg-[url('/textures/stone-pattern.svg')] opacity-5" />
+                            <div className="absolute inset-0 bg-[url('/terminal-bg.png')] opacity-10" />
+                            <div className="relative z-10">
+                              <div className="flex justify-between items-start mb-2">
+                                <h3 className="text-lg font-bold font-pixel text-green-400">
+                                  $ {session.name}
+                                </h3>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-red-500 hover:bg-red-500/20"
+                                  onClick={() => handleDeleteSession(session.id)}
+                                >
+                                  <Trash2 size={18} />
+                                </Button>
+                              </div>
 
-                          <div className="text-sm text-gray-500 mb-4">
-                            <div>
-                              Created: {new Date(session.startTime).toLocaleString()}
-                            </div>
-                            <div>
-                              Questions: {session.questions?.length || 0}
-                            </div>
-                            <div>
-                              Status: <span className="font-semibold capitalize">{session.status}</span>
-                            </div>
-                          </div>
+                              <div className="text-sm text-green-400/80 font-mono mb-4 space-y-1">
+                                <div>
+                                  > Créée le: {new Date(session.startTime).toLocaleString()}
+                                </div>
+                                <div>
+                                  > Questions: {session.questions?.length || 0}
+                                </div>
+                                <div>
+                                  > Statut: <span className="font-semibold uppercase">{session.status}</span>
+                                </div>
+                              </div>
 
-                          <div className="flex space-x-2 justify-end">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="border-dragon-gold/30 hover:bg-dragon-accent/10"
-                              onClick={() => handleViewRooms(session.id)}
-                            >
-                              <ExternalLink size={16} className="mr-1" /> View Rooms
-                            </Button>
-                            
-                            {session.status === 'pending' && (
-                              <Button 
-                                size="sm" 
-                                className="bg-green-600 hover:bg-green-700"
-                                onClick={() => handleSessionStatusChange(session.id, 'active')}
-                              >
-                                <Play size={16} className="mr-1" /> Start
-                              </Button>
-                            )}
-                            
-                            {session.status === 'active' && (
-                              <Button 
-                                size="sm" 
-                                className="bg-amber-600 hover:bg-amber-700"
-                                onClick={() => handleSessionStatusChange(session.id, 'completed')}
-                              >
-                                <Pause size={16} className="mr-1" /> End
-                              </Button>
-                            )}
-                            
-                            {session.status === 'completed' && (
-                              <Button 
-                                size="sm" 
-                                className="bg-blue-600 hover:bg-blue-700"
-                                onClick={() => handleSessionStatusChange(session.id, 'pending')}
-                              >
-                                <RotateCcw size={16} className="mr-1" /> Reset
-                              </Button>
-                            )}
+                              <div className="flex space-x-2 justify-end">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-green-500 text-green-400 hover:bg-green-500/20"
+                                  onClick={() => handleViewRooms(session.id)}
+                                >
+                                  <ExternalLink size={16} className="mr-1" /> VOIR_SALLES
+                                </Button>
+                                
+                                {session.status === 'en attente' && (
+                                  <Button 
+                                    size="sm" 
+                                    className="bg-green-500 hover:bg-green-600 text-black font-pixel"
+                                    onClick={() => handleSessionStatusChange(session.id, 'active')}
+                                  >
+                                    <Play size={16} className="mr-1" /> DEMARRER
+                                  </Button>
+                                )}
+                                
+                                {session.status === 'active' && (
+                                  <Button 
+                                    size="sm" 
+                                    className="bg-yellow-500 hover:bg-yellow-600 text-black font-pixel"
+                                    onClick={() => handleSessionStatusChange(session.id, 'terminée')}
+                                  >
+                                    <Pause size={16} className="mr-1" /> TERMINER
+                                  </Button>
+                                )}
+                                
+                                {session.status === 'terminée' && (
+                                  <Button 
+                                    size="sm" 
+                                    className="bg-blue-500 hover:bg-blue-600 text-black font-pixel"
+                                    onClick={() => handleSessionStatusChange(session.id, 'en attente')}
+                                  >
+                                    <RotateCcw size={16} className="mr-1" /> REINITIALISER
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
                           </div>
+                        ))}
+
+                      {sessions.filter(
+                        (session) =>
+                          tab === "all" || 
+                          (tab === "active" && session.status === "active") || 
+                          (tab === "en attente" && session.status === "en attente") || 
+                          (tab === "terminée" && session.status === "terminée")
+                      ).length === 0 && (
+                        <div className="col-span-full py-8 text-center">
+                          <p className="text-green-400 font-pixel">
+                            > Aucune session{tab === "all" ? "" : " " + tab} trouvée_
+                          </p>
                         </div>
-                      ))}
-
-                    {sessions.filter(
-                      (session) =>
-                        tab === "all" || 
-                        (tab === "active" && session.status === "active") || 
-                        (tab === "pending" && session.status === "pending") || 
-                        (tab === "completed" && session.status === "completed")
-                    ).length === 0 && (
-                      <div className="col-span-full py-8 text-center">
-                        <p className="text-gray-500">
-                          No {tab === "all" ? "" : tab + " "} sessions found.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </TabsContent>
-            ))}
-          </Tabs>
+                      )}
+                    </div>
+                  )}
+                </TabsContent>
+              ))}
+            </Tabs>
+          </div>
         </div>
       )}
 
       <AlertDialog open={!!deleteSessionId} onOpenChange={() => setDeleteSessionId(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-black border-2 border-red-500">
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete the session, all associated rooms,
-              questions, and scores. This action cannot be undone.
+            <AlertDialogTitle className="text-red-500 font-pixel">! ATTENTION !</AlertDialogTitle>
+            <AlertDialogDescription className="text-red-400 font-mono">
+              > Cette action supprimera définitivement la session, toutes les salles associées,
+              les questions et les scores. Cette action est irréversible.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={cancelDeleteSession}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="border-green-500 text-green-400 hover:bg-green-500/20">
+              ANNULER
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDeleteSession}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-red-500 hover:bg-red-600 text-black font-pixel"
             >
-              Delete
+              CONFIRMER_SUPPRESSION
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       <Dialog open={showRoomsDialog} onOpenChange={setShowRoomsDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-medieval">{currentSessionName} - Room Links</DialogTitle>
-            <DialogDescription>
-              Share these links with participants to join the game session.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="py-4">
-            {loadingRooms ? (
-              <div className="text-center py-8">
-                <div className="animate-spin h-6 w-6 border-2 border-dragon-primary border-t-transparent rounded-full mx-auto mb-2"></div>
-                <p>Loading rooms...</p>
-              </div>
-            ) : sessionRooms.length === 0 ? (
-              <p className="text-center text-gray-500">No rooms found for this session.</p>
-            ) : (
-              <ScrollArea className="max-h-[60vh]">
-                <div className="space-y-4">
-                  {sessionRooms.map((room) => (
-                    <div key={room.id} className="border-2 border-dragon-gold/30 rounded-md p-4 bg-dragon-scroll/20">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-medieval text-lg text-dragon-primary">{room.name}</h3>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="flex-shrink-0 border-dragon-gold/30"
-                          asChild
-                        >
-                          <a href={room.link} target="_blank" rel="noopener noreferrer">
-                            <ExternalLink className="h-4 w-4" />
-                            <span className="ml-2">Open</span>
-                          </a>
-                        </Button>
-                      </div>
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="flex-shrink-0 border-dragon-gold/30"
-                          onClick={() => copyToClipboard(room.link)}
-                        >
-                          <Copy className="h-4 w-4" />
-                          <span className="ml-2">Copy Link</span>
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+        <DialogContent className="bg-black border-2 border-green-500 sm:max-w-md">
+          <div className="absolute inset-0 bg-[url('/textures/stone-pattern.svg')] opacity-5" />
+          <div className="absolute inset-0 bg-[url('/terminal-bg.png')] opacity-10" />
+          <div className="relative z-10">
+            <DialogHeader>
+              <DialogTitle className="font-pixel text-green-400">
+                $ {currentSessionName}_ROOMS
+              </DialogTitle>
+              <DialogDescription className="text-green-400/80 font-mono">
+                > Partagez ces liens avec les participants pour rejoindre la session de jeu.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="py-4">
+              {loadingRooms ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin h-6 w-6 border-2 border-green-500 border-t-transparent rounded-full mx-auto mb-2"></div>
+                  <p className="text-green-400 font-pixel">Chargement des salles...</p>
                 </div>
-              </ScrollArea>
-            )}
+              ) : sessionRooms.length === 0 ? (
+                <p className="text-center text-green-400 font-pixel">> Aucune salle trouvée_</p>
+              ) : (
+                <ScrollArea className="max-h-[60vh]">
+                  <div className="space-y-4">
+                    {sessionRooms.map((room) => (
+                      <div key={room.id} className="border-2 border-green-500/50 rounded-md p-4 bg-black/50">
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="font-pixel text-lg text-green-400">{room.name}</h3>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-green-500 text-green-400 hover:bg-green-500/20"
+                            asChild
+                          >
+                            <a href={room.link} target="_blank" rel="noopener noreferrer">
+                              <ExternalLink className="h-4 w-4" />
+                              <span className="ml-2">OUVRIR</span>
+                            </a>
+                          </Button>
+                        </div>
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-green-500 text-green-400 hover:bg-green-500/20"
+                            onClick={() => copyToClipboard(room.link)}
+                          >
+                            <Copy className="h-4 w-4" />
+                            <span className="ml-2">COPY_LINK</span>
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              )}
+            </div>
+            
+            <DialogClose asChild>
+              <Button 
+                type="button" 
+                variant="outline"
+                className="w-full border-green-500 text-green-400 hover:bg-green-500/20 font-pixel"
+              >
+                CLOSE
+              </Button>
+            </DialogClose>
           </div>
-          
-          <DialogClose asChild>
-            <Button type="button" variant="secondary">
-              Close
-            </Button>
-          </DialogClose>
         </DialogContent>
       </Dialog>
     </div>

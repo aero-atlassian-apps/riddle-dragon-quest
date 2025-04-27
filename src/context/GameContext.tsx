@@ -78,7 +78,9 @@ export const GameProvider: React.FC<{ children: ReactNode; initialState?: Initia
     
     if (isCorrect) {
       const tokensUsed = 3 - gameState.tokensLeft;
-      const pointsEarned = 100 - (10 * tokensUsed);
+      const questionPoints = gameState.currentQuestion.points || 100;
+      const pointsEarned = Math.max(Math.floor(questionPoints * (1 - (0.1 * tokensUsed))), Math.floor(questionPoints * 0.6));
+      console.log("Points earned:", pointsEarned, "from question points:", questionPoints);
       
       setGameState((prev) => ({
         ...prev,

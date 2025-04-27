@@ -244,73 +244,11 @@ const Door: React.FC<DoorProps> = ({ doorNumber, isActive, isOpen, onDoorClick, 
           </div>
         </div>
         
-        {/* Castle ambiance effects */}
-        {isActive && (
-          <div className="absolute -inset-6 z-0">
-            {!isOpen && (
-              <>
-                <div className="absolute -left-6 top-1/2 -translate-y-1/2 opacity-20">
-                  <div className="w-8 h-16 bg-blue-400 rounded-full blur-md animate-pulse"></div>
-                </div>
-                <div className="absolute -right-6 top-1/2 -translate-y-1/2 opacity-20">
-                  <div className="w-8 h-16 bg-blue-400 rounded-full blur-md animate-pulse"></div>
-                </div>
-              </>
-            )}
-            <div className="absolute inset-0 rounded-t-lg bg-gradient-to-r from-amber-600/0 via-amber-600/20 to-amber-600/0 animate-pulse"></div>
-          </div>
-        )}
+        {/* Door spacing and alignment */}
+        <div className="absolute inset-0 z-0"></div>
       </div>
       
-      {/* Enhanced dragon's fire glow effect when door is open - from original Door component */}
-      {isOpen && (
-        <div className="absolute inset-0 bg-dragon-fire/20 rounded-t-lg z-10">
-          <div className="absolute inset-0 bg-gradient-to-t from-dragon-fire/40 to-dragon-gold/30 rounded-t-lg animate-pulse"></div>
-          <div className="absolute inset-0 overflow-hidden">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div 
-                key={i}
-                className="absolute w-1 h-12 bg-dragon-gold/60 rounded-full blur-sm"
-                style={{
-                  left: `${10 + i * 20}%`,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  animation: `flame-flicker ${0.5 + i * 0.2}s infinite alternate ease-in-out ${i * 0.1}s`
-                }}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-      
-      {/* Enhanced open door fire effect with multiple flames - from original Door component */}
-      {isOpen && (
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
-          <div className="flame-animation">
-            <div className="h-24 w-16 bg-gradient-to-t from-dragon-fire to-dragon-gold opacity-70 rounded-full blur-sm"></div>
-            
-            {/* Additional flame elements for more dynamic effect */}
-            <div className="absolute top-1/4 left-1/4 h-16 w-10 bg-gradient-to-t from-dragon-fire to-dragon-gold/80 opacity-60 rounded-full blur-sm"
-                 style={{ animation: 'flame-flicker 0.7s infinite alternate ease-in-out 0.1s' }}></div>
-            <div className="absolute top-1/3 right-1/4 h-14 w-8 bg-gradient-to-t from-dragon-fire to-dragon-gold/80 opacity-50 rounded-full blur-sm"
-                 style={{ animation: 'flame-flicker 0.6s infinite alternate ease-in-out 0.2s' }}></div>
-                 
-            {/* Sparks flying from the flames */}
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div 
-                key={i}
-                className="absolute w-1 h-1 bg-dragon-gold rounded-full"
-                style={{
-                  top: '50%',
-                  left: '50%',
-                  transform: `translate(-50%, -50%) rotate(${i * 45}deg) translateY(-${20 + i * 5}px)`,
-                  animation: `float ${0.5 + i * 0.2}s infinite alternate ease-in-out ${i * 0.1}s`
-                }}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };

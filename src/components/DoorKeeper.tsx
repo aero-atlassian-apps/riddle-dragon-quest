@@ -79,25 +79,13 @@ const DoorKeeper: React.FC<DoorKeeperProps> = ({ isCorrect, isSpeaking, question
       {isSpeaking && question && (
         <div className="speech-bubble absolute sm:top-1/2 sm:right-0 sm:transform sm:translate-x-full sm:-translate-y-1/2 p-5 max-w-xs w-full md:w-80 -top-16 left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0">
           {/* On mobile, position above; on desktop, position to the right */}
-          <div className="parchment rounded-lg border-2 border-dragon-gold/50 p-4 relative shadow-lg">
+          <div className="bg-black/90 rounded-lg border-2 border-emerald-400/50 p-4 relative shadow-lg backdrop-blur-sm">
             <div className="mb-3 text-center">
-              <h3 className="text-xl font-bold text-dragon-scale font-medieval">
-                {isCorrect === null ? "Résolvez cette énigme:" : "Faux ! Essayez encore !"}
-              </h3>
-              <p className="mt-3 text-dragon-scale font-serif italic">{question.text}</p>
+              <p className="mt-3 text-emerald-300 font-mono text-sm leading-relaxed">{question.text}</p>
             </div>
-            {question.image && (
-              <div className="mt-4 flex justify-center">
-                <img 
-                  src={`/images/${question.image}`} 
-                  alt="Indice d'énigme" 
-                  className="max-h-32 rounded-md border-2 border-dragon-gold/30 shadow-lg"
-                />
-              </div>
-            )}
             <div className="absolute top-1/2 left-0 transform -translate-x-1/2 -translate-y-1/2">
               <svg width="15" height="30" viewBox="0 0 15 30">
-                <polygon points="0,15 15,0 15,30" fill="#FEF7CD" stroke="#F59E0B" strokeWidth="1" />
+                <polygon points="0,15 15,0 15,30" fill="#064e3b" stroke="#10b981" strokeWidth="1" />
               </svg>
             </div>
           </div>

@@ -38,8 +38,8 @@ const QuestionManager: React.FC<QuestionManagerProps> = ({ sessionId, onComplete
       
       if (!imageUrl) {
         toast({
-          title: "Upload failed",
-          description: "Failed to upload image",
+          title: "Échec du téléchargement",
+          description: "Échec du téléchargement de l'image",
           variant: "destructive",
         });
         return;
@@ -55,13 +55,13 @@ const QuestionManager: React.FC<QuestionManagerProps> = ({ sessionId, onComplete
         ));
         
         toast({
-          title: "Image uploaded",
-          description: "Question image uploaded successfully",
+          title: "Image téléchargée",
+          description: "Image de la question téléchargée avec succès",
         });
       } else {
         toast({
-          title: "Update failed",
-          description: "Failed to update question with image URL",
+          title: "Échec de la mise à jour",
+          description: "Échec de la mise à jour de la question avec l'URL de l'image",
           variant: "destructive",
         });
       }
@@ -74,79 +74,85 @@ const QuestionManager: React.FC<QuestionManagerProps> = ({ sessionId, onComplete
 
   if (loading) {
     return (
-      <div className="parchment max-w-4xl mx-auto p-6">
-        <div className="flex justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-dragon-primary" />
+      <div className="max-w-4xl mx-auto bg-black/90 border-2 border-green-500 rounded-lg p-6 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('/textures/stone-pattern.svg')] opacity-5" />
+        <div className="absolute inset-0 bg-[url('/terminal-bg.png')] opacity-10" />
+        <div className="relative z-10 flex justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-green-400" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="parchment max-w-4xl mx-auto">
-      <h2 className="text-xl font-bold mb-6 text-center font-medieval">Manage Question Images</h2>
-      
-      <div className="space-y-8">
-        {questions.length === 0 ? (
-          <p className="text-center text-gray-500 font-medieval">No questions found for this session.</p>
-        ) : (
-          questions.map((question, index) => (
-            <div key={question.id} className="border-2 border-dragon-gold/30 rounded-md p-5 bg-dragon-scroll/20">
-              <div className="flex items-start gap-4">
-                <div className="flex-grow">
-                  <h3 className="font-medieval text-lg mb-2">Question {index + 1}</h3>
-                  <p className="mb-2">{question.text}</p>
-                  <p className="text-sm text-gray-500">Answer: <span className="font-semibold">{question.answer}</span></p>
-                </div>
-                
-                <div className="w-32 h-32 border-2 border-dashed border-dragon-gold/40 rounded-md relative flex flex-col items-center justify-center">
-                  {question.image ? (
-                    <div className="relative w-full h-full">
-                      <img 
-                        src={question.image} 
-                        alt={`Image for question ${index + 1}`} 
-                        className="w-full h-full object-cover rounded-md"
-                      />
-                      <div className="absolute top-1 right-1 bg-green-100 rounded-full p-1">
-                        <Check className="h-4 w-4 text-green-600" />
+    <div className="max-w-4xl mx-auto bg-black/90 border-2 border-green-500 rounded-lg p-6 relative overflow-hidden">
+      <div className="absolute inset-0 bg-[url('/textures/stone-pattern.svg')] opacity-5" />
+      <div className="absolute inset-0 bg-[url('/terminal-bg.png')] opacity-10" />
+      <div className="relative z-10">
+        <h2 className="text-xl font-bold mb-6 text-center font-pixel text-green-400">$ GERER_IMAGES_QUESTIONS</h2>
+        
+        <div className="space-y-8">
+          {questions.length === 0 ? (
+            <p className="text-center text-green-400/70 font-mono">$ AUCUNE_QUESTION_TROUVEE_</p>
+          ) : (
+            questions.map((question, index) => (
+              <div key={question.id} className="border-2 border-green-500/30 rounded-md p-5 bg-black/50">
+                <div className="flex items-start gap-4">
+                  <div className="flex-grow">
+                    <h3 className="font-mono text-lg mb-2 text-green-400">$ QUESTION_{index + 1}</h3>
+                    <p className="mb-2 text-green-400/90 font-mono">{question.text}</p>
+                    <p className="text-sm text-green-400/70 font-mono">$ REPONSE: <span className="font-semibold text-green-400">{question.answer}</span></p>
+                  </div>
+                  
+                  <div className="w-32 h-32 border-2 border-dashed border-green-500/40 rounded-md relative flex flex-col items-center justify-center bg-black/30">
+                    {question.image ? (
+                      <div className="relative w-full h-full">
+                        <img 
+                          src={question.image} 
+                          alt={`Image for question ${index + 1}`} 
+                          className="w-full h-full object-cover rounded-md"
+                        />
+                        <div className="absolute top-1 right-1 bg-green-500/20 rounded-full p-1">
+                          <Check className="h-4 w-4 text-green-400" />
+                        </div>
                       </div>
-                    </div>
-                  ) : uploading[question.id] ? (
-                    <Loader2 className="h-6 w-6 animate-spin text-dragon-primary" />
-                  ) : (
-                    <Label 
-                      htmlFor={`image-upload-${question.id}`} 
-                      className="cursor-pointer flex flex-col items-center justify-center w-full h-full"
-                    >
-                      <ImageIcon className="h-8 w-8 text-gray-400 mb-1" />
-                      <span className="text-xs text-center text-gray-500">Upload image</span>
-                      <Input
-                        id={`image-upload-${question.id}`}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => {
-                          if (e.target.files && e.target.files[0]) {
-                            handleImageUpload(question.id, e.target.files[0]);
-                          }
-                        }}
-                      />
-                    </Label>
-                  )}
+                    ) : uploading[question.id] ? (
+                      <Loader2 className="h-6 w-6 animate-spin text-green-400" />
+                    ) : (
+                      <Label 
+                        htmlFor={`image-upload-${question.id}`} 
+                        className="cursor-pointer flex flex-col items-center justify-center w-full h-full"
+                      >
+                        <ImageIcon className="h-8 w-8 text-green-400/60 mb-1" />
+                        <span className="text-xs text-center text-green-400/60 font-mono">TELECHARGER_IMAGE</span>
+                        <Input
+                          id={`image-upload-${question.id}`}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files[0]) {
+                              handleImageUpload(question.id, e.target.files[0]);
+                            }
+                          }}
+                        />
+                      </Label>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
-        )}
-      </div>
-      
-      <div className="mt-8 flex justify-end">
-        <Button 
-          onClick={onComplete}
-          className="bg-dragon-primary hover:bg-dragon-secondary font-medieval"
-        >
-          {allQuestionsHaveImages ? 'Continue' : 'Skip Image Upload'}
-        </Button>
+            ))
+          )}
+        </div>
+        
+        <div className="mt-8 flex justify-end">
+          <Button 
+            onClick={onComplete}
+            className="bg-green-500 hover:bg-green-600 text-black font-pixel"
+          >
+            {allQuestionsHaveImages ? '$ CONTINUER' : '$ PASSER_TELECHARGEMENT'}
+          </Button>
+        </div>
       </div>
     </div>
   );

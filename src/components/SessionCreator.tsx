@@ -20,8 +20,8 @@ const SessionCreator: React.FC<SessionCreatorProps> = ({ onCreateSession }) => {
     
     if (!sessionName.trim()) {
       toast({
-        title: "Error",
-        description: "Session name cannot be empty",
+        title: "Erreur",
+        description: "Le nom de la session ne peut pas être vide",
         variant: "destructive",
       });
       return;
@@ -35,16 +35,16 @@ const SessionCreator: React.FC<SessionCreatorProps> = ({ onCreateSession }) => {
       
       if (!session) {
         toast({
-          title: "Error",
-          description: "Failed to create session",
+          title: "Erreur",
+          description: "Échec de la création de la session",
           variant: "destructive",
         });
         return;
       }
 
       toast({
-        title: "Success",
-        description: "Session created successfully",
+        title: "Succès",
+        description: "Session créée avec succès",
       });
       
       // Reset form
@@ -56,8 +56,8 @@ const SessionCreator: React.FC<SessionCreatorProps> = ({ onCreateSession }) => {
     } catch (error) {
       console.error('Error:', error);
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "An error occurred while creating the session",
+        title: "Erreur",
+        description: error instanceof Error ? error.message : "Une erreur s'est produite lors de la création de la session",
         variant: "destructive",
       });
     } finally {
@@ -66,42 +66,46 @@ const SessionCreator: React.FC<SessionCreatorProps> = ({ onCreateSession }) => {
   };
 
   return (
-    <div className="parchment max-w-md mx-auto">
-      <h2 className="text-xl font-bold mb-6 text-center font-medieval">Create New Session</h2>
-      
-      <form onSubmit={handleSubmit}>
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="session-name" className="font-medieval">Session Name</Label>
-            <Input
-              id="session-name"
-              placeholder="e.g. Marketing Team Building"
-              value={sessionName}
-              onChange={(e) => setSessionName(e.target.value)}
-              required
-              className="border-dragon-gold/30"
-              disabled={isLoading}
-            />
+    <div className="max-w-md mx-auto bg-black/90 border-2 border-green-500 rounded-lg p-6 relative overflow-hidden">
+      <div className="absolute inset-0 bg-[url('/textures/stone-pattern.svg')] opacity-5" />
+      <div className="absolute inset-0 bg-[url('/terminal-bg.png')] opacity-10" />
+      <div className="relative z-10">
+        <h2 className="text-xl font-bold mb-6 text-center font-pixel text-green-400">$ INITIALISER_NOUVELLE_SESSION</h2>
+        
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="session-name" className="font-mono text-green-400">$ NOM_SESSION:</Label>
+              <Input
+                id="session-name"
+                placeholder="Entrez l'identifiant de la session..."
+                value={sessionName}
+                onChange={(e) => setSessionName(e.target.value)}
+                required
+                className="bg-black/50 border-green-500/50 text-green-400 font-mono placeholder:text-green-600/30 focus:border-green-400 focus:ring-green-400/20"
+                disabled={isLoading}
+              />
+            </div>
+            
+            <div className="pt-4">
+              <Button 
+                type="submit" 
+                className="w-full bg-green-500 hover:bg-green-600 text-black font-pixel disabled:opacity-50"
+                disabled={isLoading || !sessionName.trim()}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    INITIALISATION...
+                  </>
+                ) : (
+                  '$ CREER_SESSION'
+                )}
+              </Button>
+            </div>
           </div>
-          
-          <div className="pt-4">
-            <Button 
-              type="submit" 
-              className="w-full bg-dragon-primary hover:bg-dragon-secondary font-medieval"
-              disabled={isLoading || !sessionName.trim()}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                'Create Session'
-              )}
-            </Button>
-          </div>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 };
