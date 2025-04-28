@@ -15,7 +15,7 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({ scores, currentSess
   return (
     <div className="max-w-3xl mx-auto bg-[#1A1F2C]/80 border border-[#00FF00]/30 rounded-lg p-6 font-mono relative overflow-hidden">
       <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
-      <h2 className="text-2xl font-bold text-center mb-6 text-[#00FF00] animate-pulse">_classement.exe</h2>
+      <h2 className="text-2xl font-bold text-center mb-6 text-[#00FF00] animate-pulse">Avantage stratégique</h2>
       
       <div className="overflow-x-auto relative z-10">
         <table className="w-full border-collapse">

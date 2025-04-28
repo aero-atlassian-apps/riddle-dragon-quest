@@ -309,9 +309,9 @@ const Room: React.FC = () => {
         <div className="absolute inset-0 bg-[url('/terminal-bg.png')] opacity-10" />
         <div className="absolute inset-0 bg-cover bg-center opacity-5" style={{ backgroundImage: `url('/emblems/${room?.name?.toLowerCase().replace(/\s+/g, '-')}.svg')` }} />
         <div className="relative z-10">
-          <div className="mb-4 p-3 bg-black/30 rounded-lg border border-green-500/20">
-            <p className="text-xl text-green-400 font-medieval mb-1">{room?.sigil || 'Loading...'}</p>
-            <h1 className="text-4xl font-bold font-medieval mb-2 text-green-400">{room?.name || ''}</h1>
+          <div className="mb-4 p-3 bg-black/30 rounded-lg border border-green-500/20 flex items-center gap-4">
+            <p className="text-xl text-green-400 font-medieval">{room?.sigil || 'Loading...'}</p>
+            <h1 className="text-4xl font-bold font-medieval text-green-400">{room?.name || ''}</h1>
             <p className="text-md text-green-400/80 font-medieval italic">"{room?.motto || ''}"</p>
           </div>
 
@@ -348,15 +348,6 @@ const Room: React.FC = () => {
           </div>
 
           <div className="text-sm font-pixel typing-effect mt-2">
-            {sessionStatus === "active" && (
-              <p className="text-green-400">$ PRÊT POUR L'AVENTURE ....</p>
-            )}
-            {sessionStatus === "en attente" && (
-              <>
-                <p className="text-yellow-400">$ EN ATTENTE DE L'INITIALISATION DU MAÎTRE DU JEU...</p>
-                <p className="text-yellow-400">$ MODE VEILLE DU SYSTÈME ACTIVÉ.</p>
-              </>
-            )}
             {sessionStatus === "terminée" && (
               <>
                 <p className="text-blue-400">$ MISSION ACCOMPLIE. TOUS LES DÉFIS RELEVÉS.</p>
