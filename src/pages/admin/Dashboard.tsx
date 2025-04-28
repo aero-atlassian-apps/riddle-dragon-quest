@@ -336,13 +336,13 @@ const AdminDashboard = () => {
 
                               <div className="text-sm text-green-400/80 font-mono mb-4 space-y-1">
                                 <div>
-                                  > Créée le: {new Date(session.startTime).toLocaleString()}
+                                  Créée le: {new Date(session.startTime).toLocaleString()}
                                 </div>
                                 <div>
-                                  > Questions: {session.questions?.length || 0}
+                                  Questions: {session.questions?.length || 0}
                                 </div>
                                 <div>
-                                  > Statut: <span className="font-semibold uppercase">{session.status}</span>
+                                  Statut: <span className="font-semibold uppercase">{session.status}</span>
                                 </div>
                               </div>
 
@@ -399,7 +399,7 @@ const AdminDashboard = () => {
                       ).length === 0 && (
                         <div className="col-span-full py-8 text-center">
                           <p className="text-green-400 font-pixel">
-                            > Aucune session{tab === "all" ? "" : " " + tab} trouvée_
+                            Aucune session{tab === "all" ? "" : " " + tab} trouvée_
                           </p>
                         </div>
                       )}
@@ -417,7 +417,7 @@ const AdminDashboard = () => {
           <AlertDialogHeader>
             <AlertDialogTitle className="text-red-500 font-pixel">! ATTENTION !</AlertDialogTitle>
             <AlertDialogDescription className="text-red-400 font-mono">
-              > Cette action supprimera définitivement la session, toutes les salles associées,
+              Cette action supprimera définitivement la session, toutes les salles associées,
               les questions et les scores. Cette action est irréversible.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -445,7 +445,7 @@ const AdminDashboard = () => {
                 $ {currentSessionName} - Salles
               </DialogTitle>
               <DialogDescription className="text-green-400/80 font-mono">
-                > Partagez ces liens avec les participants pour rejoindre la session de jeu.
+                Partagez ces liens avec les participants pour rejoindre la session de jeu.
               </DialogDescription>
             </DialogHeader>
             
@@ -467,7 +467,7 @@ const AdminDashboard = () => {
                   <p className="text-green-400 font-pixel">Chargement des salles...</p>
                 </div>
               ) : sessionRooms.length === 0 ? (
-                <p className="text-center text-green-400 font-pixel">> Aucune salle trouvée_</p>
+                <p className="text-center text-green-400 font-pixel"> Aucune salle trouvée_</p>
               ) : (
                 <ScrollArea className="max-h-[60vh]">
                   <div className="space-y-4">
