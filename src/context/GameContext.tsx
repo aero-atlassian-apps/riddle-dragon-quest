@@ -137,7 +137,7 @@ export const GameProvider: React.FC<{ children: ReactNode; initialState?: Initia
     
     // Ensure minimum bonus of 10% of base bonus if completed
     const timeBonus = Math.max(Math.floor(weightedBonus), Math.floor(baseBonus * 0.1));
-    
+
     console.log(`Time bonus calculated: ${timeBonus} (Minutes: ${minutesTaken}, Difficulty: ${doorDifficultyWeight})`);
     return timeBonus;
   };
