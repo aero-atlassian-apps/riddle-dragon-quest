@@ -165,8 +165,9 @@ const RiddleQuestion = ({
               <p className="text-lg font-medieval text-emerald-400">Porte {doorNumber} Déverrouillée</p>
             </div>
           </div>
-        ) : (        
-        {question.image && (
+        ) : (
+          <>
+            {question.image && (
           <div className="mb-4 flex justify-center">
             <img 
               src={question.image} 
@@ -247,6 +248,8 @@ const RiddleQuestion = ({
             </Button>
           </div>
         </form>
+        </>
+        )}
       </Card>
     </div>
   );
