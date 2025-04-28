@@ -155,7 +155,7 @@ const Leaderboard = () => {
               </Button>
             </Link>
             
-            <h1 className="text-3xl font-bold text-[#00FF00] animate-pulse">> meilleurs_joueurs.exe_</h1>
+            <h1 className="text-3xl font-bold text-[#00FF00] animate-pulse">LE MUR DES LÉGENDES</h1>
           </div>
 
           <div className="flex items-center gap-4">
@@ -180,7 +180,7 @@ const Leaderboard = () => {
               className="text-[#00FF00]/80 hover:text-[#00FF00] hover:bg-[#00FF00]/10 font-mono"
             >
               <RefreshCw className={`h-4 w-4 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
-              actualiser
+              Actualiser
             </Button>
           </div>
         </div>

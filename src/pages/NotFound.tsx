@@ -31,7 +31,7 @@ const NotFound = () => {
         
         <h1 className="text-4xl font-bold mb-4 font-mono text-[#00FF00] animate-pulse">404</h1>
         <p className="text-xl mb-8 text-[#00FF00]/80 font-mono">
-          > ERROR: Le gardien semble avoir égaré cette page_
+          ERROR: Le gardien semble avoir égaré cette page_
         </p>
         
         <Link to="/">

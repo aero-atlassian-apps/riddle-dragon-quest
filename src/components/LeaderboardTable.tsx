@@ -84,7 +84,7 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({ scores, currentSess
             {scores.length === 0 && (
               <tr>
                 <td colSpan={3} className="px-4 py-8 text-center text-[#00FF00]/50">
-                  > Aucun score disponible pour le moment_
+                  Aucun score disponible pour le moment_
                 </td>
               </tr>
             )}
