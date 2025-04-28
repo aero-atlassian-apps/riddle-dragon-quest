@@ -5,12 +5,42 @@ interface DoorKeeperProps {
   isCorrect: boolean | null;
   isSpeaking: boolean;
   question?: Question;
+  isDefeated?: boolean;
 }
 
-const DoorKeeper: React.FC<DoorKeeperProps> = ({ isCorrect, isSpeaking, question }) => {
+const DoorKeeper: React.FC<DoorKeeperProps> = ({ isCorrect, isSpeaking, question, isDefeated = false }) => {
+  const [animatingDefeat, setAnimatingDefeat] = React.useState(false);
+
+  React.useEffect(() => {
+    if (isDefeated) {
+      setAnimatingDefeat(true);
+      const timer = setTimeout(() => setAnimatingDefeat(false), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [isDefeated]);
   return (
     <div className="relative w-full max-w-md mx-auto">
-      <div className={`dragon-float ${isCorrect === null ? 'dragon-neutral' : 'dragon-angry'}`}>
+      <div className={`
+        ${!isDefeated ? 'dragon-float' : ''}
+        ${isDefeated ? 'door-keeper-defeated' : ''}
+        ${animatingDefeat ? 'door-keeper-falling' : ''}
+        ${isCorrect === null ? 'dragon-neutral' : 'dragon-angry'}
+      `}>
+        <style jsx>{`
+          .door-keeper-falling {
+            animation: fall 1s forwards;
+          }
+          
+          .door-keeper-defeated {
+            transform: rotate(90deg) translateY(50px);
+            opacity: 0.7;
+          }
+          
+          @keyframes fall {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(90deg) translateY(50px); }
+          }
+        `}</style>
         <svg 
           viewBox="0 0 240 180" 
           xmlns="http://www.w3.org/2000/svg"
@@ -18,7 +48,7 @@ const DoorKeeper: React.FC<DoorKeeperProps> = ({ isCorrect, isSpeaking, question
         >
           {/* Door Keeper Body - Armored, imposing figure */}
           <path d="M120 155c35 0 65-25 65-60s-30-55-65-55-65 25-65 55 30 60 65 60z" 
-                fill="#2A323C" stroke="#1A1F2C" strokeWidth="3" />
+                fill={isDefeated ? "#4B5563" : "#2A323C"} stroke="#1A1F2C" strokeWidth="3" />
           
           {/* Armor plates and chainmail */}
           <path d="M95 100c-5 15 50 15 50 0" stroke="#4B5563" strokeWidth="3" fill="none" />
@@ -36,9 +66,20 @@ const DoorKeeper: React.FC<DoorKeeperProps> = ({ isCorrect, isSpeaking, question
           <path d="M115 90h10" stroke="#1A1F2C" strokeWidth="1.5" fill="none" />
           <path d="M115 95h10" stroke="#1A1F2C" strokeWidth="1.5" fill="none" />
           
-          {/* Eyes glowing through helmet slits */}
-          <rect x="108" y="82" width="8" height="2" fill={isCorrect === false ? "#ea384c" : "#60A5FA"} className="animate-pulse" />
-          <rect x="124" y="82" width="8" height="2" fill={isCorrect === false ? "#ea384c" : "#60A5FA"} className="animate-pulse" />
+          {/* Eyes based on state */}
+          {!isDefeated ? (
+            <>
+              <rect x="108" y="82" width="8" height="2" fill={isCorrect === false ? "#ea384c" : "#60A5FA"} className="animate-pulse" />
+              <rect x="124" y="82" width="8" height="2" fill={isCorrect === false ? "#ea384c" : "#60A5FA"} className="animate-pulse" />
+            </>
+          ) : (
+            <>
+              <path d="M106 80l12 4" stroke="#ea384c" strokeWidth="2" />
+              <path d="M118 80l-12 4" stroke="#ea384c" strokeWidth="2" />
+              <path d="M122 80l12 4" stroke="#ea384c" strokeWidth="2" />
+              <path d="M134 80l-12 4" stroke="#ea384c" strokeWidth="2" />
+            </>
+          )}
           
           {/* Shoulder pauldrons */}
           <path d="M85 90c-10 0-20 10-20 20s5 20 15 20c15 0 20-10 20-25 0-10-5-15-15-15z" 
@@ -46,16 +87,30 @@ const DoorKeeper: React.FC<DoorKeeperProps> = ({ isCorrect, isSpeaking, question
           <path d="M155 90c10 0 20 10 20 20s-5 20-15 20c-15 0-20-10-20-25 0-10 5-15 15-15z" 
                 fill="#4B5563" stroke="#1A1F2C" strokeWidth="2" />
           
-          {/* Sword/weapon */}
-          <path d="M75 120l-30 30" stroke="#9CA3AF" strokeWidth="3" fill="none" />
-          <path d="M45 150l-5-5" stroke="#9CA3AF" strokeWidth="3" fill="none" />
-          <path d="M75 120c-2-2-5-2-7 0" stroke="#9CA3AF" strokeWidth="2" fill="none" />
+          {/* Sword/weapon - normal or dropped */}
+          {!isDefeated ? (
+            <>
+              <path d="M75 120l-30 30" stroke="#9CA3AF" strokeWidth="3" fill="none" />
+              <path d="M45 150l-5-5" stroke="#9CA3AF" strokeWidth="3" fill="none" />
+              <path d="M75 120c-2-2-5-2-7 0" stroke="#9CA3AF" strokeWidth="2" fill="none" />
+            </>
+          ) : (
+            <path d="M40 160l35-5" stroke="#9CA3AF" strokeWidth="3" fill="none"
+                  className="origin-center rotate-45" />
+          )}
           
-          {/* Shield */}
-          <path d="M165 120c10 0 20 5 25 15s0 20-10 25-20 0-25-10-0-30 10-30z" 
-                fill="#6B7280" stroke="#1A1F2C" strokeWidth="2" />
-          <path d="M165 125c5 0 10 2 12 7s0 10-5 12-10 0-12-5-0-14 5-14z" 
-                fill="#4B5563" stroke="#1A1F2C" strokeWidth="1" />
+          {/* Shield - normal or dropped */}
+          {!isDefeated ? (
+            <>
+              <path d="M165 120c10 0 20 5 25 15s0 20-10 25-20 0-25-10-0-30 10-30z" 
+                    fill="#6B7280" stroke="#1A1F2C" strokeWidth="2" />
+              <path d="M165 125c5 0 10 2 12 7s0 10-5 12-10 0-12-5-0-14 5-14z" 
+                    fill="#4B5563" stroke="#1A1F2C" strokeWidth="1" />
+            </>
+          ) : (
+            <path d="M170 160c10 0 20 0 20-10" 
+                  fill="#6B7280" stroke="#1A1F2C" strokeWidth="2" />
+          )}
           
           {/* Torch or flame effect when speaking */}
           {(isSpeaking || isCorrect === false) && (
@@ -72,6 +127,17 @@ const DoorKeeper: React.FC<DoorKeeperProps> = ({ isCorrect, isSpeaking, question
                 fill="#1F2937" stroke="#1A1F2C" strokeWidth="2" />
           <path d="M90 110c0 30 60 30 60 0" 
                 fill="#1F2937" stroke="#1A1F2C" strokeWidth="1.5" />
+
+          {/* Defeat effects - cracks in armor */}
+          {(isDefeated || animatingDefeat) && (
+            <>
+              <path d="M100 70l40 20" stroke="#EA384D" strokeWidth="1" fillOpacity="0" className="animate-pulse" />
+              <path d="M140 70l-40 20" stroke="#EA384D" strokeWidth="1" fillOpacity="0" className="animate-pulse" />
+              <path d="M110 120l20 10" stroke="#EA384D" strokeWidth="1" fillOpacity="0" className="animate-pulse" />
+              <path d="M130 120l-20 10" stroke="#EA384D" strokeWidth="1" fillOpacity="0" className="animate-pulse" />
+              <circle cx="120" cy="100" r="35" stroke="#EA384D" strokeWidth="1" fillOpacity="0" className="animate-pulse" />
+            </>
+          )}
         </svg>
       </div>
       

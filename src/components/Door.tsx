@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { HouseEmblems } from '@/assets/emblems';
 
 interface DoorProps {
   doorNumber: number;
@@ -8,26 +7,38 @@ interface DoorProps {
   isOpen: boolean;
   onDoorClick?: () => void;
   sessionStatus?: string;
+  isUnlocking?: boolean;
 }
 
-const Door: React.FC<DoorProps> = ({ doorNumber, isActive, isOpen, onDoorClick, sessionStatus }) => {
+const Door: React.FC<DoorProps> = ({ doorNumber, isActive, isOpen, onDoorClick, sessionStatus, isUnlocking = false }) => {
   const [animating, setAnimating] = useState(false);
+const [showUnlockEffect, setShowUnlockEffect] = useState(false);
   const [hovered, setHovered] = useState(false);
   const doorRef = useRef<HTMLDivElement>(null);
   
   // Play sound effects for different door states
   useEffect(() => {
-    if (isOpen) {
-      setAnimating(true);
-      // Play door opening sound
-      const doorSound = new Audio('/door-open.mp3');
-      doorSound.volume = 0.3;
-      doorSound.play().catch(e => console.log('Audio play failed:', e));
+    if (isUnlocking) {
+      setShowUnlockEffect(true);
+      const unlockSound = new Audio('/unlock-sound.mp3');
+      unlockSound.volume = 0.3;
+      unlockSound.play().catch(e => console.log('Audio play failed:', e));
       
-      const timer = setTimeout(() => setAnimating(false), 1500);
+      const timer = setTimeout(() => {
+        setShowUnlockEffect(false);
+        if (isOpen) {
+          setAnimating(true);
+          const doorSound = new Audio('/door-open.mp3');
+          doorSound.volume = 0.3;
+          doorSound.play().catch(e => console.log('Audio play failed:', e));
+          
+          setTimeout(() => setAnimating(false), 1500);
+        }
+      }, 2000);
+      
       return () => clearTimeout(timer);
     }
-  }, [isOpen]);
+  }, [isUnlocking, isOpen]);
   
   // Play hover sound when door is active and hovered
   useEffect(() => {
@@ -90,22 +101,42 @@ const Door: React.FC<DoorProps> = ({ doorNumber, isActive, isOpen, onDoorClick, 
     }
   };
 
-  // Get house-specific emblem and styles
-  const getHouseStyles = () => {
+  // Get door complexity styles
+  const getDoorStyles = () => {
     switch(doorNumber) {
-      case 1: return { emblem: HouseEmblems.stark, name: 'Stark', color: 'from-gray-700 to-gray-800' };
-      case 2: return { emblem: HouseEmblems.lannister, name: 'Lannister', color: 'from-red-700 to-red-900' };
-      case 3: return { emblem: HouseEmblems.targaryen, name: 'Targaryen', color: 'from-red-600 to-black' };
-      case 4: return { emblem: HouseEmblems.baratheon, name: 'Baratheon', color: 'from-yellow-700 to-yellow-900' };
-      case 5: return { emblem: HouseEmblems.greyjoy, name: 'Greyjoy', color: 'from-blue-700 to-blue-900' };
-      default: return { emblem: null, name: 'Unknown', color: 'from-stone-700 to-stone-800' };
+      case 1: return { color: 'from-emerald-500 to-emerald-700' };
+      case 2: return { color: 'from-blue-500 to-blue-700' };
+      case 3: return { color: 'from-purple-500 to-purple-800' };
+      case 4: return { color: 'from-red-500 to-red-800' };
+      case 5: return { color: 'from-orange-500 to-orange-800' };
+      default: return { color: 'from-amber-600 to-amber-900' };
     }
   };
 
-  const { emblem, name, color } = getHouseStyles();
+  const { color } = getDoorStyles();
 
   return (
     <div className="relative">
+      <style jsx>{`
+        @keyframes unlock-glow {
+          0%, 100% { filter: drop-shadow(0 0 5px #FFD700); }
+          50% { filter: drop-shadow(0 0 20px #FFD700); }
+        }
+        
+        @keyframes key-turn {
+          0% { transform: rotate(0deg); }
+          50% { transform: rotate(-90deg); }
+          100% { transform: rotate(-90deg); }
+        }
+        
+        .unlocking {
+          animation: unlock-glow 1s ease-in-out infinite;
+        }
+        
+        .key-hole {
+          animation: key-turn 2s ease-in-out forwards;
+        }
+      `}</style>
       {/* Door Frame and Archway - This stays in place */}
       <div className="relative w-48 h-60">
         {/* Stone arch frame */}
@@ -213,16 +244,27 @@ const Door: React.FC<DoorProps> = ({ doorNumber, isActive, isOpen, onDoorClick, 
             
             {/* Castle door handles - Large iron ring */}
             <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+              {showUnlockEffect && (
+                <div className="absolute inset-0 unlocking">
+                  <div className="key-hole absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                    <svg width="24" height="24" viewBox="0 0 24 24" className="text-amber-400">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" fill="currentColor"/>
+                      <path d="M12 6c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z" fill="currentColor"/>
+                    </svg>
+                  </div>
+                </div>
+              )}
               <div className="h-10 w-10 rounded-full border-4 border-gray-700 shadow-inner">
                 <div className="h-2 w-4 bg-gray-600 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded"></div>
               </div>
             </div>
             
-            {/* Door emblem - House crest */}
+            {/* Complexity indicator */}
             <div className="absolute top-20 left-1/2 transform -translate-x-1/2 w-20 h-24">
               <div className="w-full h-full border-2 border-gray-700/70 rounded flex flex-col items-center justify-center bg-stone-700/30 p-2">
-                <div className="w-12 h-12">{emblem}</div>
-                <div className="text-amber-600 text-sm font-medieval mt-2">{name}</div>
+                <div className="text-amber-600 text-lg font-medieval mt-2">
+                  {Array(doorNumber).fill('✧').join('')}
+                </div>
               </div>
             </div>
             
@@ -247,8 +289,6 @@ const Door: React.FC<DoorProps> = ({ doorNumber, isActive, isOpen, onDoorClick, 
         {/* Door spacing and alignment */}
         <div className="absolute inset-0 z-0"></div>
       </div>
-      
-
     </div>
   );
 };
