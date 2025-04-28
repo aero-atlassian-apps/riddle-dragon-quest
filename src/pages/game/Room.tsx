@@ -529,7 +529,32 @@ const Room: React.FC = () => {
                   });
                 }
               }}
-              onUseToken={useToken}
+              onUseToken={async () => {
+                if (!room || !gameState.currentQuestion) return;
+                
+                // Update tokens in the database
+                const newTokensLeft = room.tokensLeft - 1;
+                const { error } = await supabase
+                  .from('rooms')
+                  .update({ tokens_left: newTokensLeft })
+                  .eq('id', room.id);
+
+                if (error) {
+                  console.error('Error updating tokens:', error);
+                  toast({
+                    title: "Error",
+                    description: "Failed to update tokens",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+
+                // Update local state
+                setRoom(prev => prev ? { ...prev, tokensLeft: newTokensLeft } : null);
+                
+                // Call the context's useToken function
+                useToken();
+              }}
               isCorrect={gameState.isAnswerCorrect}
             />
           </div>

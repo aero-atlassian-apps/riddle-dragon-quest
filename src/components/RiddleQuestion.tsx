@@ -28,9 +28,10 @@ const RiddleQuestion = ({
   const [hintRevealed, setHintRevealed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
+  const [usedTokensForQuestion, setUsedTokensForQuestion] = useState(0);
   
-  // Extract first letter of the answer as a hint
-  const firstLetterHint = question.answer ? question.answer.charAt(0).toUpperCase() : "";
+  // Get hint from question data
+  const hint = question.hint || "";
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,7 +49,11 @@ const RiddleQuestion = ({
   };
   
   const handleUseToken = () => {
+    // Prevent using more than one token per question
+    if (usedTokensForQuestion > 0) return;
+    
     setHintRevealed(true);
+    setUsedTokensForQuestion(prev => prev + 1);
     onUseToken();
   };
   
@@ -184,15 +189,15 @@ const RiddleQuestion = ({
             <div className="relative w-[95vw] h-[90vh] bg-black/90 border-2 border-emerald-400/30 rounded-lg p-4 flex items-center justify-center">
               <Button
                 onClick={() => setShowImageModal(false)}
-                className="absolute -top-2 -right-2 bg-black border border-emerald-400 text-emerald-400 rounded-full p-1 hover:bg-emerald-400/20"
+                className="absolute top-4 right-4 bg-black/80 border-2 border-emerald-400 text-emerald-400 rounded-full p-2 hover:bg-emerald-400/20 transition-colors duration-200 z-50"
                 size="icon"
               >
-                <X className="h-4 w-4" />
+                <X className="h-6 w-6" />
               </Button>
               <img
                 src={question.image}
                 alt="Image de l'énigme (plein écran)"
-                className="max-w-full max-h-full object-contain rounded-md"
+                className="w-auto h-auto max-w-[90%] max-h-[85vh] object-contain rounded-lg shadow-xl"
               />
             </div>
           </div>
@@ -234,7 +239,7 @@ const RiddleQuestion = ({
           
           {hintRevealed && (
             <div className="text-sm text-emerald-400 font-mono p-2 bg-emerald-900/20 border border-emerald-400/30 rounded mt-4">
-              <span className="font-bold text-emerald-300">INDICE:</span> La réponse commence par "{firstLetterHint}"
+              <span className="font-bold text-emerald-300">INDICE:</span> {hint}
             </div>
           )}
           

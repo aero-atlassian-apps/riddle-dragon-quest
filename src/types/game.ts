@@ -4,6 +4,7 @@ export interface Question {
   text: string;
   image?: string;
   answer: string;
+  hint?: string;
   doorNumber?: number;
   points?: number;
   style?: string;

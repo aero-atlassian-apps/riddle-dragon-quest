@@ -276,6 +276,20 @@ export const updateGameScore = async (roomId: string, score: number): Promise<bo
   return true;
 };
 
+export const updateRoomTokens = async (roomId: string, tokensLeft: number): Promise<boolean> => {
+  const { error } = await supabase
+    .from('rooms')
+    .update({ tokens_left: tokensLeft })
+    .eq('id', roomId);
+
+  if (error) {
+    console.error('Error updating room tokens:', error);
+    return false;
+  }
+
+  return true;
+};
+
 export const deleteSession = async (sessionId: string): Promise<boolean> => {
   const { error: roomsError } = await supabase
     .from('rooms')
