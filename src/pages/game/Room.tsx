@@ -309,11 +309,14 @@ const Room: React.FC = () => {
         <div className="absolute inset-0 bg-[url('/terminal-bg.png')] opacity-10" />
         <div className="absolute inset-0 bg-cover bg-center opacity-5" style={{ backgroundImage: `url('/emblems/${room?.name?.toLowerCase().replace(/\s+/g, '-')}.svg')` }} />
         <div className="relative z-10">
-          <div className="mb-4 p-3 bg-black/30 rounded-lg border border-green-500/20">
-            <p className="text-xl text-green-400 font-medieval mb-1">{room?.sigil || 'Loading...'}</p>
-            <h1 className="text-4xl font-bold font-medieval mb-2 text-green-400">{room?.name || ''}</h1>
-            <p className="text-md text-green-400/80 font-medieval italic">"{room?.motto || ''}"</p>
-          </div>
+          <h1 className="text-3xl font-bold font-medieval mb-4 text-green-400">{room?.name || 'Loading...'}</h1>
+          
+          {room?.sigil && room?.motto && (
+            <div className="mb-4 p-3 bg-black/30 rounded-lg border border-green-500/20">
+              <p className="text-xl text-green-400 font-medieval mb-1">{room.sigil}</p>
+              <p className="text-md text-green-400/80 font-medieval italic">"{room.motto}"</p>
+            </div>
+          )}
           
           <div className="flex items-center justify-center space-x-6 mb-4">
             <div className="flex items-center bg-black/50 px-4 py-2 rounded-lg border border-amber-500/30">
