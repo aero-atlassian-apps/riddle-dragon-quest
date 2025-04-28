@@ -46,7 +46,7 @@ const Room: React.FC = () => {
   const [isNewRoomModalOpen, setIsNewRoomModalOpen] = useState(false);
   const [newRoomName, setNewRoomName] = useState('');
   const [showQuestion, setShowQuestion] = useState(false);
-  
+
   const { openModal, closeModal } = useModal();
   const { gameState, setQuestion, submitAnswer, useToken } = useGame();
   const { setRoomId: setStoreRoomId } = useGameStore();
@@ -309,15 +309,12 @@ const Room: React.FC = () => {
         <div className="absolute inset-0 bg-[url('/terminal-bg.png')] opacity-10" />
         <div className="absolute inset-0 bg-cover bg-center opacity-5" style={{ backgroundImage: `url('/emblems/${room?.name?.toLowerCase().replace(/\s+/g, '-')}.svg')` }} />
         <div className="relative z-10">
-          <h1 className="text-3xl font-bold font-medieval mb-4 text-green-400">{room?.name || 'Loading...'}</h1>
-          
-          {room?.sigil && room?.motto && (
-            <div className="mb-4 p-3 bg-black/30 rounded-lg border border-green-500/20">
-              <p className="text-xl text-green-400 font-medieval mb-1">{room.sigil}</p>
-              <p className="text-md text-green-400/80 font-medieval italic">"{room.motto}"</p>
-            </div>
-          )}
-          
+          <div className="mb-4 p-3 bg-black/30 rounded-lg border border-green-500/20">
+            <p className="text-xl text-green-400 font-medieval mb-1">{room?.sigil || 'Loading...'}</p>
+            <h1 className="text-4xl font-bold font-medieval mb-2 text-green-400">{room?.name || ''}</h1>
+            <p className="text-md text-green-400/80 font-medieval italic">"{room?.motto || ''}"</p>
+          </div>
+
           <div className="flex items-center justify-center space-x-6 mb-4">
             <div className="flex items-center bg-black/50 px-4 py-2 rounded-lg border border-amber-500/30">
               <span className="w-3 h-3 rounded-full bg-amber-500 animate-pulse mr-2" />
@@ -330,12 +327,6 @@ const Room: React.FC = () => {
           </div>
 
           <div className="flex items-center justify-center mb-3">
-            {sessionStatus === "active" && (
-              <>
-                <span className="w-3 h-3 rounded-full bg-green-500 animate-pulse mr-2" />
-                <h3 className="text-2xl text-green-500 font-pixel glitch">[ SESSION DE JEU: ACTIVE ]</h3>
-              </>
-            )}
             {sessionStatus === "en attente" && (
               <>
                 <span className="w-3 h-3 rounded-full bg-yellow-500 animate-pulse mr-2" />
@@ -396,7 +387,7 @@ const Room: React.FC = () => {
                     if (sessionStatus === 'active' && index + 1 === room.currentDoor && !isOpen) {
                       try {
                         console.log('Fetching question for door:', index + 1, 'session:', room.sessionId);
-                        
+
                         const { data: questionData, error } = await supabase
                           .from('questions')
                           .select('*')
@@ -476,7 +467,7 @@ const Room: React.FC = () => {
 
                   const isCorrect = answer.toLowerCase() === gameState.currentQuestion.answer.toLowerCase();
                   gameState.isAnswerCorrect = isCorrect;
-                  
+
                   if (isCorrect) {
                     // Calculate points based on tokens used and question points
                     const tokensUsed = 3 - room.tokensLeft;
@@ -485,25 +476,25 @@ const Room: React.FC = () => {
                       .select('points')
                       .eq('id', gameState.currentQuestion.id)
                       .single();
-                    
+
                     const questionPoints = questionData?.points || 100;
                     const pointsEarned = Math.max(Math.floor(questionPoints * (1 - (0.1 * tokensUsed))), Math.floor(questionPoints * 0.6));
-                    
+
                     // Calculate time bonus if this is the last door
                     const isLastDoor = room.currentDoor === 6;
                     const timeBonus = isLastDoor ? calculateTimeBonus() : 0;
-                    
+
                     // Start a transaction to update the room state
                     const { data: updatedRoom, error: updateError } = await supabase
                       .from('rooms')
-                      .update({ 
+                      .update({
                         score: room.score + pointsEarned + timeBonus,
                         current_door: room.currentDoor + 1
                       })
                       .eq('id', room.id)
                       .select()
                       .single();
-                    
+
                     if (updateError) {
                       console.error('Failed to update room:', updateError);
                       toast({
@@ -518,7 +509,7 @@ const Room: React.FC = () => {
                     const newDoorStates = [...doorStates];
                     newDoorStates[gameState.currentQuestion.doorNumber - 1] = true;
                     setDoorStates(newDoorStates);
-                    
+
                     setRoom({
                       ...room,
                       score: updatedRoom.score,
@@ -529,7 +520,7 @@ const Room: React.FC = () => {
                     setShowConfetti(true);
                     const audio = new Audio('/sounds/success.mp3');
                     await audio.play().catch(console.error); // Handle audio play error gracefully
-                    
+
                     // Reset game state after celebration
                     setTimeout(() => {
                       setShowConfetti(false);
