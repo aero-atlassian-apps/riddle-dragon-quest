@@ -11,6 +11,7 @@ interface GameContextProps {
   goToNextDoor: () => void;
   showContinueButton: boolean;
   setShowContinueButton: (show: boolean) => void;
+  calculateTimeBonus: () => number;
 }
 
 interface InitialState {
@@ -26,6 +27,8 @@ const initialGameState: GameState = {
   score: 0,
   isAnswerCorrect: null,
   isGameComplete: false,
+  startTime: new Date(),
+  timeBonus: 0,
 };
 
 const GameContext = createContext<GameContextProps | undefined>(undefined);
@@ -115,6 +118,30 @@ export const GameProvider: React.FC<{ children: ReactNode; initialState?: Initia
     setShowContinueButton(false);
   };
 
+  const calculateTimeBonus = () => {
+    const completionTime = new Date();
+    const minutesTaken = Math.floor((completionTime.getTime() - gameState.startTime.getTime()) / (1000 * 60));
+    
+    // Base time bonus starts at 200 points
+    const baseBonus = 200;
+    
+    // Door difficulty weights (increases with each door)
+    const doorDifficultyWeight = 1 + (gameState.currentDoor - 1) * 0.2; // 1.0, 1.2, 1.4, 1.6, 1.8, 2.0
+    
+    // Exponential decay factor for time penalty
+    const decayFactor = 0.1;
+    const timePenalty = Math.exp(-decayFactor * minutesTaken);
+    
+    // Calculate weighted bonus with diminishing returns
+    const weightedBonus = baseBonus * doorDifficultyWeight * timePenalty;
+    
+    // Ensure minimum bonus of 10% of base bonus if completed
+    const timeBonus = Math.max(Math.floor(weightedBonus), Math.floor(baseBonus * 0.1));
+    
+    console.log(`Time bonus calculated: ${timeBonus} (Minutes: ${minutesTaken}, Difficulty: ${doorDifficultyWeight})`);
+    return timeBonus;
+  };
+
   const goToNextDoor = () => {
     const nextDoor = gameState.currentDoor + 1;
     console.log("Going to next door:", nextDoor);
@@ -122,9 +149,12 @@ export const GameProvider: React.FC<{ children: ReactNode; initialState?: Initia
     // Increased timeout to 1500ms to make transitions smoother and more visible
     setTimeout(() => {
       if (nextDoor > gameState.totalDoors) {
+        const timeBonus = calculateTimeBonus();
         setGameState((prev) => ({
           ...prev,
           isGameComplete: true,
+          timeBonus,
+          score: prev.score + timeBonus
         }));
       } else {
         setGameState((prev) => ({

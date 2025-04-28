@@ -29,6 +29,9 @@ export interface Room {
   link?: string;
   sigil?: string;
   motto?: string;
+  startTime?: Date;
+  completionTime?: Date;
+  timeBonus?: number;
 }
 
 export interface Score {
@@ -46,4 +49,6 @@ export interface GameState {
   score: number;
   isAnswerCorrect: boolean | null;
   isGameComplete: boolean;
+  startTime: Date;
+  timeBonus: number;
 }

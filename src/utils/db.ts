@@ -27,7 +27,7 @@ export const getSessions = async (): Promise<Session[]> => {
   const { data, error } = await supabase
     .from('sessions')
     .select('*, questions(*)')
-    .order('created_at', { ascending: false });
+    .order('start_time', { ascending: false });
 
   if (error) {
     console.error('Error fetching sessions:', error);
@@ -93,7 +93,9 @@ export const getRoom = async (roomId: string): Promise<Room | null> => {
       tokensLeft: data.tokens_left,
       currentDoor: data.current_door,
       score: data.score,
-      sessionStatus: sessionStatus
+      sessionStatus: sessionStatus,
+      sigil: data.sigil,
+      motto: data.motto
     };
   } catch (err) {
     console.error('Unexpected error in getRoom function:', err);
@@ -144,7 +146,7 @@ export const createRoom = async (sessionId: string, roomName: string, roomId?: s
     session_id: sessionId,
     name: roomName,
     sigil: sigil || '🏰', // Default sigil if none provided
-    motto: motto || 'House Motto' // Default motto if none provided
+    motto: motto || '' // Default motto if none provided
   };
 
   if (roomId) {

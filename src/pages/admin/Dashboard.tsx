@@ -160,6 +160,8 @@ const AdminDashboard = () => {
           tokensLeft: room.tokens_left,
           currentDoor: room.current_door,
           score: room.score,
+          sigil: room.sigil,
+          motto: room.motto,
           link: `${window.location.origin}/game/room/${room.id}`
         }));
         
@@ -184,6 +186,18 @@ const AdminDashboard = () => {
     toast({
       title: "Link Copied",
       description: "Room link has been copied to clipboard",
+    });
+  };
+
+  const copyAllRoomsAsTable = () => {
+    const tableContent = sessionRooms
+      .map(room => `${room.name}\t${room.sigil || '🏰'}\t${room.motto || 'House Motto'}\t${room.link}`)
+      .join('\n');
+    const header = "Room Name\tSigil\tMotto\tLink\n";
+    navigator.clipboard.writeText(header + tableContent);
+    toast({
+      title: "Rooms List Copied",
+      description: "All rooms information copied as table",
     });
   };
 
@@ -428,7 +442,7 @@ const AdminDashboard = () => {
           <div className="relative z-10">
             <DialogHeader>
               <DialogTitle className="font-pixel text-green-400">
-                $ {currentSessionName}_ROOMS
+                $ {currentSessionName} - Salles
               </DialogTitle>
               <DialogDescription className="text-green-400/80 font-mono">
                 > Partagez ces liens avec les participants pour rejoindre la session de jeu.
@@ -436,6 +450,17 @@ const AdminDashboard = () => {
             </DialogHeader>
             
             <div className="py-4">
+              <div className="flex justify-end mb-4">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-green-500 text-green-400 hover:bg-green-500/20"
+                  onClick={copyAllRoomsAsTable}
+                >
+                  <Copy className="h-4 w-4 mr-2" />
+                  TOUT_COPIER
+                </Button>
+              </div>
               {loadingRooms ? (
                 <div className="text-center py-8">
                   <div className="animate-spin h-6 w-6 border-2 border-green-500 border-t-transparent rounded-full mx-auto mb-2"></div>
@@ -449,29 +474,35 @@ const AdminDashboard = () => {
                     {sessionRooms.map((room) => (
                       <div key={room.id} className="border-2 border-green-500/50 rounded-md p-4 bg-black/50">
                         <div className="flex items-center justify-between mb-2">
-                          <h3 className="font-pixel text-lg text-green-400">{room.name}</h3>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="border-green-500 text-green-400 hover:bg-green-500/20"
-                            asChild
-                          >
-                            <a href={room.link} target="_blank" rel="noopener noreferrer">
-                              <ExternalLink className="h-4 w-4" />
-                              <span className="ml-2">OUVRIR</span>
-                            </a>
-                          </Button>
-                        </div>
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="border-green-500 text-green-400 hover:bg-green-500/20"
-                            onClick={() => copyToClipboard(room.link)}
-                          >
-                            <Copy className="h-4 w-4" />
-                            <span className="ml-2">COPY_LINK</span>
-                          </Button>
+                          <div className="flex items-center gap-3">
+                            <span className="text-2xl">{room.sigil || '🏰'}</span>
+                            <div>
+                              <h3 className="font-pixel text-lg text-green-400">{room.name}</h3>
+                              <p className="text-sm text-green-400/70 font-mono italic">{room.motto || 'House Motto'}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="icon"
+                              variant="outline"
+                              className="border-green-500 text-green-400 hover:bg-green-500/20 h-8 w-8"
+                              onClick={() => copyToClipboard(room.link)}
+                              title="Copier le lien vers la salle"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="outline"
+                              className="border-green-500 text-green-400 hover:bg-green-500/20 h-8 w-8"
+                              asChild
+                              title="Ouvrir la salle"
+                            >
+                              <a href={room.link} target="_blank" rel="noopener noreferrer">
+                                <ExternalLink className="h-4 w-4" />
+                              </a>
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -486,7 +517,7 @@ const AdminDashboard = () => {
                 variant="outline"
                 className="w-full border-green-500 text-green-400 hover:bg-green-500/20 font-pixel"
               >
-                CLOSE
+                FERMER
               </Button>
             </DialogClose>
           </div>

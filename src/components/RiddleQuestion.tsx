@@ -117,7 +117,7 @@ const RiddleQuestion = ({
         {/* Image Modal */}
         {showImageModal && question.image && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="relative max-w-4xl w-full bg-black/90 border-2 border-emerald-400/30 rounded-lg p-4">
+            <div className="relative w-[95vw] h-[90vh] bg-black/90 border-2 border-emerald-400/30 rounded-lg p-4 flex items-center justify-center">
               <Button
                 onClick={() => setShowImageModal(false)}
                 className="absolute -top-2 -right-2 bg-black border border-emerald-400 text-emerald-400 rounded-full p-1 hover:bg-emerald-400/20"
@@ -128,7 +128,7 @@ const RiddleQuestion = ({
               <img
                 src={question.image}
                 alt="Image de l'énigme (plein écran)"
-                className="w-full h-auto rounded-md"
+                className="max-w-full max-h-full object-contain rounded-md"
               />
             </div>
           </div>

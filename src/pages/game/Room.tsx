@@ -174,10 +174,10 @@ const Room: React.FC = () => {
               setSessionStatus(null);
             }
           } else {
-            console.error("Room not found");
+            console.error("La salle n'existe plus");
             toast({
               title: "Error",
-              description: "Room not found",
+              description: "La salle n'existe plus",
               variant: "destructive",
             });
             navigate('/');
@@ -257,7 +257,9 @@ const Room: React.FC = () => {
                 tokensLeft: updatedRoom.tokens_left,
                 currentDoor: updatedRoom.current_door,
                 score: updatedRoom.score,
-                sessionStatus: sessionStatus || null
+                sessionStatus: sessionStatus || null,
+                sigil: updatedRoom.sigil,
+                motto: updatedRoom.motto
               });
             }
           })
@@ -296,7 +298,7 @@ const Room: React.FC = () => {
   }
 
   if (!room) {
-    return <div className="text-center">Room not found.</div>;
+    return <div className="text-center">La salle n'existe plus.</div>;
   }
 
   return (
@@ -326,13 +328,6 @@ const Room: React.FC = () => {
               <span className="text-2xl text-green-500 font-pixel">{room?.score} Points</span>
             </div>
           </div>
-
-          {room?.sigil && room?.motto && (
-            <div className="mb-4 p-3 bg-black/30 rounded-lg border border-green-500/20">
-              <p className="text-xl text-green-400 font-medieval mb-1">{room.sigil}</p>
-              <p className="text-md text-green-400/80 font-medieval italic">"{room.motto}"</p>
-            </div>
-          )}
 
           <div className="flex items-center justify-center mb-3">
             {sessionStatus === "active" && (
