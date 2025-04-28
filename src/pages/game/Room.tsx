@@ -480,14 +480,24 @@ const Room: React.FC = () => {
                   if (isCorrect) {
                     // Calculate points based on tokens used and question points
                     const tokensUsed = 3 - room.tokensLeft;
-                    const questionPoints = gameState.currentQuestion.points || 100; // Use question points or default to 100
+                    const { data: questionData } = await supabase
+                      .from('questions')
+                      .select('points')
+                      .eq('id', gameState.currentQuestion.id)
+                      .single();
+                    
+                    const questionPoints = questionData?.points || 100;
                     const pointsEarned = Math.max(Math.floor(questionPoints * (1 - (0.1 * tokensUsed))), Math.floor(questionPoints * 0.6));
+                    
+                    // Calculate time bonus if this is the last door
+                    const isLastDoor = room.currentDoor === 6;
+                    const timeBonus = isLastDoor ? calculateTimeBonus() : 0;
                     
                     // Start a transaction to update the room state
                     const { data: updatedRoom, error: updateError } = await supabase
                       .from('rooms')
                       .update({ 
-                        score: room.score + pointsEarned,
+                        score: room.score + pointsEarned + timeBonus,
                         current_door: room.currentDoor + 1
                       })
                       .eq('id', room.id)
