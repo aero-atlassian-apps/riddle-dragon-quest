@@ -12,6 +12,11 @@ interface CertificateData {
 }
 
 export const generateCertificate = async (data: CertificateData) => {
+  // Define page dimensions and margins
+  const pageWidth = 297; // A4 landscape width in mm
+  const pageHeight = 210; // A4 landscape height in mm
+  const margin = 20; // Page margin in mm
+
   // Create a new PDF document in landscape orientation
   const doc = new jsPDF({
     orientation: 'landscape',
