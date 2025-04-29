@@ -1,7 +1,11 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Score } from '../types/game';
 import { Trophy, Medal, Award } from 'lucide-react';
+import CertificateIcon from './ui/certificate-icon';
+import WarriorCertificateModal from './WarriorCertificateModal';
+import { format } from 'date-fns';
+import { useToast } from './ui/use-toast';
 
 interface LeaderboardTableProps {
   scores: Score[];
@@ -9,6 +13,16 @@ interface LeaderboardTableProps {
 }
 
 const LeaderboardTable: React.FC<LeaderboardTableProps> = ({ scores, currentSessionId }) => {
+  const [selectedScore, setSelectedScore] = useState<Score | null>(null);
+  const { toast } = useToast();
+
+  const handleOpenCertificateModal = (score: Score) => {
+    setSelectedScore(score);
+  };
+
+  const handleCloseCertificateModal = () => {
+    setSelectedScore(null);
+  };
   // Sort scores by total score (highest first)
   const sortedScores = [...scores].sort((a, b) => b.totalScore - a.totalScore);
 
@@ -74,8 +88,19 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({ scores, currentSess
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-4 text-right font-bold font-glitch">
+                  <td className="px-4 py-4 text-right font-bold font-glitch flex items-center justify-end gap-4">
                     {score.totalScore}
+                    <CertificateIcon
+                      onClick={() => handleOpenCertificateModal(score)}
+                      className="opacity-70 hover:opacity-100 transition-opacity"
+                    />
+                    {selectedScore && (
+                      <WarriorCertificateModal
+                        score={selectedScore}
+                        isOpen={true}
+                        onClose={handleCloseCertificateModal}
+                      />
+                    )}
                   </td>
                 </tr>
               );
