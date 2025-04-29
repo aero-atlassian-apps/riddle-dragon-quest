@@ -19,65 +19,63 @@ export const generateCertificate = async (data: CertificateData) => {
     format: 'a4'
   });
 
-  // Add parchment background
-  doc.addImage('/images/parchment-bg.jpg', 'JPEG', 0, 0, doc.internal.pageSize.getWidth(), doc.internal.pageSize.getHeight());
+  // Add parchment background (high-res, elegant)
+  doc.addImage('/images/parchment-bg-highres.jpg', 'JPEG', 0, 0, doc.internal.pageSize.getWidth(), doc.internal.pageSize.getHeight());
 
-  // Set the font to a more medieval-looking style
-  doc.setFont('Times', 'Roman');
+  // Use a medieval and script font for elegance
+  doc.setFont('Cinzel', 'bold');
 
-  // Add decorative border (placeholder - you can enhance this)
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 10;
-
-  // Draw border
-  doc.setDrawColor(139, 69, 19); // Sepia tone
+  // Ornate gold border
+  doc.setDrawColor(212, 175, 55); // Gold
+  doc.setLineWidth(2.5);
+  doc.roundedRect(margin, margin, pageWidth - 2 * margin, pageHeight - 2 * margin, 8, 8, 'S');
+  // Decorative inner border
+  doc.setDrawColor(44, 62, 80); // Royal blue
   doc.setLineWidth(1);
-  doc.rect(margin, margin, pageWidth - 2 * margin, pageHeight - 2 * margin);
+  doc.roundedRect(margin+4, margin+4, pageWidth - 2 * (margin+4), pageHeight - 2 * (margin+4), 6, 6, 'S');
 
-  // Convert SVG to PNG using canvas and add to PDF
-  const shieldWidth = 60;
-  const shieldHeight = 60;
-  
-  // Create a canvas element
+  // Add graphical flourishes (ribbons/seal)
+  doc.setFillColor(212, 175, 55);
+  doc.circle(pageWidth/2, margin+18, 8, 'F'); // Gold seal top center
+  doc.setFillColor(44, 62, 80);
+  doc.circle(pageWidth/2, pageHeight-margin-18, 8, 'F'); // Blue seal bottom center
+
+  // Add high-res SVG emblem (centered, larger)
+  const shieldWidth = 70;
+  const shieldHeight = 70;
   const canvas = document.createElement('canvas');
   canvas.width = shieldWidth;
   canvas.height = shieldHeight;
   const ctx = canvas.getContext('2d');
-  
-  // Create a new image element
   const img = new Image();
   img.width = shieldWidth;
   img.height = shieldHeight;
-  
-  // Convert SVG to PNG
   await new Promise((resolve, reject) => {
     img.onload = () => {
       ctx?.drawImage(img, 0, 0, shieldWidth, shieldHeight);
       try {
-        // Convert canvas to PNG and add to PDF
         const pngData = canvas.toDataURL('image/png');
-        doc.addImage(pngData, 'PNG', (pageWidth - shieldWidth) / 2, margin + 10, shieldWidth, shieldHeight);
+        doc.addImage(pngData, 'PNG', (pageWidth - shieldWidth) / 2, margin + 22, shieldWidth, shieldHeight);
         resolve(null);
       } catch (error) {
         reject(error);
       }
     };
     img.onerror = reject;
-    img.src = '/images/shield.svg';
+    img.src = '/images/shield-highres.svg';
   });
 
-  // Add certificate title
-  doc.setFontSize(30);
-  doc.setTextColor(139, 69, 19); // Sepia tone
-  doc.text('CERTIFICAT D\'ACCOMPLISSEMENT', pageWidth / 2, margin + 90, { align: 'center' });
+  // Add certificate title (large, gold, medieval font)
+  doc.setFont('Cinzel', 'bold');
+  doc.setFontSize(38);
+  doc.setTextColor(212, 175, 55); // Gold
+  doc.text('CERTIFICAT D\'ACCOMPLISSEMENT', pageWidth / 2, margin + 110, { align: 'center' });
 
-  // Add main text
-  doc.setFontSize(16);
-  doc.setTextColor(0, 0, 0);
-  
+  // Add main text (script font for name, medieval for rest)
+  doc.setFont('Cinzel', 'normal');
+  doc.setFontSize(18);
+  doc.setTextColor(44, 62, 80); // Royal blue
   const currentDate = format(data.date, 'MMMM yyyy', { locale: fr });
-  
   const mainText = [
     `Par la présente, nous attestons que`,
     data.warriorName ? `${data.warriorName}` : `la troupe "${data.roomName}"`,
@@ -95,25 +93,41 @@ export const generateCertificate = async (data: CertificateData) => {
     `Leur sagesse dans l'utilisation des indices a été remarquable,`,
     `démontrant une stratégie digne des plus grands tacticiens.`
   ];
-
-  let yPosition = margin + 120;
+  let yPosition = margin + 135;
   mainText.forEach((line, index) => {
-    if (index === 1) doc.setFontSize(20); // Emphasize team name
-    if (index === 2) doc.setFontSize(16);
+    if (index === 1) {
+      doc.setFont('GreatVibes', 'normal'); // Script font for name
+      doc.setFontSize(26);
+      doc.setTextColor(212, 175, 55); // Gold
+    } else if (index === 2) {
+      doc.setFont('Cinzel', 'normal');
+      doc.setFontSize(18);
+      doc.setTextColor(44, 62, 80);
+    } else {
+      doc.setFont('Cinzel', 'normal');
+      doc.setFontSize(16);
+      doc.setTextColor(44, 62, 80);
+    }
     doc.text(line, pageWidth / 2, yPosition, { align: 'center' });
-    yPosition += 10;
+    yPosition += 12;
   });
 
-  // Add signature section
-  doc.setFontSize(14);
-  doc.text('Le Seigneur du Jeu', pageWidth - margin - 50, pageHeight - margin - 30, { align: 'center' });
-  doc.line(pageWidth - margin - 80, pageHeight - margin - 35, pageWidth - margin - 20, pageHeight - margin - 35);
+  // Add signature section (script font, gold)
+  doc.setFont('GreatVibes', 'normal');
+  doc.setFontSize(18);
+  doc.setTextColor(212, 175, 55);
+  doc.text('Le Seigneur du Jeu', pageWidth - margin - 60, pageHeight - margin - 30, { align: 'center' });
+  doc.setDrawColor(212, 175, 55);
+  doc.setLineWidth(1);
+  doc.line(pageWidth - margin - 90, pageHeight - margin - 35, pageWidth - margin - 30, pageHeight - margin - 35);
 
-  // Add date
-  doc.setFontSize(12);
+  // Add date (medieval font, blue)
+  doc.setFont('Cinzel', 'normal');
+  doc.setFontSize(14);
+  doc.setTextColor(44, 62, 80);
   doc.text(
     `Fait le ${format(data.date, 'dd MMMM yyyy', { locale: fr })}`,
-    margin + 50,
+    margin + 60,
     pageHeight - margin - 30,
     { align: 'center' }
   );

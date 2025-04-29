@@ -189,6 +189,8 @@ export const GameProvider: React.FC<{ children: ReactNode; initialState?: Initia
         goToNextDoor,
         showContinueButton,
         setShowContinueButton,
+        calculateFinalScore,
+        tokenMalus: gameState.tokenMalus,
       }}
     >
       {children}
