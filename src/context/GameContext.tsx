@@ -12,6 +12,7 @@ interface GameContextProps {
   showContinueButton: boolean;
   setShowContinueButton: (show: boolean) => void;
   calculateTimeBonus: () => number;
+  tokenMalus: number;
 }
 
 interface InitialState {
@@ -29,13 +30,14 @@ const initialGameState: GameState = {
   isGameComplete: false,
   startTime: new Date(),
   timeBonus: 0,
+  tokenMalus: 0,
 };
 
 const GameContext = createContext<GameContextProps | undefined>(undefined);
 
-export const GameProvider: React.FC<{ children: ReactNode; initialState?: InitialState | null }> = ({ 
-  children, 
-  initialState 
+export const GameProvider: React.FC<{ children: ReactNode; initialState?: InitialState | null }> = ({
+  children,
+  initialState
 }) => {
   const [gameState, setGameState] = useState<GameState>(() => {
     if (initialState) {
@@ -74,23 +76,23 @@ export const GameProvider: React.FC<{ children: ReactNode; initialState?: Initia
     if (!gameState.currentQuestion) return false;
 
     const isCorrect = gameState.currentQuestion.answer.toLowerCase() === answer.toLowerCase();
-    
+
     console.log("submitAnswer called with:", answer);
     console.log("Correct answer is:", gameState.currentQuestion.answer);
     console.log("Is answer correct?", isCorrect);
-    
+
     if (isCorrect) {
       const tokensUsed = 3 - gameState.tokensLeft;
       const questionPoints = gameState.currentQuestion.points || 100;
       const pointsEarned = Math.max(Math.floor(questionPoints * (1 - (0.1 * tokensUsed))), Math.floor(questionPoints * 0.6));
       console.log("Points earned:", pointsEarned, "from question points:", questionPoints);
-      
+
       setGameState((prev) => ({
         ...prev,
         score: prev.score + pointsEarned,
         isAnswerCorrect: true,
       }));
-      
+
       // Always show continue button on correct answer
       console.log("Setting showContinueButton to true on correct answer");
       setShowContinueButton(true);
@@ -100,7 +102,7 @@ export const GameProvider: React.FC<{ children: ReactNode; initialState?: Initia
         isAnswerCorrect: false,
       }));
     }
-    
+
     return isCorrect;
   };
 
@@ -118,43 +120,50 @@ export const GameProvider: React.FC<{ children: ReactNode; initialState?: Initia
     setShowContinueButton(false);
   };
 
-  const calculateTimeBonus = () => {
+  const calculateFinalScore = () => {
     const completionTime = new Date();
     const minutesTaken = Math.floor((completionTime.getTime() - gameState.startTime.getTime()) / (1000 * 60));
-    
+
     // Base time bonus starts at 200 points
     const baseBonus = 200;
-    
+
     // Door difficulty weights (increases with each door)
     const doorDifficultyWeight = 1 + (gameState.currentDoor - 1) * 0.2; // 1.0, 1.2, 1.4, 1.6, 1.8, 2.0
-    
+
     // Exponential decay factor for time penalty
     const decayFactor = 0.1;
     const timePenalty = Math.exp(-decayFactor * minutesTaken);
-    
+
     // Calculate weighted bonus with diminishing returns
     const weightedBonus = baseBonus * doorDifficultyWeight * timePenalty;
-    
+
     // Ensure minimum bonus of 10% of base bonus if completed
     const timeBonus = Math.max(Math.floor(weightedBonus), Math.floor(baseBonus * 0.1));
-    
+
+    // Calculate token malus (-30 points per token used)
+    const tokensUsed = (gameState.totalDoors * 3) - gameState.tokensLeft;
+    const tokenMalus = tokensUsed * -30;
+
     console.log(`Time bonus calculated: ${timeBonus} (Minutes: ${minutesTaken}, Difficulty: ${doorDifficultyWeight})`);
-    return timeBonus;
+    console.log(`Token malus calculated: ${tokenMalus} (Tokens used: ${tokensUsed})`);
+
+    return { timeBonus, tokenMalus };
   };
 
   const goToNextDoor = () => {
     const nextDoor = gameState.currentDoor + 1;
     console.log("Going to next door:", nextDoor);
-    
+
     // Increased timeout to 1500ms to make transitions smoother and more visible
     setTimeout(() => {
       if (nextDoor > gameState.totalDoors) {
-        const timeBonus = calculateTimeBonus();
+        const { timeBonus, tokenMalus } = calculateFinalScore();
         setGameState((prev) => ({
           ...prev,
           isGameComplete: true,
           timeBonus,
-          score: prev.score + timeBonus
+          tokenMalus,
+          score: prev.score + timeBonus + tokenMalus
         }));
       } else {
         setGameState((prev) => ({
@@ -164,7 +173,7 @@ export const GameProvider: React.FC<{ children: ReactNode; initialState?: Initia
           isAnswerCorrect: null,
         }));
       }
-      
+
       setShowContinueButton(false);
     }, 1500);
   };

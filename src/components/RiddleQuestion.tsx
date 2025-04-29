@@ -16,10 +16,10 @@ interface RiddleQuestionProps {
   doorNumber?: number;
 }
 
-const RiddleQuestion = ({ 
-  question, 
-  tokensLeft, 
-  onSubmitAnswer, 
+const RiddleQuestion = ({
+  question,
+  tokensLeft,
+  onSubmitAnswer,
   onUseToken,
   isCorrect,
   doorNumber = 1
@@ -29,34 +29,34 @@ const RiddleQuestion = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const [usedTokensForQuestion, setUsedTokensForQuestion] = useState(0);
-  
+
   // Get hint from question data
   const hint = question.hint || "";
-  
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (answer.trim()) {
       console.log("Submitting answer:", answer.trim());
       setIsSubmitting(true);
       onSubmitAnswer(answer.trim());
-      
+
       // Reset submission state after a delay
       setTimeout(() => {
         setIsSubmitting(false);
       }, 1000);
     }
   };
-  
+
   const handleUseToken = () => {
     // Prevent using more than one token per question
     if (usedTokensForQuestion > 0) return;
-    
+
     setHintRevealed(true);
     setUsedTokensForQuestion(prev => prev + 1);
     onUseToken();
   };
-  
+
   // Animation classes for correct/incorrect answers
   const getCardAnimation = () => {
     if (isCorrect === true) {
@@ -66,7 +66,7 @@ const RiddleQuestion = ({
     }
     return "";
   };
-  
+
   return (
     <div className="max-w-2xl mx-auto p-6 rounded-lg relative overflow-hidden">
       <style>
@@ -153,14 +153,14 @@ const RiddleQuestion = ({
         }
         `}
       </style>
-      
+
       <Card className={`bg-black/90 backdrop-blur-sm border-2 border-emerald-400/30 p-6 ${getCardAnimation()}`}>
         {isCorrect === true ? (
           <div className="text-center space-y-6">
             <div className="golden-key-animation">
               <svg viewBox="0 0 100 100" className="w-24 h-24 mx-auto">
                 <path d="M35 50c0-8.284 6.716-15 15-15 8.284 0 15 6.716 15 15 0 8.284-6.716 15-15 15-8.284 0-15-6.716-15-15z"
-                      className="key-bow" fill="#FFD700" />
+                  className="key-bow" fill="#FFD700" />
                 <path d="M65 50h25v-5h-5v-5h5v-5h-10v5h-5v-5h-5v15" className="key-teeth" fill="#FFD700" />
                 <path d="M65 50h35" className="key-shaft" stroke="#FFD700" strokeWidth="5" fill="none" />
               </svg>
@@ -173,87 +173,87 @@ const RiddleQuestion = ({
         ) : (
           <>
             {question.image && (
-          <div className="mb-4 flex justify-center">
-            <img 
-              src={question.image} 
-              alt="Image de l'énigme" 
-              className="max-h-48 rounded-md border border-gray-300 cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={() => setShowImageModal(true)}
-            />
-          </div>
-        )}
+              <div className="mb-4 flex justify-center h-96">
+                <img
+                  src={question.image}
+                  alt="Image de l'énigme"
+                  className="h-full w-auto rounded-md border border-gray-300 cursor-pointer hover:opacity-80 transition-opacity object-contain"
+                  onClick={() => setShowImageModal(true)}
+                />
+              </div>
+            )}
 
-        {/* Image Modal */}
-        {showImageModal && question.image && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="relative w-[95vw] h-[90vh] bg-black/90 border-2 border-emerald-400/30 rounded-lg p-4 flex items-center justify-center">
-              <Button
-                onClick={() => setShowImageModal(false)}
-                className="absolute top-4 right-4 bg-black/80 border-2 border-emerald-400 text-emerald-400 rounded-full p-2 hover:bg-emerald-400/20 transition-colors duration-200 z-50"
-                size="icon"
-              >
-                <X className="h-6 w-6" />
-              </Button>
-              <img
-                src={question.image}
-                alt="Image de l'énigme (plein écran)"
-                className="w-auto h-auto max-w-[90%] max-h-[85vh] object-contain rounded-lg shadow-xl"
-              />
-            </div>
-          </div>
-        )}
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="flex">
-            <Input 
-              value={answer} 
-              onChange={(e) => setAnswer(e.target.value)} 
-              placeholder="Entrez votre réponse..." 
-              disabled={isCorrect === true || isSubmitting}
-              className="terminal-input font-mono text-emerald-400 placeholder:text-emerald-700"
-            />
-            
-            <div className="flex items-center space-x-2 ml-2">
-              {[...Array(3)].map((_, i) => (
-                <div 
-                  key={i}
-                  className={`relative w-8 h-8 transition-all duration-300 transform ${i < tokensLeft ? 'scale-100 cursor-pointer hover:scale-110' : 'scale-90 opacity-40'}`}
-                  onClick={() => i < tokensLeft && !hintRevealed && isCorrect !== true && handleUseToken()}
-                >
-                  <div className={`absolute inset-0 ${i < tokensLeft ? 'animate-token-shine' : ''}`}>
-                    <svg viewBox="0 0 100 100" className="w-full h-full">
-                      {/* Token outer ring */}
-                      <circle cx="50" cy="50" r="45" fill="#B8860B" className="token-border" />
-                      {/* Token inner circle */}
-                      <circle cx="50" cy="50" r="40" fill="#FFD700" className="token-face" />
-                      {/* Decorative elements */}
-                      <path d="M50 20v60M20 50h60" stroke="#B8860B" strokeWidth="4" />
-                      <circle cx="50" cy="50" r="15" fill="#B8860B" />
-                      <text x="50" y="55" textAnchor="middle" fill="#FFD700" fontSize="16" fontFamily="medieval">H</text>
-                    </svg>
-                  </div>
+            {/* Image Modal */}
+            {showImageModal && question.image && (
+              <div className="fixed inset-0 bg-black/95 backdrop-blur-lg z-[100] flex items-center justify-center">
+                <div className="relative w-screen h-screen flex items-center justify-center p-4">
+                  <Button
+                    onClick={() => setShowImageModal(false)}
+                    className="absolute top-6 right-6 bg-black/90 border-2 border-emerald-400 text-emerald-400 rounded-full p-2 hover:bg-emerald-400/20 transition-colors duration-200 z-[101]"
+                    size="icon"
+                  >
+                    <X className="h-6 w-6" />
+                  </Button>
+                  <img
+                    src={question.image}
+                    alt="Image de l'énigme (plein écran)"
+                    className="max-w-[95vw] max-h-[95vh] object-contain rounded-lg shadow-2xl"
+                  />
                 </div>
-              ))}
-            </div>
-          </div>
-          
-          {hintRevealed && (
-            <div className="text-sm text-emerald-400 font-mono p-2 bg-emerald-900/20 border border-emerald-400/30 rounded mt-4">
-              <span className="font-bold text-emerald-300">INDICE:</span> {hint}
-            </div>
-          )}
-          
-          <div className="flex justify-end mt-4">
-            <Button 
-              type="submit" 
-              className="bg-emerald-400/20 hover:bg-emerald-400/30 text-emerald-400 border border-emerald-400/50 font-mono"
-              disabled={answer.trim() === '' || isCorrect === true || isSubmitting}
-            >
-              {isSubmitting ? '> Traitement...' : isCorrect === false ? '> Réessayer' : '> Soumettre la réponse'}
-            </Button>
-          </div>
-        </form>
-        </>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="flex">
+                <Input
+                  value={answer}
+                  onChange={(e) => setAnswer(e.target.value)}
+                  placeholder="Entrez votre réponse..."
+                  disabled={isCorrect === true || isSubmitting}
+                  className="terminal-input font-mono text-emerald-400 placeholder:text-emerald-700"
+                />
+
+                <div className="flex items-center space-x-2 ml-2">
+                  {[...Array(3)].map((_, i) => (
+                    <div
+                      key={i}
+                      className={`relative w-8 h-8 transition-all duration-300 transform ${i < tokensLeft ? 'scale-100 cursor-pointer hover:scale-110' : 'scale-90 opacity-40'}`}
+                      onClick={() => i < tokensLeft && !hintRevealed && isCorrect !== true && handleUseToken()}
+                    >
+                      <div className={`absolute inset-0 ${i < tokensLeft ? 'animate-token-shine' : ''}`}>
+                        <svg viewBox="0 0 100 100" className="w-full h-full">
+                          {/* Token outer ring */}
+                          <circle cx="50" cy="50" r="45" fill="#B8860B" className="token-border" />
+                          {/* Token inner circle */}
+                          <circle cx="50" cy="50" r="40" fill="#FFD700" className="token-face" />
+                          {/* Decorative elements */}
+                          <path d="M50 20v60M20 50h60" stroke="#B8860B" strokeWidth="4" />
+                          <circle cx="50" cy="50" r="15" fill="#B8860B" />
+                          <text x="50" y="55" textAnchor="middle" fill="#FFD700" fontSize="16" fontFamily="medieval">H</text>
+                        </svg>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {hintRevealed && (
+                <div className="text-sm text-emerald-400 font-mono p-2 bg-emerald-900/20 border border-emerald-400/30 rounded mt-4">
+                  <span className="font-bold text-emerald-300">INDICE:</span> {hint}
+                </div>
+              )}
+
+              <div className="flex justify-end mt-4">
+                <Button
+                  type="submit"
+                  className="bg-emerald-400/20 hover:bg-emerald-400/30 text-emerald-400 border border-emerald-400/50 font-mono"
+                  disabled={answer.trim() === '' || isCorrect === true || isSubmitting}
+                >
+                  {isSubmitting ? '> Traitement...' : isCorrect === false ? '> Réessayer' : '> Soumettre la réponse'}
+                </Button>
+              </div>
+            </form>
+          </>
         )}
       </Card>
     </div>
