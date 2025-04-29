@@ -473,7 +473,7 @@ const Room: React.FC = () => {
 
                     // Calculate time bonus if this is the last door
                     const isLastDoor = room.currentDoor === 6;
-                    const { timeBonus } = isLastDoor ? calculateFinalScore() : { timeBonus: 0 };
+                    const timeBonus = isLastDoor ? 1000 : 0; // Fixed bonus for completing last door
 
                     // Start a transaction to update the room state
                     const { data: updatedRoom, error: updateError } = await supabase

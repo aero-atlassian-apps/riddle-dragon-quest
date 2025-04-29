@@ -48,26 +48,43 @@ export const generateCertificate = async (data: CertificateData) => {
   // Add high-res SVG emblem (centered, larger)
   const shieldWidth = 70;
   const shieldHeight = 70;
-  const canvas = document.createElement('canvas');
-  canvas.width = shieldWidth;
-  canvas.height = shieldHeight;
-  const ctx = canvas.getContext('2d');
-  const img = new Image();
-  img.width = shieldWidth;
-  img.height = shieldHeight;
-  await new Promise((resolve, reject) => {
-    img.onload = () => {
-      ctx?.drawImage(img, 0, 0, shieldWidth, shieldHeight);
-      try {
-        const pngData = canvas.toDataURL('image/png');
-        doc.addImage(pngData, 'PNG', (pageWidth - shieldWidth) / 2, margin + 22, shieldWidth, shieldHeight);
-        resolve(null);
-      } catch (error) {
-        reject(error);
-      }
-    };
-    img.onerror = reject;
-    img.src = '/images/shield-highres.svg';
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = shieldWidth;
+    canvas.height = shieldHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      console.warn('Canvas context not available, skipping shield image');
+      return;
+    }
+
+    const img = new Image();
+    img.width = shieldWidth;
+    img.height = shieldHeight;
+    img.crossOrigin = 'anonymous'; // Enable CORS for image loading
+
+    await new Promise((resolve, reject) => {
+      img.onload = () => {
+        try {
+          ctx.drawImage(img, 0, 0, shieldWidth, shieldHeight);
+          const pngData = canvas.toDataURL('image/png');
+          doc.addImage(pngData, 'PNG', (pageWidth - shieldWidth) / 2, margin + 22, shieldWidth, shieldHeight);
+          resolve(null);
+        } catch (error) {
+          console.warn('Error processing shield image:', error);
+          resolve(null); // Continue without the image
+        }
+      };
+      img.onerror = (error) => {
+        console.warn('Error loading shield image:', error);
+        resolve(null); // Continue without the image
+      };
+      img.src = '/images/shield-highres.svg';
+    });
+  } catch (error) {
+    console.warn('Error in shield image generation:', error);
+    // Continue certificate generation without the shield image
+  }
   });
 
   // Add certificate title (large, gold, medieval font)
