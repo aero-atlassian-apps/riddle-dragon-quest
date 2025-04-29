@@ -35,10 +35,37 @@ export const generateCertificate = async (data: CertificateData) => {
   doc.setLineWidth(1);
   doc.rect(margin, margin, pageWidth - 2 * margin, pageHeight - 2 * margin);
 
-  // Add the Game Shield SVG (center top)
+  // Convert SVG to PNG using canvas and add to PDF
   const shieldWidth = 60;
   const shieldHeight = 60;
-  doc.addImage('/images/shield.svg', 'SVG', (pageWidth - shieldWidth) / 2, margin + 10, shieldWidth, shieldHeight);
+  
+  // Create a canvas element
+  const canvas = document.createElement('canvas');
+  canvas.width = shieldWidth;
+  canvas.height = shieldHeight;
+  const ctx = canvas.getContext('2d');
+  
+  // Create a new image element
+  const img = new Image();
+  img.width = shieldWidth;
+  img.height = shieldHeight;
+  
+  // Convert SVG to PNG
+  await new Promise((resolve, reject) => {
+    img.onload = () => {
+      ctx?.drawImage(img, 0, 0, shieldWidth, shieldHeight);
+      try {
+        // Convert canvas to PNG and add to PDF
+        const pngData = canvas.toDataURL('image/png');
+        doc.addImage(pngData, 'PNG', (pageWidth - shieldWidth) / 2, margin + 10, shieldWidth, shieldHeight);
+        resolve(null);
+      } catch (error) {
+        reject(error);
+      }
+    };
+    img.onerror = reject;
+    img.src = '/images/shield.svg';
+  });
 
   // Add certificate title
   doc.setFontSize(30);
