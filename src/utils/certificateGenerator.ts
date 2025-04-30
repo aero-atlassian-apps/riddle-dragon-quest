@@ -28,6 +28,15 @@ function createGoldPatternSVG(width: number, height: number): string {
         <stop offset="100%" stop-color="#e6c988" />
       </linearGradient>
       
+      <!-- Richer gold gradient for background -->
+      <linearGradient id="richGoldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#d4af37" />
+        <stop offset="25%" stop-color="#f9e2a2" />
+        <stop offset="50%" stop-color="#d4af37" />
+        <stop offset="75%" stop-color="#f9e2a2" />
+        <stop offset="100%" stop-color="#d4af37" />
+      </linearGradient>
+      
       <!-- Subtle pattern overlay -->
       <pattern id="noisePattern" width="${patternSize}" height="${patternSize}" patternUnits="userSpaceOnUse">
         <rect width="${patternSize}" height="${patternSize}" fill="url(#goldGradient)" />
@@ -48,42 +57,42 @@ function createGoldPatternSVG(width: number, height: number): string {
       </pattern>
     </defs>
     
-    <!-- Main background -->
-    <rect width="100%" height="100%" fill="url(#goldGradient)" />
+    <!-- Main background - using richer gold gradient -->
+    <rect width="100%" height="100%" fill="url(#richGoldGradient)" />
     
     <!-- Pattern overlay -->
     <rect width="100%" height="100%" fill="url(#noisePattern)" opacity="0.4" />
     
-    <!-- Herringbone pattern overlay -->
+    <!-- Herringbone pattern overlay - full page -->
     <rect width="100%" height="100%" fill="url(#herringbonePattern)" opacity="0.3" />
     
-    <!-- Outer frame -->
-    <rect x="10" y="10" width="${width-20}" height="${height-20}" stroke="#634a22" stroke-width="2" fill="none" />
+    <!-- Outer frame - golden instead of brown -->
+    <rect x="10" y="10" width="${width-20}" height="${height-20}" stroke="#d4af37" stroke-width="2" fill="none" />
     
     <!-- Inner frame with elegant corners -->
-    <rect x="20" y="20" width="${width-40}" height="${height-40}" stroke="#634a22" stroke-width="1" fill="none" />
+    <rect x="20" y="20" width="${width-40}" height="${height-40}" stroke="#b88a44" stroke-width="1" fill="none" />
     
     <!-- Decorative elements in corners -->
-    <g fill="#634a22">
+    <g fill="#b88a44">
       <!-- Top left -->
       <circle cx="20" cy="20" r="5" />
-      <circle cx="20" cy="20" r="3" fill="#d4af37" />
+      <circle cx="20" cy="20" r="3" fill="#ffd700" />
       
       <!-- Top right -->
       <circle cx="${width-20}" cy="20" r="5" />
-      <circle cx="${width-20}" cy="20" r="3" fill="#d4af37" />
+      <circle cx="${width-20}" cy="20" r="3" fill="#ffd700" />
       
       <!-- Bottom left -->
       <circle cx="20" cy="${height-20}" r="5" />
-      <circle cx="20" cy="${height-20}" r="3" fill="#d4af37" />
+      <circle cx="20" cy="${height-20}" r="3" fill="#ffd700" />
       
       <!-- Bottom right -->
       <circle cx="${width-20}" cy="${height-20}" r="5" />
-      <circle cx="${width-20}" cy="${height-20}" r="3" fill="#d4af37" />
+      <circle cx="${width-20}" cy="${height-20}" r="3" fill="#ffd700" />
     </g>
     
     <!-- Decorative center border elements -->
-    <g fill="#634a22">
+    <g fill="#b88a44">
       <circle cx="${width/2}" cy="20" r="3" />
       <circle cx="${width/2}" cy="${height-20}" r="3" />
       <circle cx="20" cy="${height/2}" r="3" />
@@ -147,7 +156,8 @@ function createDividerSVG(width: number): string {
   return svg;
 }
 
-// Create an SVG for certificate seal
+
+// Create an SVG for certificate seal with Game of Metrics shield
 function createSealSVG(width: number): string {
   const svg = `
   <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${width}" viewBox="0 0 100 100">
@@ -165,6 +175,19 @@ function createSealSVG(width: number): string {
         <stop offset="50%" stop-color="#ff033e" />
         <stop offset="100%" stop-color="#c41e3a" />
       </linearGradient>
+      
+      <!-- Fire gradient for shield -->
+      <linearGradient id="fireGradient" x1="0%" y1="100%" x2="0%" y2="0%">
+        <stop offset="0%" stop-color="#ffd700" />
+        <stop offset="50%" stop-color="#f9e2a2" />
+        <stop offset="100%" stop-color="#b88a44" />
+      </linearGradient>
+      
+      <!-- Glow filter -->
+      <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="1" result="blur" />
+        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+      </filter>
     </defs>
     
     <!-- Main seal -->
@@ -177,9 +200,116 @@ function createSealSVG(width: number): string {
     <!-- Shine effect -->
     <ellipse cx="40" cy="40" rx="15" ry="10" fill="#fff6c8" opacity="0.6" />
     
+    <!-- Game of Metrics Shield (simplified and golden) -->
+    <g transform="translate(50, 50) scale(0.4)" filter="url(#glow)">
+      <!-- Shield -->
+      <path 
+        d="M0,-50 L50,-35 C50,0 50,35 0,50 C-50,35 -50,0 -50,-35 Z" 
+        fill="#ffd700" 
+        stroke="#b88a44" 
+        stroke-width="2" 
+      />
+      
+      <!-- Inner shield design -->
+      <path 
+        d="M0,-40 L40,-28 C40,0 40,28 0,40 C-40,28 -40,0 -40,-28 Z" 
+        fill="#f9e2a2" 
+        stroke="#b88a44" 
+        stroke-width="1" 
+      />
+      
+      <!-- Fire in the center (golden version) -->
+      <path 
+        d="M0,15 C5,8 8,0 6,-8 C10,0 14,-12 12,-16 C16,-4 20,-12 18,-20 C22,-12 24,-8 20,0 C28,-8 26,-4 24,4 C30,-2 28,8 22,12 C26,14 20,18 16,16 C18,20 12,22 8,18 C10,24 2,20 0,16 C-2,20 -10,24 -8,18 C-12,22 -18,20 -16,16 C-20,18 -26,14 -22,12 C-28,8 -30,-2 -24,4 C-26,-4 -28,-8 -20,0 C-24,-8 -22,-12 -18,-20 C-20,-12 -16,-4 -12,-16 C-14,-12 -10,0 -6,-8 C-8,0 -5,8 0,15 Z" 
+        fill="url(#fireGradient)" 
+      />
+    </g>
+    
     <!-- Ribbon tails -->
     <path d="M35,80 L20,100 M65,80 L80,100" stroke="url(#sealRibbonGradient)" stroke-width="5" stroke-linecap="round" />
     <path d="M45,80 L35,100 M55,80 L65,100" stroke="url(#sealRibbonGradient)" stroke-width="5" stroke-linecap="round" />
+  </svg>`;
+  
+  return svg;
+}
+
+// Create Game of Metrics Shield SVG for certificate
+function createGamesShieldSVG(width: number): string {
+  const svg = `
+  <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${width/2}" viewBox="0 0 800 400">
+    <defs>
+      <filter id="shieldGlow" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="5" result="blur" />
+        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+      </filter>
+      
+      <!-- Gold fire gradient -->
+      <linearGradient id="goldFireGradient" x1="0%" y1="100%" x2="0%" y2="0%">
+        <stop offset="0%" stop-color="#b88a44" />
+        <stop offset="50%" stop-color="#ffd700" />
+        <stop offset="100%" stop-color="#fff6c8" />
+      </linearGradient>
+      
+      <!-- Gold text gradient -->
+      <linearGradient id="goldTextGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#fff6c8" />
+        <stop offset="50%" stop-color="#ffd700" />
+        <stop offset="100%" stop-color="#b88a44" />
+      </linearGradient>
+    </defs>
+    
+    <!-- Shield with fire -->
+    <g transform="translate(400, 250)" filter="url(#shieldGlow)">
+      <!-- Shield -->
+      <path 
+        d="M0,-120 L120,-80 C120,0 120,80 0,120 C-120,80 -120,0 -120,-80 Z" 
+        fill="#ffd700" 
+        stroke="#b88a44" 
+        stroke-width="4" 
+      />
+      
+      <!-- Inner shield design -->
+      <path 
+        d="M0,-100 L100,-65 C100,0 100,65 0,100 C-100,65 -100,0 -100,-65 Z" 
+        fill="#f9e2a2" 
+        stroke="#b88a44" 
+        stroke-width="2" 
+      />
+      
+      <!-- Fire in the center (golden version) -->
+      <path 
+        d="M0,40 C10,20 20,0 15,-20 C25,0 35,-30 30,-40 C40,-10 50,-30 45,-50 C55,-30 60,-20 50,0 C70,-20 65,-10 60,10 C75,-5 70,20 55,30 C65,35 50,45 40,40 C45,50 30,55 20,45 C25,60 5,50 0,40 C-5,50 -25,60 -20,45 C-30,55 -45,50 -40,40 C-50,45 -65,35 -55,30 C-70,20 -75,-5 -60,10 C-65,-10 -70,-20 -50,0 C-60,-20 -55,-30 -45,-50 C-50,-30 -40,-10 -30,-40 C-35,-30 -25,0 -15,-20 C-20,0 -10,20 0,40 Z" 
+        fill="url(#goldFireGradient)" 
+      />
+    </g>
+    
+    <!-- Game of Metrics Text - Positioned above the shield -->
+    <g filter="url(#shieldGlow)">
+      <text 
+        x="400" 
+        y="80" 
+        text-anchor="middle" 
+        fill="url(#goldTextGradient)"
+        stroke="#b88a44"
+        stroke-width="1"
+        font-size="50"
+        font-family="'Cinzel', serif"
+      >
+        GAME OF
+      </text>
+      <text 
+        x="400" 
+        y="140" 
+        text-anchor="middle" 
+        fill="url(#goldTextGradient)"
+        stroke="#b88a44"
+        stroke-width="1"
+        font-size="70"
+        font-family="'Cinzel', serif"
+      >
+        METRICS
+      </text>
+    </g>
   </svg>`;
   
   return svg;
@@ -252,9 +382,9 @@ export const generateCertificate = async (data: CertificateData) => {
 
   // STEP 2: Draw the elegant border frame (multi-layered for luxury)
   function drawLuxuryBorders() {
-    // Outer black border
-    doc.setDrawColor(0);
-    doc.setLineWidth(1);
+    // Outer golden border instead of black
+    doc.setDrawColor(184, 138, 68); // Dark gold
+    doc.setLineWidth(1.5);
     doc.rect(margin - 5, margin - 5, pageWidth - 2 * (margin - 5), pageHeight - 2 * (margin - 5), 'S');
     
     // Main gold border
@@ -263,7 +393,7 @@ export const generateCertificate = async (data: CertificateData) => {
     doc.rect(margin, margin, pageWidth - 2 * margin, pageHeight - 2 * margin, 'S');
     
     // Inner border (thinner)
-    doc.setDrawColor(139, 69, 19); // Brown
+    doc.setDrawColor(184, 138, 68); // Dark gold instead of brown
     doc.setLineWidth(0.5);
     doc.rect(margin + 5, margin + 5, pageWidth - 2 * (margin + 5), pageHeight - 2 * (margin + 5), 'S');
     
@@ -427,7 +557,7 @@ export const generateCertificate = async (data: CertificateData) => {
     // Achievement text
     const achievementText = `For successfully completing "${data.sessionName}" 
 in the "${data.roomName}" escape room
-with an impressive score of ${data.score}%.`;
+with an impressive score of ${data.score}`;
     
     // Center the text block
     const splitAchievement = doc.splitTextToSize(achievementText, pageWidth - 100);
@@ -445,22 +575,64 @@ with an impressive score of ${data.score}%.`;
     doc.setFontSize(12);
     doc.text('SIGNATURE', pageWidth / 4, pageHeight - margin - 10, { align: 'center' });
     
+    // Add 'Community Of Practices' signature
+    doc.setFont('Brush Script MT', 'italic');
+    doc.setFontSize(18);
+    doc.setTextColor(139, 69, 19); // Brown for signature
+    doc.text('Community Of Practices', pageWidth / 4, pageHeight - margin - 30, { align: 'center' });
+    doc.setFont('Times', 'normal');
+    
     // Date line on right side
     doc.line(pageWidth * 3/4 - 40, pageHeight - margin - 20, pageWidth * 3/4 + 40, pageHeight - margin - 20);
     doc.text('DATE', pageWidth * 3/4, pageHeight - margin - 10, { align: 'center' });
     
-    // Add a subtle watermark/background pattern in the center
+    // Add the date under the date line
+    doc.setFontSize(14);
+    doc.setTextColor(100, 84, 0); // Dark gold
+    doc.text(format(data.date, 'dd MMMM yyyy', { locale: fr }), pageWidth * 3/4, pageHeight - margin - 30, { align: 'center' });
+    
+    // Add Game of Metrics Shield as a watermark in the center
     try {
-      // Create a herringbone pattern fill
+      // Create the Game of Metrics Shield as a watermark
+      const shieldWidth = 120;
+      const shieldSVG = createGamesShieldSVG(shieldWidth);
+      
+      const shieldCanvas = document.createElement('canvas');
+      shieldCanvas.width = shieldWidth * 3; // Higher resolution
+      shieldCanvas.height = shieldWidth * 1.5 * 3;
+      
+      const shieldCtx = shieldCanvas.getContext('2d');
+      if (shieldCtx) {
+        const shieldImg = new Image();
+        shieldImg.onload = () => {
+          shieldCtx.drawImage(shieldImg, 0, 0, shieldCanvas.width, shieldCanvas.height);
+          
+          // Position the shield in the center of the certificate as a watermark
+          doc.addImage(
+            shieldCanvas.toDataURL('image/png'), 'PNG', 
+            pageWidth / 2 - shieldWidth / 2, 
+            pageHeight / 2 - shieldWidth / 3, 
+            shieldWidth, 
+            shieldWidth / 2
+          );
+        };
+        
+        // Convert shield SVG to data URL
+        const shieldBlob = new Blob([shieldSVG], {type: 'image/svg+xml'});
+        const shieldUrl = URL.createObjectURL(shieldBlob);
+        shieldImg.src = shieldUrl;
+      }
+      
+      // Create a herringbone pattern fill for the entire background
       const centerPatternCanvas = document.createElement('canvas');
-      const centerPatternSize = 200;
+      const centerPatternSize = pageWidth;
       centerPatternCanvas.width = centerPatternSize;
       centerPatternCanvas.height = centerPatternSize;
       
       const cpCtx = centerPatternCanvas.getContext('2d');
       if (cpCtx) {
         // Fill with light gold
-        cpCtx.fillStyle = '#f9e2a288'; // Semi-transparent
+        cpCtx.fillStyle = '#f9e2a222'; // Very semi-transparent
         cpCtx.fillRect(0, 0, centerPatternSize, centerPatternSize);
         
         // Draw herringbone pattern
@@ -468,7 +640,7 @@ with an impressive score of ${data.score}%.`;
         cpCtx.lineWidth = 1;
         
         // Create herringbone pattern
-        const patternSpacing = 10;
+        const patternSpacing = 20;
         for (let i = -centerPatternSize; i < centerPatternSize * 2; i += patternSpacing) {
           cpCtx.beginPath();
           cpCtx.moveTo(i, 0);
@@ -481,17 +653,17 @@ with an impressive score of ${data.score}%.`;
           cpCtx.stroke();
         }
         
-        // Add pattern to center of certificate
+        // Add pattern to entire certificate (behind the shield)
         doc.addImage(
           centerPatternCanvas.toDataURL('image/png'), 'PNG',
-          pageWidth / 2 - centerPatternSize / 4,
-          pageHeight / 2 - centerPatternSize / 4,
-          centerPatternSize / 2,
-          centerPatternSize / 2
+          margin + 15,
+          margin + 15,
+          pageWidth - 2 * (margin + 15),
+          pageHeight - 2 * (margin + 15)
         );
       }
     } catch (error) {
-      console.warn('Center pattern creation failed:', error);
+      console.warn('Center pattern or shield creation failed:', error);
     }
     
     // Return the document for saving or further processing
