@@ -116,7 +116,9 @@ const RiddleQuestion = ({
           display: flex;
           align-items: center;
           justify-content: center;
-          z-index: 9999;
+          z-index: 50000;
+          background-color: rgba(0, 0, 0, 0.95);
+          backdrop-filter: blur(8px);
         }
 
         .animate-token-shine {
@@ -200,12 +202,13 @@ const RiddleQuestion = ({
 
             {/* Image Modal */}
             {showImageModal && question.image && (
-              <div className="image-modal fixed inset-0 bg-black/95 backdrop-blur-lg">
+              <div className="image-modal">
                 <div className="relative w-full h-full flex items-center justify-center p-4">
                   <Button
                     onClick={() => setShowImageModal(false)}
-                    className="absolute top-6 right-6 bg-black/90 border-2 border-emerald-400 text-emerald-400 rounded-full p-2 hover:bg-emerald-400/20 transition-colors duration-200 z-[10000] shadow-lg"
+                    className="absolute top-6 right-6 bg-black/90 border-2 border-emerald-400 text-emerald-400 rounded-full p-2 hover:bg-emerald-400/20 transition-colors duration-200 z-[60000] shadow-lg"
                     size="icon"
+                    aria-label="Close image"
                   >
                     <X className="h-6 w-6" />
                   </Button>
