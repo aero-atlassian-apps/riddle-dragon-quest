@@ -217,12 +217,19 @@ const Room: React.FC = () => {
       const totalDoors = 6; // Total number of doors in the game
       const newDoorStates = Array(totalDoors).fill(false).map((_, index) => {
         // A door is considered open if its number is less than the current door
-        // This means the player has already terminée this door
-        return index + 1 < room.currentDoor;
+        // This means the player has already completed this door
+        // If currentDoor > 6, all doors should be open (challenge completed)
+        return room.currentDoor > 6 ? true : index + 1 < room.currentDoor;
       });
       setDoorStates(newDoorStates);
+      
+      // If all doors are open, trigger celebration
+      if (room.currentDoor > 6) {
+        startConfetti();
+        setShowConfetti(true);
+      }
     }
-  }, [room]);
+  }, [room, startConfetti]);
 
   useEffect(() => {
     if (isSessionCompleted) {
@@ -366,6 +373,22 @@ const Room: React.FC = () => {
 
       {!showQuestion ? (
         <div className="max-w-6xl mx-auto px-4">
+          {/* Challenge completion message - shown when all doors are open */}
+          {room.currentDoor > 6 && (
+            <div className="mb-12 text-center p-6 bg-black/80 border-2 border-amber-500 rounded-lg font-mono relative overflow-hidden animate-pulse">
+              <div className="absolute inset-0 bg-[url('/textures/stone-pattern.svg')] opacity-5" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,215,0,0.2)_0%,transparent_70%)]" />
+              <div className="relative z-10">
+                <h2 className="text-3xl font-bold text-amber-400 font-medieval mb-4">DÉFI TERMINÉ!</h2>
+                <p className="text-xl text-amber-300 font-medieval mb-6">Félicitations, brave aventurier! Vous avez vaincu tous les gardiens et déverrouillé toutes les portes.</p>
+                <Link to="/leaderboard">
+                  <Button className="bg-amber-500 hover:bg-amber-600 text-black font-pixel px-6 py-3 text-lg">
+                    VOIR LE MUR DES HÉROS
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-16 place-items-center">
             {doorStates.map((isOpen, index) => (
               <div key={index} className="flex flex-col items-center transform hover:scale-105 transition-transform duration-300">
@@ -460,6 +483,15 @@ const Room: React.FC = () => {
                   gameState.isAnswerCorrect = isCorrect;
 
                   if (isCorrect) {
+                    // Calculate final score based on tokens used and question points
+                    const calculateFinalScore = (basePoints: number, tokensUsed: number, isLastDoor: boolean) => {
+                      // Calculate points with token penalty
+                      const pointsWithPenalty = Math.max(Math.floor(basePoints * (1 - (0.1 * tokensUsed))), Math.floor(basePoints * 0.6));
+                      // Add time bonus if this is the last door
+                      const timeBonus = isLastDoor ? 1000 : 0;
+                      return pointsWithPenalty + timeBonus;
+                    };
+                    
                     // Calculate points based on tokens used and question points
                     const tokensUsed = 3 - room.tokensLeft;
                     const { data: questionData } = await supabase
@@ -469,17 +501,14 @@ const Room: React.FC = () => {
                       .single();
 
                     const questionPoints = questionData?.points || 100;
-                    const pointsEarned = Math.max(Math.floor(questionPoints * (1 - (0.1 * tokensUsed))), Math.floor(questionPoints * 0.6));
-
-                    // Calculate time bonus if this is the last door
                     const isLastDoor = room.currentDoor === 6;
-                    const timeBonus = isLastDoor ? 1000 : 0; // Fixed bonus for completing last door
+                    const finalScore = calculateFinalScore(questionPoints, tokensUsed, isLastDoor);
 
                     // Start a transaction to update the room state
                     const { data: updatedRoom, error: updateError } = await supabase
                       .from('rooms')
                       .update({
-                        score: room.score + pointsEarned + timeBonus,
+                        score: room.score + finalScore,
                         current_door: room.currentDoor + 1
                       })
                       .eq('id', room.id)
@@ -511,6 +540,17 @@ const Room: React.FC = () => {
                     setShowConfetti(true);
                     const audio = new Audio('/sounds/success.mp3');
                     await audio.play().catch(console.error); // Handle audio play error gracefully
+
+                    // Check if all doors are now open (challenge completed)
+                    const allDoorsOpen = updatedRoom.current_door > 6;
+                    if (allDoorsOpen) {
+                      // Trigger more intense celebration for challenge completion
+                      startConfetti();
+                      
+                      // Play victory sound
+                      const victoryAudio = new Audio('/sounds/victory.mp3');
+                      await victoryAudio.play().catch(console.error);
+                    }
 
                     // Reset game state after celebration
                     setTimeout(() => {
