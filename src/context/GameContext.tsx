@@ -152,7 +152,7 @@ export const GameProvider: React.FC<{ children: ReactNode; initialState?: Initia
     console.log(`Time bonus calculated: ${timeBonus} (Minutes: ${minutesTaken}, Difficulty: ${doorDifficultyWeight})`);
     console.log(`Token malus calculated: ${tokenMalus} (Tokens used: ${tokensUsed})`);
 
-    return { timeBonus, tokenMalus };}
+    return { timeBonus, tokenMalus };
   };
 
   const goToNextDoor = () => {

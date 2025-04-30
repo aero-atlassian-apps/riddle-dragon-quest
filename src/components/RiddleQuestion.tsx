@@ -103,6 +103,21 @@ const RiddleQuestion = ({
           0% { transform: rotateY(0deg); }
           100% { transform: rotateY(360deg); }
         }
+        
+        /* Image modal styles */
+        .image-modal {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          width: 100vw;
+          height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 9999;
+        }
 
         .animate-token-shine {
           animation: token-shine 2s ease-in-out infinite;
@@ -185,11 +200,11 @@ const RiddleQuestion = ({
 
             {/* Image Modal */}
             {showImageModal && question.image && (
-              <div className="fixed inset-0 bg-black/95 backdrop-blur-lg z-[100] flex items-center justify-center">
-                <div className="relative w-screen h-screen flex items-center justify-center p-4">
+              <div className="image-modal fixed inset-0 bg-black/95 backdrop-blur-lg">
+                <div className="relative w-full h-full flex items-center justify-center p-4">
                   <Button
                     onClick={() => setShowImageModal(false)}
-                    className="absolute top-6 right-6 bg-black/90 border-2 border-emerald-400 text-emerald-400 rounded-full p-2 hover:bg-emerald-400/20 transition-colors duration-200 z-[101]"
+                    className="absolute top-6 right-6 bg-black/90 border-2 border-emerald-400 text-emerald-400 rounded-full p-2 hover:bg-emerald-400/20 transition-colors duration-200 z-[10000] shadow-lg"
                     size="icon"
                   >
                     <X className="h-6 w-6" />
