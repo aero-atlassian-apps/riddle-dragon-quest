@@ -82,7 +82,6 @@ export const generateCertificate = async (data: CertificateData) => {
         };
         // Use absolute path with public directory prefix
         img.src = '/images/shield-highres.svg';
-      });
     } catch (error) {
       console.warn('Error in image promise handling:', error);
       // Continue without the image
