@@ -25,7 +25,12 @@ export const generateCertificate = async (data: CertificateData) => {
   });
 
   // Add parchment background (high-res, elegant)
-  doc.addImage('/images/parchment-bg-highres.jpg', 'JPEG', 0, 0, doc.internal.pageSize.getWidth(), doc.internal.pageSize.getHeight());
+  try {
+    doc.addImage('/images/parchment-bg-highres.jpg', 'JPEG', 0, 0, doc.internal.pageSize.getWidth(), doc.internal.pageSize.getHeight());
+  } catch (error) {
+    console.warn('Error loading parchment background:', error);
+    // Continue without background
+  }
 
   // Use a medieval and script font for elegance
   doc.setFont('Cinzel', 'bold');
@@ -55,38 +60,51 @@ export const generateCertificate = async (data: CertificateData) => {
     const ctx = canvas.getContext('2d');
     if (!ctx) {
       console.warn('Canvas context not available, skipping shield image');
-      return;
+      return doc;
     }
 
-    const img = new Image();
-    img.width = shieldWidth;
-    img.height = shieldHeight;
-    img.crossOrigin = 'anonymous'; // Enable CORS for image loading
+    // Set a timeout to prevent hanging if image loading takes too long
+    const imageLoadPromise = new Promise<void>((resolve) => {
+      const img = new Image();
+      img.width = shieldWidth;
+      img.height = shieldHeight;
+      img.crossOrigin = 'anonymous'; // Enable CORS for image loading
+
+      // Set up timeout to avoid hanging
+      const timeoutId = setTimeout(() => {
+        console.warn('Shield image loading timed out');
+        resolve();
+      }, 3000); // 3 second timeout
+
+      img.onload = () => {
+        clearTimeout(timeoutId);
+        try {
+          ctx.drawImage(img, 0, 0, shieldWidth, shieldHeight);
+          const pngData = canvas.toDataURL('image/png');
+          doc.addImage(pngData, 'PNG', (pageWidth - shieldWidth) / 2, margin + 22, shieldWidth, shieldHeight);
+        } catch (error) {
+          console.warn('Error processing shield image:', error);
+          // Continue without the image
+        }
+        resolve();
+      };
+
+      img.onerror = () => {
+        clearTimeout(timeoutId);
+        console.warn('Error loading shield image');
+        resolve(); // Continue without the image
+      };
+
+      // Use absolute path with public directory prefix
+      img.src = '/images/shield-highres.svg';
+    });
 
     try {
-      await new Promise((resolve) => {
-        img.onload = () => {
-          try {
-            ctx.drawImage(img, 0, 0, shieldWidth, shieldHeight);
-            const pngData = canvas.toDataURL('image/png');
-            doc.addImage(pngData, 'PNG', (pageWidth - shieldWidth) / 2, margin + 22, shieldWidth, shieldHeight);
-          } catch (error) {
-            console.warn('Error processing shield image:', error);
-            // Continue without the image
-          }
-          resolve(null);
-        };
-        img.onerror = () => {
-          console.warn('Error loading shield image');
-          resolve(null); // Continue without the image
-        };
-        // Use absolute path with public directory prefix
-        img.src = '/images/shield-highres.svg';
+      await imageLoadPromise;
     } catch (error) {
       console.warn('Error in image promise handling:', error);
       // Continue without the image
     }
-    });
   } catch (error) {
     console.warn('Error in shield image generation:', error);
     // Continue certificate generation without the shield image
