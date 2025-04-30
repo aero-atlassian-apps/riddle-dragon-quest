@@ -63,29 +63,36 @@ export const generateCertificate = async (data: CertificateData) => {
     img.height = shieldHeight;
     img.crossOrigin = 'anonymous'; // Enable CORS for image loading
 
-    await new Promise((resolve, reject) => {
-      img.onload = () => {
-        try {
-          ctx.drawImage(img, 0, 0, shieldWidth, shieldHeight);
-          const pngData = canvas.toDataURL('image/png');
-          doc.addImage(pngData, 'PNG', (pageWidth - shieldWidth) / 2, margin + 22, shieldWidth, shieldHeight);
+    try {
+      await new Promise((resolve) => {
+        img.onload = () => {
+          try {
+            ctx.drawImage(img, 0, 0, shieldWidth, shieldHeight);
+            const pngData = canvas.toDataURL('image/png');
+            doc.addImage(pngData, 'PNG', (pageWidth - shieldWidth) / 2, margin + 22, shieldWidth, shieldHeight);
+          } catch (error) {
+            console.warn('Error processing shield image:', error);
+            // Continue without the image
+          }
           resolve(null);
-        } catch (error) {
-          console.warn('Error processing shield image:', error);
+        };
+        img.onerror = () => {
+          console.warn('Error loading shield image');
           resolve(null); // Continue without the image
-        }
-      };
-      img.onerror = (error) => {
-        console.warn('Error loading shield image:', error);
-        resolve(null); // Continue without the image
-      };
-      img.src = '/images/shield-highres.svg';
+        };
+        // Use absolute path with public directory prefix
+        img.src = '/images/shield-highres.svg';
+      });
+    } catch (error) {
+      console.warn('Error in image promise handling:', error);
+      // Continue without the image
+    }
     });
   } catch (error) {
     console.warn('Error in shield image generation:', error);
     // Continue certificate generation without the shield image
   }
-  });
+
 
   // Add certificate title (large, gold, medieval font)
   doc.setFont('Cinzel', 'bold');
