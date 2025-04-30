@@ -1,8 +1,8 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, RefreshCw } from "lucide-react";
+import { ArrowLeft, RefreshCw, Volume2, VolumeX } from "lucide-react";
 import LeaderboardTable from "@/components/LeaderboardTable";
 import { Score } from "@/types/game";
 import confetti from "canvas-confetti";
@@ -13,9 +13,14 @@ const Leaderboard = () => {
   const [scores, setScores] = useState<Score[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [volume, setVolume] = useState(0.3); // Default volume at 30%
 
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [sessions, setSessions] = useState<{ id: string; name: string }[]>([]);
+  
+  // Audio reference for Game of Thrones theme
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const fetchSessions = async () => {
     setIsLoading(true);
@@ -82,9 +87,37 @@ const Leaderboard = () => {
     setIsRefreshing(true);
     await fetchScores();
   };
+  
+  const toggleMute = () => {
+    setIsMuted(!isMuted);
+  };
+  
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVolume = parseFloat(e.target.value);
+    setVolume(newVolume);
+  };
 
   useEffect(() => {
     fetchSessions();
+    
+    // Initialize audio element
+    const audio = new Audio('/sounds/game-of-thrones.mp3');
+    audio.loop = true;
+    audio.volume = volume;
+    audioRef.current = audio;
+    
+    // Start playing the theme music
+    audio.play().catch(error => {
+      console.warn('Audio autoplay was prevented:', error);
+    });
+    
+    // Cleanup function to stop audio when component unmounts
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -107,6 +140,13 @@ const Leaderboard = () => {
       };
     }
   }, [currentSessionId]);
+  
+  // Effect to handle volume changes
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = isMuted ? 0 : volume;
+    }
+  }, [volume, isMuted]);
   
   const launchConfetti = () => {
     const duration = 5 * 1000;
@@ -182,6 +222,31 @@ const Leaderboard = () => {
               <RefreshCw className={`h-4 w-4 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
               Actualiser
             </Button>
+            
+            {/* Audio controls */}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleMute}
+                className="text-[#00FF00]/80 hover:text-[#00FF00] hover:bg-[#00FF00]/10 font-mono"
+              >
+                {isMuted ? (
+                  <VolumeX className="h-4 w-4" />
+                ) : (
+                  <Volume2 className="h-4 w-4" />
+                )}
+              </Button>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={volume}
+                onChange={handleVolumeChange}
+                className="w-20 accent-[#00FF00] bg-[#1A1F2C] h-1 rounded-lg appearance-none cursor-pointer"
+              />
+            </div>
           </div>
         </div>
         

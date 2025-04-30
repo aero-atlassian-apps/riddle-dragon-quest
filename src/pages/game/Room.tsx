@@ -487,8 +487,8 @@ const Room: React.FC = () => {
                     const calculateFinalScore = (basePoints: number, tokensUsed: number, isLastDoor: boolean) => {
                       // Calculate points with token penalty
                       const pointsWithPenalty = Math.max(Math.floor(basePoints * (1 - (0.1 * tokensUsed))), Math.floor(basePoints * 0.6));
-                      // Add time bonus if this is the last door
-                      const timeBonus = isLastDoor ? 1000 : 0;
+                      // Add time bonus if this is the last door, capped at 200 points
+                      const timeBonus = isLastDoor ? 200 : 0;
                       return pointsWithPenalty + timeBonus;
                     };
                     
