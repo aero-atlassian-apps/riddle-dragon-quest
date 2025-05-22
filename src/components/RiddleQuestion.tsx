@@ -27,19 +27,7 @@ const RiddleQuestion = ({
   const [answer, setAnswer] = useState("");
   const [hintRevealed, setHintRevealed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showImageModal, setShowImageModal] = useState(false);
 
-  // Handle keyboard events for modal accessibility
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && showImageModal) {
-        setShowImageModal(false);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showImageModal]);
   const [usedTokensForQuestion, setUsedTokensForQuestion] = useState(0);
 
   // Get hint from question data
@@ -116,79 +104,9 @@ const RiddleQuestion = ({
           100% { transform: rotateY(360deg); }
         }
         
-        /* Image modal styles */
-        .image-modal {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          width: 100vw;
-          height: 100vh;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 100000;
-          background-color: rgba(0, 0, 0, 0.9);
-          backdrop-filter: blur(8px);
-          opacity: 0;
-          visibility: hidden;
-          transition: all 0.4s ease;
-          padding: 20px; /* Add padding to ensure content doesn't touch edges */
-        }
+
         
-        .image-modal.active {
-          opacity: 1;
-          visibility: visible;
-        }
-        
-        /* Close button highlight effect */
-        .modal-close-btn {
-          position: absolute;
-          top: 20px;
-          right: 20px;
-          background-color: rgba(220, 38, 38, 0.8);
-          color: white;
-          border-radius: 50%;
-          width: 48px;
-          height: 48px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          z-index: 100001;
-          animation: pulse-glow 2s infinite;
-          transition: all 0.2s ease;
-          border: 2px solid rgba(255, 255, 255, 0.7);
-        }
-        
-        .modal-close-btn:hover {
-          background-color: rgba(185, 28, 28, 0.9);
-          transform: scale(1.1);
-        }
-        
-        @keyframes pulse-glow {
-          0%, 100% { box-shadow: 0 0 15px rgba(255, 0, 0, 0.7), 0 0 5px rgba(255, 255, 255, 0.5); }
-          50% { box-shadow: 0 0 25px rgba(255, 0, 0, 1), 0 0 15px rgba(255, 255, 255, 0.8); }
-        }
-        
-        @keyframes fade-in {
-          from { opacity: 0; transform: scale(0.95); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        
-        @keyframes zoom-in {
-          from { transform: scale(0.8); opacity: 0; }
-          to { transform: scale(1); opacity: 1; }
-        }
-        
-        .animate-fade-in {
-          animation: fade-in 0.4s ease-in-out;
-        }
-        
-        .animate-zoom-in {
-          animation: zoom-in 0.5s ease-out;
-        }
+
 
         .animate-token-shine {
           animation: token-shine 2s ease-in-out infinite;
