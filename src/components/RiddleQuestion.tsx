@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Question } from "@/types/game";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,18 @@ const RiddleQuestion = ({
   const [hintRevealed, setHintRevealed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
+
+  // Handle keyboard events for modal accessibility
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showImageModal) {
+        setShowImageModal(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showImageModal]);
   const [usedTokensForQuestion, setUsedTokensForQuestion] = useState(0);
 
   // Get hint from question data
@@ -119,6 +131,49 @@ const RiddleQuestion = ({
           z-index: 50000;
           background-color: rgba(0, 0, 0, 0.95);
           backdrop-filter: blur(8px);
+          opacity: 0;
+          visibility: hidden;
+          transition: opacity 0.3s ease, visibility 0.3s ease;
+          padding: 20px; /* Add padding to ensure content doesn't touch edges */
+        }
+        
+        .image-modal.active {
+          opacity: 1;
+          visibility: visible;
+        }
+        
+        /* Close button highlight effect */
+        .modal-close-btn {
+          position: absolute;
+          top: 20px;
+          right: 20px;
+          background-color: rgba(16, 185, 129, 0.3);
+          color: white;
+          border: 2px solid rgba(16, 185, 129, 0.8);
+          border-radius: 50%;
+          width: 40px;
+          height: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          z-index: 60001;
+          box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+          animation: pulse-glow 2s infinite;
+        }
+        
+        @keyframes pulse-glow {
+          0%, 100% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.5); }
+          50% { box-shadow: 0 0 25px rgba(16, 185, 129, 0.8); }
+        }
+        
+        @keyframes fade-in {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-in-out;
         }
 
         .animate-token-shine {
@@ -201,25 +256,31 @@ const RiddleQuestion = ({
             )}
 
             {/* Image Modal */}
-            {showImageModal && question.image && (
-              <div className="image-modal">
-                <div className="relative w-full h-full flex items-center justify-center p-4">
-                  <Button
-                    onClick={() => setShowImageModal(false)}
-                    className="absolute top-6 right-6 bg-black/90 border-2 border-emerald-400 text-emerald-400 rounded-full p-2 hover:bg-emerald-400/20 transition-colors duration-200 z-[60000] shadow-lg"
-                    size="icon"
-                    aria-label="Close image"
-                  >
-                    <X className="h-6 w-6" />
-                  </Button>
-                  <img
-                    src={question.image}
-                    alt="Image de l'énigme (plein écran)"
-                    className="max-w-[95vw] max-h-[95vh] object-contain rounded-lg shadow-2xl"
-                  />
+            <div className={`image-modal ${showImageModal ? 'active' : ''}`}>
+              <div className="relative w-full h-full flex items-center justify-center animate-fade-in">
+                {/* Improved close button with better visibility */}
+                <div 
+                  onClick={() => setShowImageModal(false)}
+                  className="modal-close-btn"
+                  aria-label="Fermer l'image"
+                  title="Fermer l'image (Echap)"
+                >
+                  <X className="h-8 w-8" />
+                </div>
+                
+                {/* Improved image container with better sizing */}
+                <div className="w-[90%] h-[90%] flex items-center justify-center">
+                  {question.image && (
+                    <img
+                      src={question.image}
+                      alt="Image de l'énigme (plein écran)"
+                      className="max-w-full max-h-full object-contain rounded-lg shadow-2xl border-2 border-emerald-400/30"
+                      style={{ maxHeight: '85vh' }} /* Ensure image fits within viewport */
+                    />
+                  )}
                 </div>
               </div>
-            )}
+            </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="flex">

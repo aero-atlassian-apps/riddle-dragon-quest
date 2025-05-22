@@ -232,7 +232,11 @@ export const getSessionQuestions = async (sessionId: string): Promise<Question[]
     id: q.id,
     text: q.text,
     answer: q.answer,
-    image: q.image
+    image: q.image,
+    hint: q.hint,
+    doorNumber: q.door_number,
+    points: q.points,
+    style: q.style
   }));
 };
 
