@@ -128,12 +128,12 @@ const RiddleQuestion = ({
           display: flex;
           align-items: center;
           justify-content: center;
-          z-index: 50000;
-          background-color: rgba(0, 0, 0, 0.95);
+          z-index: 100000;
+          background-color: rgba(0, 0, 0, 0.9);
           backdrop-filter: blur(8px);
           opacity: 0;
           visibility: hidden;
-          transition: opacity 0.3s ease, visibility 0.3s ease;
+          transition: all 0.4s ease;
           padding: 20px; /* Add padding to ensure content doesn't touch edges */
         }
         
@@ -147,33 +147,47 @@ const RiddleQuestion = ({
           position: absolute;
           top: 20px;
           right: 20px;
-          background-color: rgba(16, 185, 129, 0.3);
+          background-color: rgba(220, 38, 38, 0.8);
           color: white;
-          border: 2px solid rgba(16, 185, 129, 0.8);
           border-radius: 50%;
-          width: 40px;
-          height: 40px;
+          width: 48px;
+          height: 48px;
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
-          z-index: 60001;
-          box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+          z-index: 100001;
           animation: pulse-glow 2s infinite;
+          transition: all 0.2s ease;
+          border: 2px solid rgba(255, 255, 255, 0.7);
+        }
+        
+        .modal-close-btn:hover {
+          background-color: rgba(185, 28, 28, 0.9);
+          transform: scale(1.1);
         }
         
         @keyframes pulse-glow {
-          0%, 100% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.5); }
-          50% { box-shadow: 0 0 25px rgba(16, 185, 129, 0.8); }
+          0%, 100% { box-shadow: 0 0 15px rgba(255, 0, 0, 0.7), 0 0 5px rgba(255, 255, 255, 0.5); }
+          50% { box-shadow: 0 0 25px rgba(255, 0, 0, 1), 0 0 15px rgba(255, 255, 255, 0.8); }
         }
         
         @keyframes fade-in {
-          from { opacity: 0; }
-          to { opacity: 1; }
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        
+        @keyframes zoom-in {
+          from { transform: scale(0.8); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
         }
         
         .animate-fade-in {
-          animation: fade-in 0.3s ease-in-out;
+          animation: fade-in 0.4s ease-in-out;
+        }
+        
+        .animate-zoom-in {
+          animation: zoom-in 0.5s ease-out;
         }
 
         .animate-token-shine {
@@ -265,19 +279,23 @@ const RiddleQuestion = ({
                   aria-label="Fermer l'image"
                   title="Fermer l'image (Echap)"
                 >
-                  <X className="h-8 w-8" />
+                  <X className="h-8 w-8" strokeWidth={3} />
                 </div>
                 
                 {/* Improved image container with better sizing */}
-                <div className="w-[90%] h-[90%] flex items-center justify-center">
+                <div className="w-[85%] h-[85%] flex items-center justify-center bg-black/50 p-4 rounded-xl border-2 border-white/20">
                   {question.image && (
                     <img
-                      src={question.image}
-                      alt="Image de l'énigme (plein écran)"
-                      className="max-w-full max-h-full object-contain rounded-lg shadow-2xl border-2 border-emerald-400/30"
-                      style={{ maxHeight: '85vh' }} /* Ensure image fits within viewport */
+                      src={question.image}                      alt="Image de l'énigme (plein écran)"
+                      className="max-w-full max-h-full object-contain rounded-lg shadow-2xl border-2 border-emerald-400/30 animate-zoom-in"
+                      style={{ maxHeight: '80vh', maxWidth: '100%' }} /* Ensure image fits within viewport */
                     />
                   )}
+                </div>
+                
+                {/* Instructions overlay */}
+                <div className="absolute bottom-4 left-0 right-0 text-center text-white/70 text-sm">
+                  Appuyez sur <kbd className="px-2 py-1 bg-gray-700 rounded mx-1">ESC</kbd> ou cliquez sur le bouton X pour fermer
                 </div>
               </div>
             </div>

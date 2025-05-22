@@ -441,7 +441,10 @@ const Room: React.FC = () => {
                           text: questionData.text,
                           answer: questionData.answer,
                           image: questionData.image,
-                          doorNumber: questionData.door_number
+                          hint: questionData.hint,
+                          doorNumber: questionData.door_number,
+                          points: questionData.points,
+                          style: questionData.style
                         };
                         setQuestion(questionToSet);
                         setShowQuestion(true);
