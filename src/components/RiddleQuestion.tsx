@@ -181,42 +181,10 @@ const RiddleQuestion = ({
                 <img
                   src={question.image}
                   alt="Image de l'énigme"
-                  className="h-full w-auto rounded-md border border-gray-300 cursor-pointer hover:opacity-80 transition-opacity object-contain"
-                  onClick={() => setShowImageModal(true)}
+                  className="h-full w-auto rounded-md border border-gray-300 object-contain"
                 />
               </div>
             )}
-
-            {/* Image Modal */}
-            <div className={`image-modal ${showImageModal ? 'active' : ''}`}>
-              <div className="relative w-full h-full flex items-center justify-center animate-fade-in">
-                {/* Improved close button with better visibility */}
-                <div 
-                  onClick={() => setShowImageModal(false)}
-                  className="modal-close-btn"
-                  aria-label="Fermer l'image"
-                  title="Fermer l'image (Echap)"
-                >
-                  <X className="h-8 w-8" strokeWidth={3} />
-                </div>
-                
-                {/* Improved image container with better sizing */}
-                <div className="w-[85%] h-[85%] flex items-center justify-center bg-black/50 p-4 rounded-xl border-2 border-white/20">
-                  {question.image && (
-                    <img
-                      src={question.image}                      alt="Image de l'énigme (plein écran)"
-                      className="max-w-full max-h-full object-contain rounded-lg shadow-2xl border-2 border-emerald-400/30 animate-zoom-in"
-                      style={{ maxHeight: '80vh', maxWidth: '100%' }} /* Ensure image fits within viewport */
-                    />
-                  )}
-                </div>
-                
-                {/* Instructions overlay */}
-                <div className="absolute bottom-4 left-0 right-0 text-center text-white/70 text-sm">
-                  Appuyez sur <kbd className="px-2 py-1 bg-gray-700 rounded mx-1">ESC</kbd> ou cliquez sur le bouton X pour fermer
-                </div>
-              </div>
-            </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="flex">
