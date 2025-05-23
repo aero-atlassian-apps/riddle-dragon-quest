@@ -174,10 +174,10 @@ const Room: React.FC = () => {
               setSessionStatus(null);
             }
           } else {
-            console.error("La salle n'existe plus");
+            console.error("La troupe n'existe plus");
             toast({
               title: "Error",
-              description: "La salle n'existe plus",
+              description: "La troupe n'existe plus",
               variant: "destructive",
             });
             navigate('/');
@@ -305,7 +305,7 @@ const Room: React.FC = () => {
   }
 
   if (!room) {
-    return <div className="text-center">La salle n'existe plus.</div>;
+    return <div className="text-center">La troupe n'existe plus.</div>;
   }
 
   return (
@@ -364,7 +364,7 @@ const Room: React.FC = () => {
             {!sessionStatus && (
               <>
                 <p className="text-red-400">$ ÉCHEC DE LA CONNEXION. IMPOSSIBLE D'ÉTABLIR LE LIEN.</p>
-                <p className="text-red-400">$ VEUILLEZ VÉRIFIER LES IDENTIFIANTS DE LA SALLE ET RÉESSAYER.</p>
+                <p className="text-red-400">$ VEUILLEZ VÉRIFIER LES IDENTIFIANTS DE LA TROUPE ET RÉESSAYER.</p>
               </>
             )}
           </div>

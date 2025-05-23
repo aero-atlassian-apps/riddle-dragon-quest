@@ -353,7 +353,7 @@ const AdminDashboard = () => {
                                   className="border-green-500 text-green-400 hover:bg-green-500/20"
                                   onClick={() => handleViewRooms(session.id)}
                                 >
-                                  <ExternalLink size={16} className="mr-1" /> VOIR_SALLES
+                                  <ExternalLink size={16} className="mr-1" /> VOIR_TROUPES
                                 </Button>
                                 
                                 {session.status === 'en attente' && (
@@ -417,7 +417,7 @@ const AdminDashboard = () => {
           <AlertDialogHeader>
             <AlertDialogTitle className="text-red-500 font-pixel">! ATTENTION !</AlertDialogTitle>
             <AlertDialogDescription className="text-red-400 font-mono">
-              Cette action supprimera définitivement la session, toutes les salles associées,
+              Cette action supprimera définitivement la session, toutes les troupes associées,
               les questions et les scores. Cette action est irréversible.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -442,7 +442,7 @@ const AdminDashboard = () => {
           <div className="relative z-10">
             <DialogHeader>
               <DialogTitle className="font-pixel text-green-400">
-                $ {currentSessionName} - Salles
+                $ {currentSessionName} - Troupes
               </DialogTitle>
               <DialogDescription className="text-green-400/80 font-mono">
                 Partagez ces liens avec les participants pour rejoindre la session de jeu.
@@ -464,10 +464,10 @@ const AdminDashboard = () => {
               {loadingRooms ? (
                 <div className="text-center py-8">
                   <div className="animate-spin h-6 w-6 border-2 border-green-500 border-t-transparent rounded-full mx-auto mb-2"></div>
-                  <p className="text-green-400 font-pixel">Chargement des salles...</p>
+                  <p className="text-green-400 font-pixel">Chargement des troupes...</p>
                 </div>
               ) : sessionRooms.length === 0 ? (
-                <p className="text-center text-green-400 font-pixel"> Aucune salle trouvée_</p>
+                <p className="text-center text-green-400 font-pixel"> Aucune troupe trouvée_</p>
               ) : (
                 <ScrollArea className="max-h-[60vh]">
                   <div className="space-y-4">
@@ -487,7 +487,7 @@ const AdminDashboard = () => {
                               variant="outline"
                               className="border-green-500 text-green-400 hover:bg-green-500/20 h-8 w-8"
                               onClick={() => copyToClipboard(room.link)}
-                              title="Copier le lien vers la salle"
+                              title="Copier le lien vers la troupe"
                             >
                               <Copy className="h-4 w-4" />
                             </Button>
@@ -496,7 +496,7 @@ const AdminDashboard = () => {
                               variant="outline"
                               className="border-green-500 text-green-400 hover:bg-green-500/20 h-8 w-8"
                               asChild
-                              title="Ouvrir la salle"
+                              title="Ouvrir la troupe"
                             >
                               <a href={room.link} target="_blank" rel="noopener noreferrer">
                                 <ExternalLink className="h-4 w-4" />
