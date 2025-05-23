@@ -68,7 +68,7 @@ const RiddleQuestion = ({
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6 rounded-lg relative overflow-hidden">
+    <div className="max-w-4xl mx-auto p-6 rounded-lg relative overflow-hidden">
       <style>
         {`
         @keyframes success-pulse {
@@ -177,7 +177,7 @@ const RiddleQuestion = ({
         ) : (
           <>
             {question.image && (
-              <div className="mb-4 flex justify-center h-96">
+              <div className="mb-4 flex justify-center h-[500px]">
                 <img
                   src={question.image}
                   alt="Image de l'énigme"
