@@ -1,0 +1,52 @@
+{
+  "questions": [
+    {
+      "id": 1,
+      "text": "Quel est le nombre total d’éléments actuellement en cours dans le système (WIP global) ?",
+      "hint": "identifiez les colonnes qui représentent un travail \"En Cours\"",
+      "answer": "5",
+      "style": "work_analysis",
+      "points": 140
+    },
+    {
+      "id": 2,
+      "text": "Combien de défauts de production ont échappé aux tests avant la mise en production de la Release 2?",
+      "hint": "Chaque colonne représente les défauts échappés d'une release",
+      "answer": "20",
+      "style": "technical_debt",
+      "points": 150
+    },
+    {
+      "id": 3,
+      "text": "Quel est le pourcentage de story points consacrés à la réduction de la dette technique ?",
+      "hint": "Faites attention au \"Label\"",
+      "answer": "11",
+      "style": "technical_debt",
+      "points": 160
+    },
+    {
+      "id": 4,
+      "text": "Quel est le pourcentage des défauts échappés pour la release 2?",
+      "hint": "Taux de défauts échappés (%) = (Défauts échappés/ Totale des défauts) *100",
+      "answer": "64",
+      "style": "percentage",
+      "points": 170
+    },
+    {
+      "id": 5,
+      "text": "Quelle étape du flux semble être le goulet d’étranglement au vu de l'accumulation croissante des tickets ?",
+      "hint": "L'élargissement vertical d'une zone d'une même couleur (même statut) représente une augmentation du nombre de tickets dans ce même état -> surcharge",
+      "answer": "QA",
+      "style": "work_analysis",
+      "points": 180
+    },
+    {
+      "id": 6,
+      "text": "Quel est le cycle time pour cette période en jours ?",
+      "hint": "Lors du calcul du Cycle Time, on évite les valeurs extrêmes. Ne comptabilisez par les heures",
+      "answer": "4",
+      "style": "metric_calculation",
+      "points": 200
+    }
+  ]
+}
