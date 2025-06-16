@@ -54,6 +54,18 @@ const Room: React.FC = () => {
   const user = useUser();
   const { startConfetti, stopConfetti } = useConfettiStore();
 
+  const normalizeString = (str) => {
+    return str
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
+      .replace(/['']/g, "'") // Normalize apostrophes
+      .replace(/[""]/g, '"') // Normalize quotes
+      .replace(/[–—]/g, '-'); // Normalize dashes
+  };
+
   const handleRoomNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNewRoomName(e.target.value);
   };
@@ -222,7 +234,7 @@ const Room: React.FC = () => {
         return room.currentDoor > 6 ? true : index + 1 < room.currentDoor;
       });
       setDoorStates(newDoorStates);
-      
+
       // If all doors are open, trigger celebration
       if (room.currentDoor > 6) {
         startConfetti();
@@ -482,7 +494,7 @@ const Room: React.FC = () => {
                     throw new Error('Missing question or room data');
                   }
 
-                  const isCorrect = answer.toLowerCase() === gameState.currentQuestion.answer.toLowerCase();
+                  const isCorrect = normalizeString(answer) === normalizeString(gameState.currentQuestion.answer);
                   gameState.isAnswerCorrect = isCorrect;
 
                   if (isCorrect) {
@@ -494,7 +506,7 @@ const Room: React.FC = () => {
                       const timeBonus = isLastDoor ? 200 : 0;
                       return pointsWithPenalty + timeBonus;
                     };
-                    
+
                     // Calculate points based on tokens used and question points
                     const tokensUsed = 3 - room.tokensLeft;
                     const { data: questionData } = await supabase
@@ -549,7 +561,7 @@ const Room: React.FC = () => {
                     if (allDoorsOpen) {
                       // Trigger more intense celebration for challenge completion
                       startConfetti();
-                      
+
                       // Play victory sound
                       const victoryAudio = new Audio('/sounds/victory.mp3');
                       await victoryAudio.play().catch(console.error);
@@ -574,7 +586,7 @@ const Room: React.FC = () => {
               }}
               onUseToken={async () => {
                 if (!room || !gameState.currentQuestion) return;
-                
+
                 // Update tokens in the database
                 const newTokensLeft = room.tokensLeft - 1;
                 const { error } = await supabase
@@ -594,7 +606,7 @@ const Room: React.FC = () => {
 
                 // Update local state
                 setRoom(prev => prev ? { ...prev, tokensLeft: newTokensLeft } : null);
-                
+
                 // Call the context's useToken function
                 useToken();
               }}
