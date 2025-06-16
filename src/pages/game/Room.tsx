@@ -259,10 +259,11 @@ const Room: React.FC = () => {
   }, [isSessionCompleted, stopConfetti, startConfetti]);
 
   useEffect(() => {
-    let channel: any;
+    let roomChannel: any;
+    let sessionChannel: any;
 
     if (roomId && isDirectlyNavigated) {
-      channel = supabase
+      roomChannel = supabase
         .channel('room-status-subscription')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` },
           (payload) => {
@@ -284,7 +285,7 @@ const Room: React.FC = () => {
           })
         .subscribe();
 
-      supabase
+      sessionChannel = supabase
         .channel('session-status-subscription')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' },
           (payload) => {
@@ -296,8 +297,11 @@ const Room: React.FC = () => {
         .subscribe();
 
       return () => {
-        if (channel) {
-          supabase.removeChannel(channel);
+        if (roomChannel) {
+          supabase.removeChannel(roomChannel);
+        }
+        if (sessionChannel) {
+          supabase.removeChannel(sessionChannel);
         }
       };
     }
