@@ -100,7 +100,7 @@ const QuestionManager: React.FC<QuestionManagerProps> = ({ sessionId, onComplete
                 <div className="flex items-start gap-4">
                   <div className="flex-grow">
                     <h3 className="font-mono text-lg mb-2 text-green-400">$ QUESTION_{index + 1}</h3>
-                    <p className="mb-2 text-green-400/90 font-mono">{question.text}</p>
+                    <p className="mb-2 text-green-400/90 font-mono whitespace-pre-line">{question.text}</p>
                     <p className="text-sm text-green-400/70 font-mono">$ REPONSE: <span className="font-semibold text-green-400">{question.answer}</span></p>
                   </div>
                   

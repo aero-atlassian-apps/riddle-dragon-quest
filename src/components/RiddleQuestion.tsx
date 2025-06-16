@@ -171,7 +171,7 @@ const RiddleQuestion = ({
             </div>
             <div className="victory-text space-y-2">
               <p className="text-2xl font-medieval text-amber-400">Gardien Vaincu!</p>
-              <p className="text-lg font-medieval text-emerald-400">Porte {doorNumber} Déverrouillée</p>
+              <p className="text-lg font-medieval text-emerald-400">Porte Déverrouillée</p>
             </div>
           </div>
         ) : (

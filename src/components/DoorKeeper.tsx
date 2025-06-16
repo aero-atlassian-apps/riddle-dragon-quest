@@ -147,7 +147,7 @@ const DoorKeeper: React.FC<DoorKeeperProps> = ({ isCorrect, isSpeaking, question
           {/* On mobile, position above; on desktop, position to the right */}
           <div className="bg-black/90 rounded-lg border-2 border-emerald-400/50 p-4 relative shadow-lg backdrop-blur-sm">
             <div className="mb-3 text-center">
-              <p className="mt-3 text-emerald-300 font-mono text-sm leading-relaxed">{question.text}</p>
+              <p className="mt-3 text-emerald-300 font-mono text-sm leading-relaxed whitespace-pre-line">{question.text}</p>
             </div>
             <div className="absolute top-1/2 left-0 transform -translate-x-1/2 -translate-y-1/2">
               <svg width="15" height="30" viewBox="0 0 15 30">
