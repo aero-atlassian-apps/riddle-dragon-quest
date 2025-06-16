@@ -356,6 +356,12 @@ const Room: React.FC = () => {
                 <h3 className="text-2xl text-yellow-500 font-pixel glitch">[ SESSION DE JEU: EN ATTENTE ]</h3>
               </>
             )}
+            {sessionStatus === "active" && (
+              <>
+                <span className="w-3 h-3 rounded-full bg-green-500 animate-pulse mr-2" />
+                <h3 className="text-2xl text-green-500 font-pixel glitch">[ SESSION DE JEU: ACTIVE ]</h3>
+              </>
+            )}
             {sessionStatus === "terminée" && (
               <>
                 <span className="w-3 h-3 rounded-full bg-blue-500 animate-pulse mr-2" />
@@ -369,6 +375,15 @@ const Room: React.FC = () => {
               </>
             )}
           </div>
+
+          {sessionStatus === "active" && (
+            <div className="text-center mb-4">
+              <h4 className="text-xl font-bold text-amber-400 mb-2">Contexte</h4>
+              <p className="text-gray-300 font-pixel text-sm leading-relaxed max-w-4xl mx-auto">
+                Le registre des traitements a été imprimé, mais certaines colonnes sont effacées. Pour compléter le registre et passer à l'étape suivante, il faut identifier 6 informations obligatoires dans tout registre de traitement.
+              </p>
+            </div>
+          )}
 
           <div className="text-sm font-pixel typing-effect mt-2">
             {sessionStatus === "terminée" && (

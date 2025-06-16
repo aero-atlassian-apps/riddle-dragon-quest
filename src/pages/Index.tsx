@@ -12,12 +12,12 @@ const Index = () => {
       <div className="max-w-4xl w-full mx-auto text-center my-auto">
         <div className="bg-[#1a1a1a] p-8 rounded-xl border-4 border-[#00ff00]/30">
           <h1 className="text-5xl md:text-6xl font-bold mb-8 text-[#00ff00] shadow-[0_0_10px_#00ff00] font-medieval">
-            Games of <span className="text-[#39ff14]">COPs</span>
+            Serious <span className="text-[#39ff14]">GAMES</span>
           </h1>
           
           <div className="mb-8">
             <p className="text-xl text-[#00ff00] mb-6 font-medieval">
-              "Quand vous jouez aux Games of COPs, vous gagnez ou vous apprenez. Il n'y a pas de juste milieu."
+              "Quand vous jouez à nos SERIOUS GAMES, vous gagnez ou vous apprenez. Il n'y a pas de juste milieu."
             </p>
             
             <div className="my-12 flex justify-center">
@@ -73,7 +73,7 @@ const Index = () => {
       </div>
       
       <footer className="mt-8 text-sm text-[#00ff00]/70 text-center font-medieval">
-        &copy; {new Date().getFullYear()} Games of COPs. Tous droits réservés par ordre du Roi.
+        &copy; {new Date().getFullYear()} AWB Serious GAMES. Tous droits réservés par ordre du Roi.
       </footer>
     </div>
   );

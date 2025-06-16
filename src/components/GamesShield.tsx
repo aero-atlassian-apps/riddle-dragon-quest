@@ -39,16 +39,16 @@ const GamesShield: React.FC<GamesShieldProps> = ({ className = '' }) => {
           {/* Shield */}
           <path 
             d="M0,-120 L120,-80 C120,0 120,80 0,120 C-120,80 -120,0 -120,-80 Z" 
-            fill="#F59E0B" 
-            stroke="#8B5CF6" 
+            fill="#DC2626" 
+            stroke="#EA580C" 
             strokeWidth="4" 
           />
           
           {/* Inner shield design */}
           <path 
             d="M0,-100 L100,-65 C100,0 100,65 0,100 C-100,65 -100,0 -100,-65 Z" 
-            fill="#FEF7CD" 
-            stroke="#7E69AB" 
+            fill="#FED7AA" 
+            stroke="#C2410C" 
             strokeWidth="2" 
           />
           
@@ -74,7 +74,7 @@ const GamesShield: React.FC<GamesShieldProps> = ({ className = '' }) => {
             fontSize="50"
             fontFamily="'Cinzel', serif"
           >
-            GAME OF
+            Ready for the Adventure ?
           </text>
           <text 
             x="400" 
@@ -87,7 +87,7 @@ const GamesShield: React.FC<GamesShieldProps> = ({ className = '' }) => {
             fontSize="70"
             fontFamily="'Cinzel', serif"
           >
-            METRICS
+            Let's GO
           </text>
         </g>
       </svg>
