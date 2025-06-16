@@ -31,7 +31,7 @@ const RoomCreator: React.FC<RoomCreatorProps> = ({ sessionId, onCreateRooms, onC
   const { toast } = useToast();
 
   const incrementRooms = () => {
-    if (numberOfRooms < 5) {
+    if (numberOfRooms < 10) {
       setNumberOfRooms(prev => prev + 1);
     }
   };
@@ -116,7 +116,7 @@ const RoomCreator: React.FC<RoomCreatorProps> = ({ sessionId, onCreateRooms, onC
         {!showLinks ? (
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-4">
-              <Label className="mb-3 block text-lg font-mono text-green-400">$ NOMBRE_DE_MAISONS (2-5):</Label>
+              <Label className="mb-3 block text-lg font-mono text-green-400">$ NOMBRE_DE_MAISONS (2-10):</Label>
               
               <div className="flex items-center justify-center space-x-4">
                 <Button
@@ -137,7 +137,7 @@ const RoomCreator: React.FC<RoomCreatorProps> = ({ sessionId, onCreateRooms, onC
                   variant="outline"
                   size="icon"
                   onClick={incrementRooms}
-                  disabled={numberOfRooms >= 5}
+                  disabled={numberOfRooms >= 10}
                   className="border-green-500/50 text-green-400 hover:bg-green-500/20 disabled:opacity-50"
                 >
                   <Plus className="h-4 w-4" />
@@ -149,7 +149,7 @@ const RoomCreator: React.FC<RoomCreatorProps> = ({ sessionId, onCreateRooms, onC
                   type="submit" 
                   className="w-full bg-green-500 hover:bg-green-600 text-black font-pixel"
                 >
-                  $ CRÉER_MAISONS
+                  $ CRÉER_ROOMS
                 </Button>
               </div>
             </div>
