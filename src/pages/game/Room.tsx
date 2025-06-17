@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import DoorKeeper from '@/components/DoorKeeper';
 import { toast } from '@/components/ui/use-toast';
-import { getRoom, getSessionStatus, getSession } from '@/utils/db';
+import { getRoom, getSessionStatus, getSession, getMaxDoorNumber } from '@/utils/db';
 import { supabase } from '@/integrations/supabase/client';
 import { Session, Room as RoomType } from '@/types/game';
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,6 @@ import { useConfettiStore } from '@/store/confettiStore';
 import { useModal } from '@/store/modalStore';
 import { useGameStore } from '@/store/gameStore';
 import { Confetti } from '@/components/Confetti';
-import { calculateDoorStates } from '@/utils/gameLogic';
 import RiddleQuestion from '@/components/RiddleQuestion';
 import { useGame } from '@/context/GameContext';
 
@@ -35,6 +34,7 @@ const Room: React.FC = () => {
   const [room, setRoom] = useState<RoomType | null>(null);
   const [sessionStatus, setSessionStatus] = useState<string | null>(null);
   const [sessionContext, setSessionContext] = useState<string | null>(null);
+  const [totalDoors, setTotalDoors] = useState<number>(6);
   const [isLoading, setIsLoading] = useState(true);
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [isSessionCompleted, setIsSessionCompleted] = useState(false);
@@ -49,7 +49,7 @@ const Room: React.FC = () => {
   const [showQuestion, setShowQuestion] = useState(false);
 
   const { openModal, closeModal } = useModal();
-  const { gameState, setQuestion, submitAnswer, useToken } = useGame();
+  const { gameState, setQuestion, submitAnswer, useToken, setTotalDoors: setGameTotalDoors } = useGame();
   const { setRoomId: setStoreRoomId } = useGameStore();
   const confettiRef = useRef<HTMLDivElement>(null);
   const user = useUser();
@@ -173,10 +173,16 @@ const Room: React.FC = () => {
             setStoreRoomId(currentRoom.id);
 
             if (currentRoom.sessionId) {
-              const [status, session] = await Promise.all([
+              const [status, session, maxDoorNumber] = await Promise.all([
                 getSessionStatus(currentRoom.sessionId),
-                getSession(currentRoom.sessionId)
+                getSession(currentRoom.sessionId),
+                getMaxDoorNumber(currentRoom.sessionId)
               ]);
+              
+              // Set dynamic total doors
+              setTotalDoors(maxDoorNumber);
+              setGameTotalDoors(maxDoorNumber);
+              console.log('Total doors set to:', maxDoorNumber);
               
               // Only set the session status if we got a valid response
               if (status) {
@@ -240,22 +246,21 @@ const Room: React.FC = () => {
   useEffect(() => {
     if (room) {
       // Calculate door states based on current door and total doors
-      const totalDoors = 6; // Total number of doors in the game
       const newDoorStates = Array(totalDoors).fill(false).map((_, index) => {
         // A door is considered open if its number is less than the current door
         // This means the player has already completed this door
-        // If currentDoor > 6, all doors should be open (challenge completed)
-        return room.currentDoor > 6 ? true : index + 1 < room.currentDoor;
+        // If currentDoor > totalDoors, all doors should be open (challenge completed)
+        return room.currentDoor > totalDoors ? true : index + 1 < room.currentDoor;
       });
       setDoorStates(newDoorStates);
 
       // If all doors are open, trigger celebration
-      if (room.currentDoor > 6) {
+      if (room.currentDoor > totalDoors) {
         startConfetti();
         setShowConfetti(true);
       }
     }
-  }, [room, startConfetti]);
+  }, [room, totalDoors, startConfetti]);
 
   useEffect(() => {
     if (isSessionCompleted) {
@@ -370,12 +375,6 @@ const Room: React.FC = () => {
                 <h3 className="text-2xl text-yellow-500 font-pixel glitch">[ SESSION DE JEU: EN ATTENTE ]</h3>
               </>
             )}
-            {sessionStatus === "active" && (
-              <>
-                <span className="w-3 h-3 rounded-full bg-green-500 animate-pulse mr-2" />
-                <h3 className="text-2xl text-green-500 font-pixel glitch">[ SESSION DE JEU: ACTIVE ]</h3>
-              </>
-            )}
             {sessionStatus === "terminée" && (
               <>
                 <span className="w-3 h-3 rounded-full bg-blue-500 animate-pulse mr-2" />
@@ -394,7 +393,7 @@ const Room: React.FC = () => {
             <div className="text-center mb-4">
               <h4 className="text-xl font-bold text-amber-400 mb-2">Contexte</h4>
               <p className="text-gray-300 font-pixel text-sm leading-relaxed max-w-4xl mx-auto">
-                test {sessionContext}
+                {sessionContext}
               </p>
             </div>
           )}
@@ -419,7 +418,7 @@ const Room: React.FC = () => {
       {!showQuestion ? (
         <div className="max-w-6xl mx-auto px-4">
           {/* Challenge completion message - shown when all doors are open */}
-          {room.currentDoor > 6 && (
+          {room.currentDoor > totalDoors && (
             <div className="mb-12 text-center p-6 bg-black/80 border-2 border-amber-500 rounded-lg font-mono relative overflow-hidden animate-pulse">
               <div className="absolute inset-0 bg-[url('/textures/stone-pattern.svg')] opacity-5" />
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,215,0,0.2)_0%,transparent_70%)]" />
@@ -434,7 +433,12 @@ const Room: React.FC = () => {
               </div>
             </div>
           )}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-16 place-items-center">
+          <div className={`grid gap-x-12 gap-y-16 place-items-center ${
+            totalDoors <= 3 ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' :
+            totalDoors <= 6 ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' :
+            totalDoors <= 9 ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' :
+            'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'
+          }`}>
             {doorStates.map((isOpen, index) => (
               <div key={index} className="flex flex-col items-center transform hover:scale-105 transition-transform duration-300">
                 <Door
@@ -542,7 +546,7 @@ const Room: React.FC = () => {
                     };
 
                     // Calculate points based on tokens used and question points
-                    const tokensUsed = 3 - room.tokensLeft;
+                    const tokensUsed = 1 - room.tokensLeft;
                     const { data: questionData } = await supabase
                       .from('questions')
                       .select('points')
@@ -550,7 +554,7 @@ const Room: React.FC = () => {
                       .single();
 
                     const questionPoints = questionData?.points || 100;
-                    const isLastDoor = room.currentDoor === 6;
+                    const isLastDoor = room.currentDoor === totalDoors;
                     const finalScore = calculateFinalScore(questionPoints, tokensUsed, isLastDoor);
 
                     // Start a transaction to update the room state
@@ -591,7 +595,7 @@ const Room: React.FC = () => {
                     await audio.play().catch(console.error); // Handle audio play error gracefully
 
                     // Check if all doors are now open (challenge completed)
-                    const allDoorsOpen = updatedRoom.current_door > 6;
+                    const allDoorsOpen = updatedRoom.current_door > totalDoors;
                     if (allDoorsOpen) {
                       // Trigger more intense celebration for challenge completion
                       startConfetti();

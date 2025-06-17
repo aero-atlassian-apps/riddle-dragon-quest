@@ -194,23 +194,11 @@ const RiddleQuestion = ({
                 {question.prize && (
                   <Button
                     onClick={() => setShowPrizeModal(true)}
-                    className="bg-amber-500 hover:bg-amber-600 text-white font-medieval px-6 py-3 text-lg transition-all duration-200 transform hover:scale-105"
+                    className="bg-green-800 hover:bg-green-900 text-white font-medieval px-6 py-3 text-lg transition-all duration-200 transform hover:scale-105 border-2 border-yellow-400 hover:border-yellow-300"
                   >
                     🏆 Réclamer la Récompense
                   </Button>
                 )}
-                
-                <Button
-                  onClick={() => {
-                    // Reset states and close question view
-                    setShowPrizeModal(false);
-                    // This will trigger the parent component to handle the transition
-                    window.dispatchEvent(new CustomEvent('continueToNextRoom'));
-                  }}
-                  className="bg-emerald-500 hover:bg-emerald-600 text-white font-medieval px-6 py-3 text-lg transition-all duration-200 transform hover:scale-105"
-                >
-                  ⚡ Continuer vers la Prochaine Porte
-                </Button>
               </div>
             </div>
           </div>
@@ -237,7 +225,7 @@ const RiddleQuestion = ({
                 />
 
                 <div className="flex items-center space-x-2 ml-2">
-                  {[...Array(3)].map((_, i) => (
+                  {[...Array(1)].map((_, i) => (
                     <div
                       key={i}
                       className={`relative w-8 h-8 transition-all duration-300 transform ${i < tokensLeft ? 'scale-100 cursor-pointer hover:scale-110' : 'scale-90 opacity-40'}`}
@@ -282,7 +270,7 @@ const RiddleQuestion = ({
 
       {/* Prize Modal */}
       <Dialog open={showPrizeModal} onOpenChange={setShowPrizeModal}>
-        <DialogContent className="sm:max-w-md bg-gradient-to-br from-amber-50 to-yellow-100 border-2 border-amber-300">
+        <DialogContent className="sm:max-w-md bg-gradient-to-br from-gray-900 to-green-900 border-2 border-yellow-400">
           <DialogHeader className="text-center">
             <div className="flex justify-center mb-4">
               <div className="relative">
@@ -290,20 +278,19 @@ const RiddleQuestion = ({
                 <div className="absolute -top-2 -right-2 h-6 w-6 bg-amber-400 rounded-full animate-ping"></div>
               </div>
             </div>
-            <DialogTitle className="text-2xl font-bold text-amber-800 font-medieval">
+            <DialogTitle className="text-2xl font-bold text-yellow-400 font-medieval">
               🎉 Récompense Obtenue! 🎉
             </DialogTitle>
-            <DialogDescription className="text-amber-700 font-medium">
+            <DialogDescription className="text-green-300 font-medium">
               Félicitations! Vous avez gagné une récompense précieuse.
             </DialogDescription>
           </DialogHeader>
           
           <div className="flex flex-col items-center space-y-4 py-4">
-            <div className="bg-white/80 border-2 border-amber-300 rounded-lg p-6 w-full">
+            <div className="bg-gray-800/80 border-2 border-yellow-400 rounded-lg p-6 w-full">
               <div className="text-center">
-                <p className="text-sm text-amber-600 font-medium mb-2">Votre Prix:</p>
-                <div className="bg-gradient-to-r from-amber-100 to-yellow-100 border border-amber-300 rounded-md p-4">
-                  <p className="text-xl font-bold text-amber-800 font-mono break-all">
+                <div className="bg-gradient-to-r from-gray-800 to-green-800 border border-yellow-400 rounded-md p-4">
+                  <p className="text-xl font-bold text-yellow-300 font-mono break-all">
                     {question.prize}
                   </p>
                 </div>
@@ -313,7 +300,7 @@ const RiddleQuestion = ({
             <div className="flex space-x-3 w-full">
               <Button
                 onClick={copyPrize}
-                className="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-medium transition-all duration-200"
+                className="flex-1 bg-green-700 hover:bg-green-800 text-white font-medium transition-all duration-200 border-2 border-yellow-400"
                 disabled={copied}
               >
                 {copied ? (
@@ -324,17 +311,21 @@ const RiddleQuestion = ({
                 ) : (
                   <>
                     <Copy className="h-4 w-4 mr-2" />
-                    Copier le Prix
+                    Copier
                   </>
                 )}
               </Button>
               
               <Button
-                onClick={() => setShowPrizeModal(false)}
+                onClick={() => {
+                  setShowPrizeModal(false);
+                  const event = new CustomEvent('continueToNextRoom');
+                  window.dispatchEvent(event);
+                }}
                 variant="outline"
-                className="flex-1 border-amber-300 text-amber-700 hover:bg-amber-50"
+                className="flex-1 border-2 border-yellow-400 text-yellow-400 hover:bg-green-800/50 bg-gray-800"
               >
-                Continuer
+                ⚡ Continuer vers la Prochaine Porte
               </Button>
             </div>
           </div>

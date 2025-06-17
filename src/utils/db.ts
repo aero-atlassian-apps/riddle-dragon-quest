@@ -242,6 +242,37 @@ export const getSessionQuestions = async (sessionId: string): Promise<Question[]
   }));
 };
 
+export const getSessionQuestionCount = async (sessionId: string): Promise<number> => {
+  const { count, error } = await supabase
+    .from('questions')
+    .select('*', { count: 'exact', head: true })
+    .eq('session_id', sessionId);
+
+  if (error) {
+    console.error('Error fetching session question count:', error);
+    return 1; // Default fallback to 1 doors
+  }
+
+  return count || 1; // Default fallback to 1 doors if count is null
+};
+
+export const getMaxDoorNumber = async (sessionId: string): Promise<number> => {
+  const { data, error } = await supabase
+    .from('questions')
+    .select('door_number')
+    .eq('session_id', sessionId)
+    .order('door_number', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (error) {
+    console.error('Error fetching max door number:', error);
+    return 6; // Default fallback to 6 doors
+  }
+
+  return data?.door_number || 6; // Default fallback to 6 doors
+};
+
 export const uploadQuestionImage = async (file: File, questionId: number): Promise<string | null> => {
   const fileExt = file.name.split('.').pop();
   const fileName = `${questionId}-${Date.now()}.${fileExt}`;

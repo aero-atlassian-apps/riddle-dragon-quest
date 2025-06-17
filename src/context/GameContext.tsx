@@ -13,6 +13,7 @@ interface GameContextProps {
   setShowContinueButton: (show: boolean) => void;
   calculateTimeBonus: () => number;
   tokenMalus: number;
+  setTotalDoors: (totalDoors: number) => void;
 }
 
 interface InitialState {
@@ -22,15 +23,15 @@ interface InitialState {
 }
 
 const initialGameState: GameState = {
-  tokensLeft: 3,
+  tokensLeft: 1,
   currentDoor: 1,
   totalDoors: 6,
   score: 0,
   isAnswerCorrect: null,
   isGameComplete: false,
   startTime: new Date(),
-  timeBonus: 0,
-  tokenMalus: 0,
+  timeBonus: 1,
+  tokenMalus: 1,
 };
 
 const GameContext = createContext<GameContextProps | undefined>(undefined);
@@ -82,7 +83,7 @@ export const GameProvider: React.FC<{ children: ReactNode; initialState?: Initia
     console.log("Is answer correct?", isCorrect);
 
     if (isCorrect) {
-      const tokensUsed = 3 - gameState.tokensLeft;
+      const tokensUsed = 1 - gameState.tokensLeft;
       const questionPoints = gameState.currentQuestion.points || 100;
       const pointsEarned = Math.max(Math.floor(questionPoints * (1 - (0.1 * tokensUsed))), Math.floor(questionPoints * 0.6));
       console.log("Points earned:", pointsEarned, "from question points:", questionPoints);
@@ -145,14 +146,22 @@ export const GameProvider: React.FC<{ children: ReactNode; initialState?: Initia
     const timeBonus = Math.max(Math.floor(scaledBonus), Math.floor(maxTimeBonus * 0.1));
 
     // Calculate token malus (-30 points per token used)
-    // Since tokens are per room (not per door), we calculate based on initial tokens (3)
-    const tokensUsed = 3 - gameState.tokensLeft;
+    // Since tokens are per room (not per door), we calculate based on initial tokens (1)
+    const tokensUsed = 1 - gameState.tokensLeft;
     const tokenMalus = tokensUsed * -30;
 
     console.log(`Time bonus calculated: ${timeBonus} (Minutes: ${minutesTaken}, Difficulty: ${doorDifficultyWeight})`);
     console.log(`Token malus calculated: ${tokenMalus} (Tokens used: ${tokensUsed})`);
 
     return { timeBonus, tokenMalus };
+  };
+
+  const setTotalDoors = (totalDoors: number) => {
+    console.log("Setting total doors to:", totalDoors);
+    setGameState((prev) => ({
+      ...prev,
+      totalDoors
+    }));
   };
 
   const goToNextDoor = () => {
@@ -196,6 +205,7 @@ export const GameProvider: React.FC<{ children: ReactNode; initialState?: Initia
         setShowContinueButton,
         calculateFinalScore,
         tokenMalus: gameState.tokenMalus,
+        setTotalDoors,
       }}
     >
       {children}
