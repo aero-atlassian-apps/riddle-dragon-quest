@@ -6,7 +6,8 @@
       "hint": "",
       "answer": "Responsable de traitement",
       "style": "direct",
-      "points": 140
+      "points": 140,
+      "prize": "Clé de la Gouvernance"
     },
     {
       "id": 2,
@@ -14,7 +15,8 @@
       "hint": "",
       "answer": "Finalité",
       "style": "direct",
-      "points": 150
+      "points": 150,
+      "prize": "Sceptre de la Finalité"
     },
     {
       "id": 3,
@@ -22,7 +24,8 @@
       "hint": "Les données me concernent directement",
       "answer": "Personnes concernées",
       "style": "direct",
-      "points": 160
+      "points": 160,
+      "prize": "Bouclier des Droits"
     },
     {
       "id": 4,
@@ -30,7 +33,8 @@
       "hint": "J'identifie directement les personnes",
       "answer": "Données personnelles",
       "style": "direct",
-      "points": 170
+      "points": 170,
+      "prize": "Cristal de l'Identité"
     },
     {
       "id": 5,
@@ -38,7 +42,8 @@
       "hint": "",
       "answer": "Sous-Traitant",
       "style": "direct",
-      "points": 180
+      "points": 180,
+      "prize": "Anneau de la Délégation"
     },
     {
       "id": 6,
@@ -46,7 +51,8 @@
       "hint": "Je suis synonyme de temps",
       "answer": "Durée de conservation",
       "style": "direct",
-      "points": 180
+      "points": 180,
+      "prize": "Sablier du Temps"
     }
   ]
 }

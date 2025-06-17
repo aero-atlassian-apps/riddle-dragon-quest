@@ -8,6 +8,7 @@ export interface Question {
   doorNumber?: number;
   points?: number;
   style?: string;
+  prize?: string;
 }
 
 export interface Session {
@@ -17,6 +18,7 @@ export interface Session {
   endTime?: Date;
   questions: Question[];
   status?: string;
+  context?: string;
 }
 
 export interface Room {

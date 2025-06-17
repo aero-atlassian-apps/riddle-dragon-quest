@@ -1,10 +1,10 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Session, Question, Room, Score } from "@/types/game";
 
-export const createSession = async (name: string): Promise<Session | null> => {
+export const createSession = async (name: string, context?: string): Promise<Session | null> => {
   const { data, error } = await supabase
     .from('sessions')
-    .insert([{ name }])
+    .insert([{ name, context }])
     .select()
     .single();
 
@@ -19,7 +19,8 @@ export const createSession = async (name: string): Promise<Session | null> => {
     startTime: new Date(data.start_time),
     endTime: data.end_time ? new Date(data.end_time) : undefined,
     questions: [],
-    status: data.status
+    status: data.status,
+    context: data.context
   };
 };
 
@@ -40,7 +41,8 @@ export const getSessions = async (): Promise<Session[]> => {
     startTime: new Date(session.start_time),
     endTime: session.end_time ? new Date(session.end_time) : undefined,
     questions: session.questions || [],
-    status: session.status
+    status: session.status,
+    context: session.context
   }));
 };
 
@@ -190,8 +192,7 @@ export const addQuestionsToSession = async (sessionId: string, questions: Omit<Q
         hint: q.hint,
         points: q.points || 100,
         style: q.style,
-        style: q.style,
-        points: q.points,
+        prize: q.prize,
       }))
     );
 
@@ -236,7 +237,8 @@ export const getSessionQuestions = async (sessionId: string): Promise<Question[]
     hint: q.hint,
     doorNumber: q.door_number,
     points: q.points,
-    style: q.style
+    style: q.style,
+    prize: q.prize
   }));
 };
 
@@ -356,4 +358,27 @@ export const getSessionStatus = async (sessionId: string): Promise<string | null
   
   console.log('Session status fetched (fresh):', data.status);
   return data.status;
+};
+
+export const getSession = async (sessionId: string): Promise<Session | null> => {
+  const { data, error } = await supabase
+    .from('sessions')
+    .select('*')
+    .eq('id', sessionId)
+    .single();
+  
+  if (error || !data) {
+    console.error('Error fetching session:', error);
+    return null;
+  }
+  
+  return {
+    id: data.id,
+    name: data.name,
+    startTime: new Date(data.start_time),
+    endTime: data.end_time ? new Date(data.end_time) : undefined,
+    questions: [],
+    status: data.status,
+    context: data.context
+  };
 };

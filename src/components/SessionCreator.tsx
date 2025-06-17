@@ -12,6 +12,7 @@ interface SessionCreatorProps {
 
 const SessionCreator: React.FC<SessionCreatorProps> = ({ onCreateSession }) => {
   const [sessionName, setSessionName] = useState('');
+  const [sessionContext, setSessionContext] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -31,7 +32,7 @@ const SessionCreator: React.FC<SessionCreatorProps> = ({ onCreateSession }) => {
 
     try {
       // Create session
-      const session = await createSession(sessionName);
+      const session = await createSession(sessionName, sessionContext.trim() || undefined);
       
       if (!session) {
         toast({
@@ -49,6 +50,7 @@ const SessionCreator: React.FC<SessionCreatorProps> = ({ onCreateSession }) => {
       
       // Reset form
       setSessionName('');
+      setSessionContext('');
       
       // Notify parent component with the session ID
       onCreateSession(session.id);
@@ -83,6 +85,19 @@ const SessionCreator: React.FC<SessionCreatorProps> = ({ onCreateSession }) => {
                 onChange={(e) => setSessionName(e.target.value)}
                 required
                 className="bg-black/50 border-green-500/50 text-green-400 font-mono placeholder:text-green-600/30 focus:border-green-400 focus:ring-green-400/20"
+                disabled={isLoading}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="session-context" className="font-mono text-green-400">$ CONTEXTE_SESSION:</Label>
+              <textarea
+                id="session-context"
+                placeholder="Entrez le contexte de la session (optionnel)..."
+                value={sessionContext}
+                onChange={(e) => setSessionContext(e.target.value)}
+                rows={3}
+                className="w-full bg-black/50 border border-green-500/50 text-green-400 font-mono placeholder:text-green-600/30 focus:border-green-400 focus:ring-green-400/20 rounded-md px-3 py-2 resize-none"
                 disabled={isLoading}
               />
             </div>

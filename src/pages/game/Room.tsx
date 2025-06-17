@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import DoorKeeper from '@/components/DoorKeeper';
 import { toast } from '@/components/ui/use-toast';
-import { getRoom, getSessionStatus } from '@/utils/db';
+import { getRoom, getSessionStatus, getSession } from '@/utils/db';
 import { supabase } from '@/integrations/supabase/client';
 import { Session, Room as RoomType } from '@/types/game';
 import { Button } from '@/components/ui/button';
@@ -34,6 +34,7 @@ const Room: React.FC = () => {
 
   const [room, setRoom] = useState<RoomType | null>(null);
   const [sessionStatus, setSessionStatus] = useState<string | null>(null);
+  const [sessionContext, setSessionContext] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [isSessionCompleted, setIsSessionCompleted] = useState(false);
@@ -172,7 +173,11 @@ const Room: React.FC = () => {
             setStoreRoomId(currentRoom.id);
 
             if (currentRoom.sessionId) {
-              const status = await getSessionStatus(currentRoom.sessionId);
+              const [status, session] = await Promise.all([
+                getSessionStatus(currentRoom.sessionId),
+                getSession(currentRoom.sessionId)
+              ]);
+              
               // Only set the session status if we got a valid response
               if (status) {
                 setSessionStatus(status);
@@ -181,9 +186,18 @@ const Room: React.FC = () => {
                 console.warn("Invalid session status received");
                 setSessionStatus(null);
               }
+              
+              // Set session context if available
+              if (session?.context) {
+                setSessionContext(session.context);
+                console.log('Session context set to:', session.context);
+              } else {
+                setSessionContext(null);
+              }
             } else {
               console.warn("Room does not have a session ID.");
               setSessionStatus(null);
+              setSessionContext(null);
             }
           } else {
             console.error("La troupe n'existe plus");
@@ -376,11 +390,11 @@ const Room: React.FC = () => {
             )}
           </div>
 
-          {sessionStatus === "active" && (
+          {sessionStatus === "active" && sessionContext && (
             <div className="text-center mb-4">
               <h4 className="text-xl font-bold text-amber-400 mb-2">Contexte</h4>
               <p className="text-gray-300 font-pixel text-sm leading-relaxed max-w-4xl mx-auto">
-                Le registre des traitements a été imprimé, mais certaines colonnes sont effacées. Pour compléter le registre et passer à l'étape suivante, il faut identifier 6 informations obligatoires dans tout registre de traitement.
+                test {sessionContext}
               </p>
             </div>
           )}
@@ -475,7 +489,8 @@ const Room: React.FC = () => {
                           hint: questionData.hint,
                           doorNumber: questionData.door_number,
                           points: questionData.points,
-                          style: questionData.style
+                          style: questionData.style,
+                          prize: questionData.prize
                         };
                         setQuestion(questionToSet);
                         setShowQuestion(true);
@@ -586,13 +601,20 @@ const Room: React.FC = () => {
                       await victoryAudio.play().catch(console.error);
                     }
 
-                    // Reset game state after celebration
+                    // Stop confetti after celebration but keep question view open for manual control
                     setTimeout(() => {
                       setShowConfetti(false);
+                    }, 3000);
+                    
+                    // Listen for manual continue event from RiddleQuestion component
+                    const handleContinueToNextRoom = () => {
                       setShowQuestion(false);
                       gameState.currentQuestion = null;
                       gameState.isAnswerCorrect = null;
-                    }, 3000);
+                      window.removeEventListener('continueToNextRoom', handleContinueToNextRoom);
+                    };
+                    
+                    window.addEventListener('continueToNextRoom', handleContinueToNextRoom);
                   }
                 } catch (error) {
                   console.error('Error submitting answer:', error);

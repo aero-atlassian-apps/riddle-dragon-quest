@@ -102,6 +102,9 @@ const QuestionManager: React.FC<QuestionManagerProps> = ({ sessionId, onComplete
                     <h3 className="font-mono text-lg mb-2 text-green-400">$ QUESTION_{index + 1}</h3>
                     <p className="mb-2 text-green-400/90 font-mono whitespace-pre-line">{question.text}</p>
                     <p className="text-sm text-green-400/70 font-mono">$ REPONSE: <span className="font-semibold text-green-400">{question.answer}</span></p>
+                    {question.prize && (
+                      <p className="text-sm text-amber-400/80 font-mono">$ PRIX: <span className="font-semibold text-amber-400">{question.prize}</span></p>
+                    )}
                   </div>
                   
                   <div className="w-32 h-32 border-2 border-dashed border-green-500/40 rounded-md relative flex flex-col items-center justify-center bg-black/30">

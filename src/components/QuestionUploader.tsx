@@ -71,6 +71,12 @@ const QuestionUploader: React.FC<QuestionUploaderProps> = ({ sessionId, onUpload
           setIsLoading(false);
           return;
         }
+        
+        if (question.prize && typeof question.prize !== 'string') {
+          setError('Format de question invalide : le prix doit être une chaîne de caractères');
+          setIsLoading(false);
+          return;
+        }
       }
 
       // Format questions to be stored in the database (explicitly excluding image field)
@@ -99,7 +105,8 @@ const QuestionUploader: React.FC<QuestionUploaderProps> = ({ sessionId, onUpload
           door_number: doorNumber,
           hint: q.hint || null,
           style: q.style || null,
-          points: q.points || 1 // Default to 1 point if not specified
+          points: q.points || 1, // Default to 1 point if not specified
+          prize: q.prize || null
         };
       });
       
@@ -193,13 +200,15 @@ const QuestionUploader: React.FC<QuestionUploaderProps> = ({ sessionId, onUpload
       "door_number": 1, // Optionnel : les numéros de porte seront attribués automatiquement si non fournis
       "points": 2, // Optionnel : nombre de points pour la question (par défaut: 1)
       "hint": "Pensez aux instruments de musique", // Optionnel : indice pour la question
-      "style": "enigme" // Optionnel : style de la question
+      "style": "enigme", // Optionnel : style de la question
+      "prize": "Clé Musicale" // Optionnel : prix obtenu en réussissant la question
     },
     {
       "text": "Qu'est-ce qui devient plus mouillé en séchant ?",
       "answer": "serviette",
       "hint": "Pensez aux objets du quotidien",
-      "style": "logique"
+      "style": "logique",
+      "prize": "Serviette Magique"
     }
   ]
 }`}

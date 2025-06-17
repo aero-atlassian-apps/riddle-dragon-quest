@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { HelpCircle, X } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { HelpCircle, X, Copy, Check, Trophy } from "lucide-react";
 
 interface RiddleQuestionProps {
   question: Question;
@@ -27,6 +28,8 @@ const RiddleQuestion = ({
   const [answer, setAnswer] = useState("");
   const [hintRevealed, setHintRevealed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPrizeModal, setShowPrizeModal] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const [usedTokensForQuestion, setUsedTokensForQuestion] = useState(0);
 
@@ -45,6 +48,20 @@ const RiddleQuestion = ({
       setTimeout(() => {
         setIsSubmitting(false);
       }, 1000);
+    }
+  };
+
+  // Manual prize modal control - no automatic display
+
+  const copyPrize = async () => {
+    if (question.prize) {
+      try {
+        await navigator.clipboard.writeText(question.prize);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (err) {
+        console.error('Failed to copy prize:', err);
+      }
     }
   };
 
@@ -169,9 +186,32 @@ const RiddleQuestion = ({
                 <path d="M65 50h35" className="key-shaft" stroke="#FFD700" strokeWidth="5" fill="none" />
               </svg>
             </div>
-            <div className="victory-text space-y-2">
+            <div className="victory-text space-y-4">
               <p className="text-2xl font-medieval text-amber-400">Gardien Vaincu!</p>
               <p className="text-lg font-medieval text-emerald-400">Porte Déverrouillée</p>
+              
+              <div className="flex flex-col space-y-3 mt-6">
+                {question.prize && (
+                  <Button
+                    onClick={() => setShowPrizeModal(true)}
+                    className="bg-amber-500 hover:bg-amber-600 text-white font-medieval px-6 py-3 text-lg transition-all duration-200 transform hover:scale-105"
+                  >
+                    🏆 Réclamer la Récompense
+                  </Button>
+                )}
+                
+                <Button
+                  onClick={() => {
+                    // Reset states and close question view
+                    setShowPrizeModal(false);
+                    // This will trigger the parent component to handle the transition
+                    window.dispatchEvent(new CustomEvent('continueToNextRoom'));
+                  }}
+                  className="bg-emerald-500 hover:bg-emerald-600 text-white font-medieval px-6 py-3 text-lg transition-all duration-200 transform hover:scale-105"
+                >
+                  ⚡ Continuer vers la Prochaine Porte
+                </Button>
+              </div>
             </div>
           </div>
         ) : (
@@ -239,6 +279,67 @@ const RiddleQuestion = ({
           </>
         )}
       </Card>
+
+      {/* Prize Modal */}
+      <Dialog open={showPrizeModal} onOpenChange={setShowPrizeModal}>
+        <DialogContent className="sm:max-w-md bg-gradient-to-br from-amber-50 to-yellow-100 border-2 border-amber-300">
+          <DialogHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <div className="relative">
+                <Trophy className="h-16 w-16 text-amber-500 animate-bounce" />
+                <div className="absolute -top-2 -right-2 h-6 w-6 bg-amber-400 rounded-full animate-ping"></div>
+              </div>
+            </div>
+            <DialogTitle className="text-2xl font-bold text-amber-800 font-medieval">
+              🎉 Récompense Obtenue! 🎉
+            </DialogTitle>
+            <DialogDescription className="text-amber-700 font-medium">
+              Félicitations! Vous avez gagné une récompense précieuse.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex flex-col items-center space-y-4 py-4">
+            <div className="bg-white/80 border-2 border-amber-300 rounded-lg p-6 w-full">
+              <div className="text-center">
+                <p className="text-sm text-amber-600 font-medium mb-2">Votre Prix:</p>
+                <div className="bg-gradient-to-r from-amber-100 to-yellow-100 border border-amber-300 rounded-md p-4">
+                  <p className="text-xl font-bold text-amber-800 font-mono break-all">
+                    {question.prize}
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex space-x-3 w-full">
+              <Button
+                onClick={copyPrize}
+                className="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-medium transition-all duration-200"
+                disabled={copied}
+              >
+                {copied ? (
+                  <>
+                    <Check className="h-4 w-4 mr-2" />
+                    Copié!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copier le Prix
+                  </>
+                )}
+              </Button>
+              
+              <Button
+                onClick={() => setShowPrizeModal(false)}
+                variant="outline"
+                className="flex-1 border-amber-300 text-amber-700 hover:bg-amber-50"
+              >
+                Continuer
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
