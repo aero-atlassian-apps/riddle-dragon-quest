@@ -344,17 +344,17 @@ const Room: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto p-4 relative min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 bg-[url('/textures/stone-pattern.svg')] bg-repeat bg-opacity-50 before:absolute before:inset-0 before:bg-[url('/terminal-bg.png')] before:opacity-10 before:pointer-events-none after:absolute after:inset-0 after:bg-[radial-gradient(circle_at_center,rgba(0,255,0,0.1)_0%,transparent_70%)] after:pointer-events-none">
+    <div className="w-full max-w-full mx-auto relative min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 bg-[url('/textures/stone-pattern.svg')] bg-repeat bg-opacity-50 before:absolute before:inset-0 before:bg-[url('/terminal-bg.png')] before:opacity-10 before:pointer-events-none after:absolute after:inset-0 after:bg-[radial-gradient(circle_at_center,rgba(0,255,0,0.1)_0%,transparent_70%)] after:pointer-events-none px-4 sm:px-6 lg:px-8 py-6 sm:py-8 overflow-x-hidden">
       {showConfetti && <Confetti ref={confettiRef} />}
-      <div className="mb-8 text-center p-6 bg-black/90 border-2 border-green-500 rounded-lg font-mono relative overflow-hidden">
+      <div className="mb-8 lg:mb-12 text-center p-6 lg:p-8 bg-black/90 border-2 border-green-500 rounded-lg font-mono relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('/textures/stone-pattern.svg')] opacity-5" />
         <div className="absolute inset-0 bg-[url('/terminal-bg.png')] opacity-10" />
         <div className="absolute inset-0 bg-cover bg-center opacity-5" style={{ backgroundImage: `url('/emblems/${room?.name?.toLowerCase().replace(/\s+/g, '-')}.svg')` }} />
         <div className="relative z-10">
           <div className="mb-4 p-3 bg-black/30 rounded-lg border border-green-500/20 flex items-center gap-4">
             <p className="text-xl text-green-400 font-medieval">{room?.sigil || 'Loading...'}</p>
-            <h1 className="text-4xl font-bold font-medieval text-green-400">{room?.name || ''}</h1>
-            <p className="text-md text-green-400/80 font-medieval italic">"{room?.motto || ''}"</p>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold font-medieval text-green-400">{room?.name || ''}</h1>
+            <p className="text-lg sm:text-xl lg:text-2xl text-green-400/80 font-medieval italic">"{room?.motto || ''}"</p>
           </div>
 
           <div className="flex items-center justify-center space-x-6 mb-4">
@@ -392,7 +392,7 @@ const Room: React.FC = () => {
           {sessionStatus === "active" && sessionContext && (
             <div className="text-center mb-4">
               <h4 className="text-xl font-bold text-amber-400 mb-2">Contexte</h4>
-              <p className="text-gray-300 font-pixel text-sm leading-relaxed max-w-4xl mx-auto">
+              <p className="text-gray-300 font-pixel text-sm leading-relaxed max-w-4xl mx-auto whitespace-pre-line">
                 {sessionContext}
               </p>
             </div>
@@ -416,31 +416,31 @@ const Room: React.FC = () => {
       </div>
 
       {!showQuestion ? (
-        <div className="max-w-6xl mx-auto px-4">
+        <div className="w-full max-w-full mx-auto px-4 sm:px-6 overflow-x-hidden">
           {/* Challenge completion message - shown when all doors are open */}
           {room.currentDoor > totalDoors && (
-            <div className="mb-12 text-center p-6 bg-black/80 border-2 border-amber-500 rounded-lg font-mono relative overflow-hidden animate-pulse">
+            <div className="mb-8 sm:mb-12 text-center p-4 sm:p-6 bg-black/80 border-2 border-amber-500 rounded-lg font-mono relative overflow-hidden animate-pulse">
               <div className="absolute inset-0 bg-[url('/textures/stone-pattern.svg')] opacity-5" />
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,215,0,0.2)_0%,transparent_70%)]" />
               <div className="relative z-10">
-                <h2 className="text-3xl font-bold text-amber-400 font-medieval mb-4">DÉFI TERMINÉ!</h2>
-                <p className="text-xl text-amber-300 font-medieval mb-6">Félicitations, brave aventurier! Vous avez vaincu tous les gardiens et déverrouillé toutes les portes.</p>
+                <h2 className="text-2xl sm:text-3xl font-bold text-amber-400 font-medieval mb-4">DÉFI TERMINÉ!</h2>
+                <p className="text-lg sm:text-xl text-amber-300 font-medieval mb-6">Félicitations, brave aventurier! Vous avez vaincu tous les gardiens et déverrouillé toutes les portes.</p>
                 <Link to="/leaderboard">
-                  <Button className="bg-amber-500 hover:bg-amber-600 text-black font-pixel px-6 py-3 text-lg">
+                  <Button className="bg-amber-500 hover:bg-amber-600 text-black font-pixel px-4 sm:px-6 py-3 text-base sm:text-lg min-h-[48px] w-full sm:w-auto">
                     VOIR LE MUR DES HÉROS
                   </Button>
                 </Link>
               </div>
             </div>
           )}
-          <div className={`grid gap-x-12 gap-y-16 place-items-center ${
-            totalDoors <= 3 ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' :
-            totalDoors <= 6 ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' :
-            totalDoors <= 9 ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' :
-            'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'
-          }`}>
+          <div className={`w-full max-w-full grid gap-4 sm:gap-6 lg:gap-8 overflow-x-hidden ${
+            totalDoors <= 4 ? 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4' :
+            totalDoors <= 8 ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5' :
+            totalDoors <= 12 ? 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-6' :
+            'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8'
+          } justify-items-center place-items-center`}>
             {doorStates.map((isOpen, index) => (
-              <div key={index} className="flex flex-col items-center transform hover:scale-105 transition-transform duration-300">
+              <div key={index} className="flex flex-col items-center transform hover:scale-105 active:scale-95 transition-transform duration-300 w-full max-w-[200px]">
                 <Door
                   doorNumber={index + 1}
                   isActive={index + 1 === room.currentDoor}
@@ -516,13 +516,41 @@ const Room: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="mt-6 mb-6">
-          <DoorKeeper
-            isCorrect={gameState.isAnswerCorrect}
-            isSpeaking={true}
-            question={gameState.currentQuestion}
-          />
-          <div className="mt-6">
+        <div className="relative w-full max-w-full mx-auto">
+          {/* Enhanced layout with question bubble positioned above door keeper */}
+          <div className="relative flex flex-col items-center space-y-4">
+            {/* Question bubble positioned above door keeper */}
+            <div className="w-full max-w-6xl mx-auto relative z-20 -mb-8">
+              <div className="bg-gray-800/95 backdrop-blur-sm border-2 border-amber-400/60 rounded-2xl p-6 shadow-2xl relative">
+                {/* Speech bubble tail pointing down to door keeper */}
+                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full">
+                  <div className="w-0 h-0 border-l-[20px] border-r-[20px] border-t-[20px] border-l-transparent border-r-transparent border-t-amber-400/60"></div>
+                  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-[2px]">
+                    <div className="w-0 h-0 border-l-[18px] border-r-[18px] border-t-[18px] border-l-transparent border-r-transparent border-t-gray-800/95"></div>
+                  </div>
+                </div>
+                
+                {/* Question text */}
+                <div className="text-center mb-4">
+                  <p className="text-lg md:text-xl lg:text-2xl font-medieval text-amber-300 leading-relaxed whitespace-pre-line">
+                    {gameState.currentQuestion?.text}
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Door keeper positioned below question bubble */}
+            <div className="relative z-10 w-full max-w-md mx-auto">
+              <DoorKeeper
+                isCorrect={gameState.isAnswerCorrect}
+                isSpeaking={false}
+                question={gameState.currentQuestion}
+              />
+            </div>
+          </div>
+          
+          {/* RiddleQuestion component for input and controls */}
+          <div className="mt-8 w-full">
             <RiddleQuestion
               question={gameState.currentQuestion}
               tokensLeft={room.tokensLeft}

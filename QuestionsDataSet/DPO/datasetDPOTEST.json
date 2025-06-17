@@ -1,0 +1,76 @@
+{
+  "questions": [
+    {
+      "id": 1,
+      "text": "Qui suis-je ?\n\nJe suis la personne ou l'organisation qui détermine pourquoi et comment les données sont traitées.",
+      "hint": "",
+      "answer": "Reponse",
+      "style": "direct",
+      "points": 100,
+      "prize": "P"
+    },
+    {
+      "id": 2,
+      "text": "Qui suis-je?\n\nJe précède l'action, mais je ne suis pas une option.\n\nSans moi, tout traitement devient suspicion.\n\nJe dis pourquoi les données sont prises,\n\nEt je refuse qu'on me déguise.",
+      "hint": "",
+      "answer": "Reponse",
+      "style": "direct",
+      "points": 100,
+      "prize": "R"
+    },
+    {
+      "id": 3,
+      "text": "Qui suis-je?\n\nOn Parle souvent de moi,\n\nCar sans moi, pas de données, pas de droits\n\nJe suis celui qu'on doit respecter, Informer, protéger\n\nJe peux demander, refuser, effacer",
+      "hint": "Les données me concernent directement",
+      "answer": "Reponse",
+      "style": "direct",
+      "points": 100,
+      "prize": "I"
+    },
+    {
+      "id": 4,
+      "text": "Qui suis-je?\n\nUnique ou combinée, je te désigne sans égard,\n\nMême quand je semble floue ou peu marquante.\n\nJe traverse les réseaux, les dossiers, les écrans,\n\nPourtant, je ne suis pas anodine :\n\nLa loi m'encadre, me protège, me discipline.",
+      "hint": "J'identifie directement les personnes",
+      "answer": "Reponse",
+      "style": "direct",
+      "points": 100,
+      "prize": "V"
+    },
+    {
+      "id": 5,
+      "text": "Qui suis-je?\n\nJe traite les données personnelles pour le compte d'un autre, sans en décider les finalités?",
+      "hint": "",
+      "answer": "Reponse",
+      "style": "direct",
+      "points": 100,
+      "prize": "A"
+    },
+    {
+      "id": 6,
+      "text": "Qui suis-je?\n\nJe ne suis ni éternelle, ni laissée au hasard,\n\nJe marque le temps, mais je ne dois pas être illusoire.\n\nTrop longue, je deviens un risque,\n\nTrop courte, je rends le traitement peu réaliste.",
+      "hint": "Je suis synonyme de temps",
+      "answer": "Reponse",
+      "style": "direct",
+      "points": 100,
+      "prize": "CY"
+    },
+    {
+      "id": 7,
+      "text": "Qui suis-je?\n\nJe ne suis ni éternelle, ni laissée au hasard,\n\nJe marque le temps, mais je ne dois pas être illusoire.\n\nTrop longue, je deviens un risque,\n\nTrop courte, je rends le traitement peu réaliste.",
+      "hint": "Je suis synonyme de temps",
+      "answer": "Reponse",
+      "style": "direct",
+      "points": 100,
+      "prize": "CY"
+    },
+    {
+      "id": 8,
+      "text": "Qui suis-je?\n\nJe ne suis ni éternelle, ni laissée au hasard,\n\nJe marque le temps, mais je ne dois pas être illusoire.\n\nTrop longue, je deviens un risque,\n\nTrop courte, je rends le traitement peu réaliste.",
+      "hint": "Je suis synonyme de temps",
+      "answer": "Reponse",
+      "style": "direct",
+      "points": 100,
+      "prize": "CY"
+    }
+  ]
+}

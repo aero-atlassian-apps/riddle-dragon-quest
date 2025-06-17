@@ -116,7 +116,7 @@ const [showUnlockEffect, setShowUnlockEffect] = useState(false);
   const { color } = getDoorStyles();
 
   return (
-    <div className="relative">
+    <div className="relative w-full max-w-[160px] sm:max-w-[180px]">
       <style jsx>{`
         @keyframes unlock-glow {
           0%, 100% { filter: drop-shadow(0 0 5px #FFD700); }
@@ -138,13 +138,13 @@ const [showUnlockEffect, setShowUnlockEffect] = useState(false);
         }
       `}</style>
       {/* Door Frame and Archway - This stays in place */}
-      <div className="relative w-48 h-60">
+      <div className="relative w-40 h-52 sm:w-48 sm:h-60">
         {/* Stone arch frame */}
-        <div className="absolute -top-4 -left-6 w-60 h-12 bg-stone-600 rounded-t-full z-0"></div>
+        <div className="absolute -top-3 -left-5 w-50 h-10 sm:-top-4 sm:-left-6 sm:w-60 sm:h-12 bg-stone-600 rounded-t-full z-0"></div>
         
         {/* Side pillars of the door frame */}
-        <div className="absolute left-0 top-0 w-3 h-56 bg-stone-600 z-10"></div>
-        <div className="absolute right-0 top-0 w-3 h-56 bg-stone-600 z-10"></div>
+        <div className="absolute left-0 top-0 w-2 h-48 sm:w-3 sm:h-56 bg-stone-600 z-10"></div>
+        <div className="absolute right-0 top-0 w-2 h-48 sm:w-3 sm:h-56 bg-stone-600 z-10"></div>
         
         {/* Doorway interior (visible when door is open) */}
         <div className="absolute inset-3 bottom-0 bg-gray-950 z-5">
@@ -173,7 +173,7 @@ const [showUnlockEffect, setShowUnlockEffect] = useState(false);
         </div>
         
         {/* Stone base - castle foundation */}
-        <div className="absolute bottom-0 w-48 h-8 bg-stone-700 mx-auto rounded-b-lg shadow-lg z-20">
+        <div className="absolute bottom-0 w-40 h-6 sm:w-48 sm:h-8 bg-stone-700 mx-auto rounded-b-lg shadow-lg z-20">
           {/* Stone texture */}
           <div className="absolute inset-0 opacity-30">
             {[...Array(8)].map((_, i) => (
@@ -237,13 +237,13 @@ const [showUnlockEffect, setShowUnlockEffect] = useState(false);
             <div className="absolute top-0 right-1/4 w-2 h-full bg-gray-800"></div>
             
             {/* Door number in castle style shield */}
-            <div className={`absolute top-6 left-1/2 transform -translate-x-1/2 bg-amber-700 h-12 w-10 flex items-center justify-center border-2 border-gray-800 shadow-inner transition-all duration-300 ${hovered && isActive && !isOpen ? 'animate-pulse scale-110' : ''}`}
+            <div className={`absolute top-4 sm:top-6 left-1/2 transform -translate-x-1/2 bg-amber-700 h-8 w-7 sm:h-12 sm:w-10 flex items-center justify-center border-2 border-gray-800 shadow-inner transition-all duration-300 ${hovered && isActive && !isOpen ? 'animate-pulse scale-110' : ''}`}
                  style={{clipPath: 'polygon(50% 0%, 100% 0%, 100% 70%, 50% 100%, 0% 70%, 0% 0%)'}}>
-              <span className="text-amber-200 font-bold font-medieval">{doorNumber}</span>
+              <span className="text-amber-200 font-bold font-medieval text-xs sm:text-base">{doorNumber}</span>
             </div>
             
             {/* Castle door handles - Large iron ring */}
-            <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+            <div className="absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2">
               {showUnlockEffect && (
                 <div className="absolute inset-0 unlocking">
                   <div className="key-hole absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
@@ -254,15 +254,15 @@ const [showUnlockEffect, setShowUnlockEffect] = useState(false);
                   </div>
                 </div>
               )}
-              <div className="h-10 w-10 rounded-full border-4 border-gray-700 shadow-inner">
-                <div className="h-2 w-4 bg-gray-600 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded"></div>
+              <div className="h-7 w-7 sm:h-10 sm:w-10 rounded-full border-2 sm:border-4 border-gray-700 shadow-inner">
+                <div className="h-1 w-3 sm:h-2 sm:w-4 bg-gray-600 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded"></div>
               </div>
             </div>
             
             {/* Complexity indicator */}
-            <div className="absolute top-20 left-1/2 transform -translate-x-1/2 w-20 h-24">
-              <div className="w-full h-full border-2 border-gray-700/70 rounded flex flex-col items-center justify-center bg-stone-700/30 p-2">
-                <div className="text-amber-600 text-lg font-medieval mt-2">
+            <div className="absolute top-14 sm:top-20 left-1/2 transform -translate-x-1/2 w-16 h-18 sm:w-20 sm:h-24">
+              <div className="w-full h-full border-2 border-gray-700/70 rounded flex flex-col items-center justify-center bg-stone-700/30 p-1 sm:p-2">
+                <div className="text-amber-600 text-sm sm:text-lg font-medieval mt-1 sm:mt-2">
                   {Array(doorNumber).fill('✧').join('')}
                 </div>
               </div>

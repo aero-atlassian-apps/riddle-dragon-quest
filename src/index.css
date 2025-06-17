@@ -90,13 +90,160 @@
   * {
     @apply border-border;
   }
+  
+  html, body {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+  }
+  
   body {
     @apply bg-background text-foreground;
+  }
+  
+  #root {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+  
+  /* Tablet-specific optimizations */
+  @media (min-width: 768px) and (max-width: 1024px) {
+    /* Ensure touch targets are at least 44px */
+    button, [role="button"], input[type="button"], input[type="submit"] {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    
+    /* Improve text readability on tablets */
+    body {
+      font-size: 16px;
+      line-height: 1.5;
+    }
+    
+    /* Better spacing for tablet layouts */
+    .container {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
+  
+  /* Touch device optimizations */
+  @media (hover: none) and (pointer: coarse) {
+    /* Remove hover effects on touch devices */
+    .hover\:scale-110:hover {
+      transform: none;
+    }
+    
+    /* Add active states for better touch feedback */
+    .active\:scale-95:active {
+      transform: scale(0.95);
+    }
+    
+    /* Ensure interactive elements are large enough */
+    button, [role="button"], input, select, textarea {
+      min-height: 48px;
+    }
   }
 }
 
 .dragon-float {
   animation: float 6s ease-in-out infinite;
+}
+
+/* Tablet-specific responsive utilities */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .tablet\:text-lg {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+  }
+  
+  .tablet\:text-xl {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+  }
+  
+  .tablet\:p-6 {
+    padding: 1.5rem;
+  }
+  
+  .tablet\:p-8 {
+    padding: 2rem;
+  }
+  
+  .tablet\:gap-4 {
+    gap: 1rem;
+  }
+  
+  .tablet\:gap-6 {
+    gap: 1.5rem;
+  }
+  
+  .tablet\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  
+  .tablet\:grid-cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  
+  .tablet\:grid-cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  
+  .tablet\:max-w-none {
+    max-width: none;
+  }
+  
+  .tablet\:space-y-6 > * + * {
+    margin-top: 1.5rem;
+  }
+}
+
+/* Touch-friendly animations */
+@media (hover: none) {
+  .touch\:active\:scale-95:active {
+    transform: scale(0.95);
+    transition: transform 0.1s ease;
+  }
+  
+  .touch\:active\:opacity-80:active {
+    opacity: 0.8;
+    transition: opacity 0.1s ease;
+  }
+}
+
+/* Enhanced tablet layout optimizations */
+@media (min-width: 768px) and (max-width: 1024px) {
+  /* Better grid spacing for tablets */
+  .tablet-grid-optimized {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    justify-items: center;
+    align-items: start;
+  }
+  
+  /* Improved two-column layout for tablets */
+  .tablet-two-column {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    align-items: start;
+  }
+  
+  /* Better form layouts for tablets */
+  .tablet-form-spacing {
+    gap: 1.5rem;
+  }
+  
+  .tablet-form-spacing input,
+  .tablet-form-spacing button {
+    min-height: 3.5rem;
+    font-size: 1.125rem;
+  }
 }
 
 .dragon-glow {
