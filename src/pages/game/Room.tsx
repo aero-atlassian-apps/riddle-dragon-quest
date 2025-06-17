@@ -49,7 +49,7 @@ const Room: React.FC = () => {
   const [showQuestion, setShowQuestion] = useState(false);
 
   const { openModal, closeModal } = useModal();
-  const { gameState, setQuestion, submitAnswer, useToken, setTotalDoors: setGameTotalDoors } = useGame();
+  const { gameState, setQuestion, submitAnswer, useToken, setTotalDoors: setGameTotalDoors, calculateFinalScore, goToNextDoor, setStartTime } = useGame();
   const { setRoomId: setStoreRoomId } = useGameStore();
   const confettiRef = useRef<HTMLDivElement>(null);
   const user = useUser();
@@ -171,6 +171,18 @@ const Room: React.FC = () => {
           if (currentRoom) {
             setRoom(currentRoom);
             setStoreRoomId(currentRoom.id);
+            
+            // Initialize game start time if this is the beginning of the game
+            if (currentRoom.currentDoor === 1) {
+              // Check if start time needs to be initialized (default date or very old)
+              const now = new Date();
+              const timeDiff = now.getTime() - gameState.startTime.getTime();
+              // If start time is more than 1 hour old or is the default date, reset it
+               if (timeDiff > 3600000 || gameState.startTime.getTime() < 1000000000000) {
+                 console.log('Initializing game start time for room:', currentRoom.id);
+                 setStartTime(now);
+               }
+            }
 
             if (currentRoom.sessionId) {
               const [status, session, maxDoorNumber] = await Promise.all([
@@ -564,15 +576,6 @@ const Room: React.FC = () => {
                   gameState.isAnswerCorrect = isCorrect;
 
                   if (isCorrect) {
-                    // Calculate final score based on tokens used and question points
-                    const calculateFinalScore = (basePoints: number, tokensUsed: number, isLastDoor: boolean) => {
-                      // Calculate points with token penalty
-                      const pointsWithPenalty = Math.max(Math.floor(basePoints * (1 - (0.1 * tokensUsed))), Math.floor(basePoints * 0.6));
-                      // Add time bonus if this is the last door, capped at 200 points
-                      const timeBonus = isLastDoor ? 200 : 0;
-                      return pointsWithPenalty + timeBonus;
-                    };
-
                     // Calculate points based on tokens used and question points
                     const tokensUsed = 1 - room.tokensLeft;
                     const { data: questionData } = await supabase
@@ -582,14 +585,16 @@ const Room: React.FC = () => {
                       .single();
 
                     const questionPoints = questionData?.points || 100;
-                    const isLastDoor = room.currentDoor === totalDoors;
-                    const finalScore = calculateFinalScore(questionPoints, tokensUsed, isLastDoor);
+                    // Calculate points with token penalty (no time bonus per door, only at completion)
+                    const pointsWithPenalty = Math.max(Math.floor(questionPoints * (1 - (0.1 * tokensUsed))), Math.floor(questionPoints * 0.6));
+                    const finalScore = pointsWithPenalty;
 
                     // Start a transaction to update the room state
+                    const currentScore = room.score || 0; // Handle null scores
                     const { data: updatedRoom, error: updateError } = await supabase
                       .from('rooms')
                       .update({
-                        score: room.score + finalScore,
+                        score: currentScore + finalScore,
                         current_door: room.currentDoor + 1
                       })
                       .eq('id', room.id)
@@ -613,7 +618,7 @@ const Room: React.FC = () => {
 
                     setRoom({
                       ...room,
-                      score: updatedRoom.score,
+                      score: updatedRoom.score || 0,
                       currentDoor: updatedRoom.current_door
                     });
 
@@ -625,6 +630,29 @@ const Room: React.FC = () => {
                     // Check if all doors are now open (challenge completed)
                     const allDoorsOpen = updatedRoom.current_door > totalDoors;
                     if (allDoorsOpen) {
+                      // Calculate and apply final score with time bonus and token malus
+                      const { timeBonus, tokenMalus } = calculateFinalScore(room.tokensLeft);
+                      const finalScoreAdjustment = timeBonus + tokenMalus;
+                      
+                      console.log(`Applying final score adjustment: ${finalScoreAdjustment} (Time bonus: ${timeBonus}, Token malus: ${tokenMalus})`);
+                      
+                      // Update the room score with the final adjustments
+                      const updatedScore = (updatedRoom.score || 0) + finalScoreAdjustment;
+                      const { error: finalScoreError } = await supabase
+                        .from('rooms')
+                        .update({ score: updatedScore })
+                        .eq('id', room.id);
+                      
+                      if (finalScoreError) {
+                        console.error('Failed to apply final score adjustment:', finalScoreError);
+                      } else {
+                        // Update local room state with the final score
+                        setRoom(prev => prev ? {
+                          ...prev,
+                          score: updatedScore
+                        } : null);
+                      }
+                      
                       // Trigger more intense celebration for challenge completion
                       startConfetti();
 

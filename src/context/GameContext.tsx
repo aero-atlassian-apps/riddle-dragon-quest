@@ -121,36 +121,25 @@ export const GameProvider: React.FC<{ children: ReactNode; initialState?: Initia
     setShowContinueButton(false);
   };
 
-  const calculateFinalScore = () => {
+  const calculateFinalScore = (roomTokensLeft?: number) => {
     const completionTime = new Date();
     const minutesTaken = Math.floor((completionTime.getTime() - gameState.startTime.getTime()) / (1000 * 60));
 
     // Maximum time bonus is 200 points for the full game
     const maxTimeBonus = 200;
 
-    // Door difficulty weights (increases with each door)
-    const doorDifficultyWeight = 1 + (gameState.currentDoor - 1) * 0.2; // 1.0, 1.2, 1.4, 1.6, 1.8, 2.0
-
-    // Exponential decay factor for time penalty
-    const decayFactor = 0.1;
-    const timePenalty = Math.exp(-decayFactor * minutesTaken);
-
-    // Calculate weighted bonus with diminishing returns, but cap at maxTimeBonus
-    const rawBonus = maxTimeBonus * doorDifficultyWeight * timePenalty;
-    
-    // Scale the bonus to ensure maximum is capped at 200 points
-    const scaleFactor = maxTimeBonus / (maxTimeBonus * gameState.totalDoors * 0.2);
-    const scaledBonus = Math.min(rawBonus * scaleFactor, maxTimeBonus);
-
-    // Ensure minimum bonus of 10% of max bonus if completed
-    const timeBonus = Math.max(Math.floor(scaledBonus), Math.floor(maxTimeBonus * 0.1));
+    // Simple linear time bonus: 200 points for 0 minutes, decreasing to 50 points at 30+ minutes
+    // Formula: 200 - (minutesTaken * 5), clamped between 50 and 200
+    const linearBonus = 200 - (minutesTaken * 5);
+    const timeBonus = Math.max(50, Math.min(200, Math.floor(linearBonus)));
 
     // Calculate token malus (-30 points per token used)
-    // Since tokens are per room (not per door), we calculate based on initial tokens (1)
-    const tokensUsed = 1 - gameState.tokensLeft;
-    const tokenMalus = tokensUsed * -30;
+    // Use room tokens if provided, otherwise fall back to gameState
+    const tokensLeft = roomTokensLeft !== undefined ? roomTokensLeft : gameState.tokensLeft;
+    const tokensUsed = 1 - tokensLeft;
+    const tokenMalus = tokensUsed * -50;
 
-    console.log(`Time bonus calculated: ${timeBonus} (Minutes: ${minutesTaken}, Difficulty: ${doorDifficultyWeight})`);
+    console.log(`Time bonus calculated: ${timeBonus} (Minutes: ${minutesTaken}, Linear formula: 200 - ${minutesTaken} * 5)`);
     console.log(`Token malus calculated: ${tokenMalus} (Tokens used: ${tokensUsed})`);
 
     return { timeBonus, tokenMalus };
@@ -161,6 +150,14 @@ export const GameProvider: React.FC<{ children: ReactNode; initialState?: Initia
     setGameState((prev) => ({
       ...prev,
       totalDoors
+    }));
+  };
+
+  const setStartTime = (startTime: Date) => {
+    console.log("Setting game start time to:", startTime);
+    setGameState((prev) => ({
+      ...prev,
+      startTime
     }));
   };
 
@@ -206,6 +203,7 @@ export const GameProvider: React.FC<{ children: ReactNode; initialState?: Initia
         calculateFinalScore,
         tokenMalus: gameState.tokenMalus,
         setTotalDoors,
+        setStartTime,
       }}
     >
       {children}
