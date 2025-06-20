@@ -92,7 +92,7 @@ const RoomCreator: React.FC<RoomCreatorProps> = ({ sessionId, onCreateRooms, onC
     const tokensToUse = hintEnabled ? tokensPerRoom : 1;
     
     for (const room of rooms) {
-      const result = await createRoom(sessionId, room.name, room.id, room.sigil, room.motto, tokensToUse);
+      const result = await createRoom(sessionId, room.name, room.id, room.sigil, room.motto, tokensToUse, tokensToUse);
       
       if (!result) {
         toast({

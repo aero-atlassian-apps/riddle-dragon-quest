@@ -95,6 +95,7 @@ export const getRoom = async (roomId: string): Promise<Room | null> => {
       sessionId: data.session_id,
       name: data.name,
       tokensLeft: data.tokens_left,
+      initialTokens: data.initial_tokens || data.tokens_left, // Fallback for existing rooms
       currentDoor: data.current_door,
       score: data.score,
       sessionStatus: sessionStatus,
@@ -137,8 +138,13 @@ export const getRoomDirectCheck = async (roomId: string): Promise<{exists: boole
   }
 };
 
-export const createRoom = async (sessionId: string, roomName: string, roomId?: string, sigil?: string, motto?: string, tokensLeft?: number): Promise<Room | null> => {
+export const createRoom = async (sessionId: string, roomName: string, roomId?: string, sigil?: string, motto?: string, tokensLeft?: number, initialTokens?: number): Promise<Room | null> => {
   console.log(`[ROOM DEBUG] Creating room with name: ${roomName}, sessionId: ${sessionId}, roomId: ${roomId || 'auto-generated'}`);
+  
+  // Initial tokens are set once at room creation and never change
+  const roomInitialTokens = initialTokens !== undefined ? initialTokens : 0;
+  // Tokens left start at the same value as initial tokens but will decrease with usage
+  const roomTokensLeft = tokensLeft !== undefined ? tokensLeft : roomInitialTokens;
   
   const roomData: {
     session_id: string;
@@ -147,12 +153,14 @@ export const createRoom = async (sessionId: string, roomName: string, roomId?: s
     sigil: string;
     motto: string;
     tokens_left?: number;
+    initial_tokens?: number;
   } = {
     session_id: sessionId,
     name: roomName,
     sigil: sigil || '🏰', // Default sigil if none provided
     motto: motto || '', // Default motto if none provided
-    tokens_left: tokensLeft !== undefined ? tokensLeft : 1 // Default to 1 token if not specified
+    tokens_left: roomTokensLeft, // Current tokens available (will decrease with usage)
+    initial_tokens: roomInitialTokens // Fixed value set at room creation (never changes)
   };
 
   if (roomId) {

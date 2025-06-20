@@ -11,7 +11,7 @@ export async function POST(req: Request) {
       });
     }
 
-    const room = await createRoom(sessionId, roomName, roomId, undefined, undefined, tokensLeft);
+    const room = await createRoom(sessionId, roomName, roomId, undefined, undefined, tokensLeft, tokensLeft);
 
     if (!room) {
       return new Response(JSON.stringify({ error: 'Failed to create room' }), {

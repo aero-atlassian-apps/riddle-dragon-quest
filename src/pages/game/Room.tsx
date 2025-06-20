@@ -48,9 +48,10 @@ const Room: React.FC = () => {
   const [isNewRoomModalOpen, setIsNewRoomModalOpen] = useState(false);
   const [newRoomName, setNewRoomName] = useState('');
   const [showQuestion, setShowQuestion] = useState(false);
+  const [roomStartTime, setRoomStartTime] = useState<Date | null>(null);
 
   const { openModal, closeModal } = useModal();
-  const { gameState, setQuestion, submitAnswer, useToken, setTotalDoors: setGameTotalDoors, calculateFinalScore, goToNextDoor, setStartTime } = useGame();
+  const { gameState, setQuestion, submitAnswer, useToken, setTotalDoors: setGameTotalDoors, calculateFinalScore, goToNextDoor, setStartTime, syncTokensWithRoom } = useGame();
   const { setRoomId: setStoreRoomId } = useGameStore();
   const confettiRef = useRef<HTMLDivElement>(null);
   const user = useUser();
@@ -174,17 +175,21 @@ const Room: React.FC = () => {
             setRoom(currentRoom);
             setStoreRoomId(currentRoom.id);
             
-            // Initialize game start time if this is the beginning of the game
-            if (currentRoom.currentDoor === 1) {
-              // Check if start time needs to be initialized (default date or very old)
+            // Initialize room-specific start time if this is the beginning of the game
+            if (currentRoom.currentDoor === 1 && !roomStartTime) {
               const now = new Date();
-              const timeDiff = now.getTime() - gameState.startTime.getTime();
-              // If start time is more than 1 hour old or is the default date, reset it
-               if (timeDiff > 3600000 || gameState.startTime.getTime() < 1000000000000) {
-                 console.log('Initializing game start time for room:', currentRoom.id);
-                 setStartTime(now);
-               }
+              console.log('Initializing room start time for room:', currentRoom.id);
+              setRoomStartTime(now);
+              // Also set the shared game start time for backward compatibility
+              setStartTime(now);
             }
+
+            // Sync game state tokens with room tokens
+            console.log('Syncing game tokens with room - Room tokens left:', currentRoom.tokensLeft);
+            // Use the stored initial tokens from the database
+            const roomInitialTokens = currentRoom.initialTokens;
+            console.log('Room initial tokens from database:', roomInitialTokens, '(tokens left:', currentRoom.tokensLeft, ')');
+            syncTokensWithRoom(currentRoom.tokensLeft, roomInitialTokens);
 
             if (currentRoom.sessionId) {
               const [status, session, maxDoorNumber] = await Promise.all([
@@ -362,9 +367,9 @@ const Room: React.FC = () => {
   }
 
   return (
-    <div className="w-full max-w-full mx-auto relative min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 bg-[url('/textures/stone-pattern.svg')] bg-repeat bg-opacity-50 before:absolute before:inset-0 before:bg-[url('/terminal-bg.png')] before:opacity-10 before:pointer-events-none after:absolute after:inset-0 after:bg-[radial-gradient(circle_at_center,rgba(0,255,0,0.1)_0%,transparent_70%)] after:pointer-events-none px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+    <div className="w-full max-w-full mx-auto relative min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 bg-[url('/textures/stone-pattern.svg')] bg-repeat bg-opacity-50 before:absolute before:inset-0 before:bg-[url('/terminal-bg.png')] before:opacity-10 before:pointer-events-none after:absolute after:inset-0 after:bg-[radial-gradient(circle_at_center,rgba(0,255,0,0.1)_0%,transparent_70%)] after:pointer-events-none px-2 sm:px-4 py-2 sm:py-4">
       {showConfetti && <Confetti ref={confettiRef} />}
-      <div className="mb-8 lg:mb-12 text-center p-6 lg:p-8 bg-black/90 border-2 border-green-500 rounded-lg font-mono relative overflow-hidden">
+      <div className="mb-4 lg:mb-6 text-center p-3 lg:p-4 bg-black/90 border-2 border-green-500 rounded-lg font-mono relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('/textures/stone-pattern.svg')] opacity-5" />
         <div className="absolute inset-0 bg-[url('/terminal-bg.png')] opacity-10" />
         <div className="absolute inset-0 bg-cover bg-center opacity-5" style={{ backgroundImage: `url('/emblems/${room?.name?.toLowerCase().replace(/\s+/g, '-')}.svg')` }} />
@@ -436,15 +441,15 @@ const Room: React.FC = () => {
       </div>
 
       {!showQuestion ? (
-        <div className="w-full max-w-full mx-auto px-4 sm:px-6 pt-8 sm:pt-12 lg:pt-16 pb-8 sm:pb-12 lg:pb-16">
+        <div className="w-full max-w-full mx-auto px-2 sm:px-4 pt-2 sm:pt-4 pb-2 sm:pb-4">
           {/* Challenge completion message - shown when all doors are open */}
           {room.currentDoor > totalDoors && (
-            <div className="mb-8 sm:mb-12 text-center p-4 sm:p-6 bg-black/80 border-2 border-amber-500 rounded-lg font-mono relative overflow-hidden animate-pulse">
+            <div className="mb-4 sm:mb-6 text-center p-2 sm:p-3 bg-black/80 border-2 border-amber-500 rounded-lg font-mono relative overflow-hidden animate-pulse">
               <div className="absolute inset-0 bg-[url('/textures/stone-pattern.svg')] opacity-5" />
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,215,0,0.2)_0%,transparent_70%)]" />
               <div className="relative z-10">
-                <h2 className="text-2xl sm:text-3xl font-bold text-amber-400 font-medieval mb-4">DÉFI TERMINÉ!</h2>
-                <p className="text-lg sm:text-xl text-amber-300 font-medieval mb-6">Félicitations, brave aventurier! Vous avez vaincu tous les gardiens et déverrouillé toutes les portes.</p>
+                <h2 className="text-2xl sm:text-3xl font-bold text-amber-400 font-medieval mb-2">DÉFI TERMINÉ!</h2>
+                <p className="text-lg sm:text-xl text-amber-300 font-medieval mb-3">Félicitations, brave aventurier! Vous avez vaincu tous les gardiens et déverrouillé toutes les portes.</p>
                 <Link to="/leaderboard">
                   <Button className="bg-amber-500 hover:bg-amber-600 text-black font-pixel px-4 sm:px-6 py-3 text-base sm:text-lg min-h-[48px] w-full sm:w-auto">
                     VOIR LE MUR DES HÉROS
@@ -453,7 +458,7 @@ const Room: React.FC = () => {
               </div>
             </div>
           )}
-          <div className={`w-full max-w-full grid gap-4 sm:gap-6 lg:gap-8 overflow-x-hidden mt-12 sm:mt-16 lg:mt-20 ${
+          <div className={`w-full max-w-full grid gap-2 sm:gap-4 lg:gap-6 mt-4 sm:mt-6 lg:mt-8 ${
             totalDoors <= 4 ? 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4' :
             totalDoors <= 8 ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5' :
             totalDoors <= 12 ? 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-6' :
@@ -596,6 +601,14 @@ const Room: React.FC = () => {
                     // Use full question points - token malus will be applied only at game completion
                     const finalScore = questionPoints;
 
+                    console.log("=== ROOM SCORE UPDATE DETAILS ===");
+                    console.log("Question ID:", gameState.currentQuestion.id);
+                    console.log("Question points from DB:", questionPoints);
+                    console.log("Score to add to room:", finalScore);
+                    console.log("Current room score:", room.score || 0);
+                    console.log("New room score will be:", (room.score || 0) + finalScore);
+                    console.log("==================================");
+
                     // Start a transaction to update the room state
                     const currentScore = room.score || 0; // Handle null scores
                     const { data: updatedRoom, error: updateError } = await supabase
@@ -637,14 +650,24 @@ const Room: React.FC = () => {
                     // Check if all doors are now open (challenge completed)
                     const allDoorsOpen = updatedRoom.current_door > totalDoors;
                     if (allDoorsOpen) {
-                      // Calculate and apply final score with time bonus and token malus
-                      const { timeBonus, tokenMalus } = calculateFinalScore(room.tokensLeft);
+                      // Calculate and apply final score with time bonus and token malus using room-specific start time
+                      const { timeBonus, tokenMalus } = calculateFinalScore(room.tokensLeft, roomStartTime || undefined);
                       const finalScoreAdjustment = timeBonus + tokenMalus;
                       
-                      console.log(`Applying final score adjustment: ${finalScoreAdjustment} (Time bonus: ${timeBonus}, Token malus: ${tokenMalus})`);
+                      console.log("=== GAME COMPLETION SCORE ADJUSTMENT ===");
+                      console.log("All doors completed! Applying final adjustments...");
+                      console.log("Room ID:", room.id);
+                      console.log("Room start time used:", roomStartTime?.toISOString() || "Not set - using game state time");
+                      console.log("Current room score after last question:", updatedRoom.score || 0);
+                      console.log("Time bonus:", timeBonus);
+                      console.log("Token malus:", tokenMalus);
+                      console.log("Total final adjustment:", finalScoreAdjustment);
+                      console.log("Room tokens left:", room.tokensLeft);
                       
                       // Update the room score with the final adjustments
                       const updatedScore = (updatedRoom.score || 0) + finalScoreAdjustment;
+                      console.log("Final score after all adjustments:", updatedScore);
+                      console.log("=========================================");
                       const { error: finalScoreError } = await supabase
                         .from('rooms')
                         .update({ score: updatedScore })

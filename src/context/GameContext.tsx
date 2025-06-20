@@ -11,9 +11,11 @@ interface GameContextProps {
   goToNextDoor: () => void;
   showContinueButton: boolean;
   setShowContinueButton: (show: boolean) => void;
-  calculateTimeBonus: () => number;
+  calculateFinalScore: (roomTokensLeft?: number, roomStartTime?: Date) => { timeBonus: number; tokenMalus: number };
   tokenMalus: number;
   setTotalDoors: (totalDoors: number) => void;
+  setStartTime: (startTime: Date) => void;
+  syncTokensWithRoom: (roomTokensLeft: number, roomInitialTokens?: number) => void;
 }
 
 interface InitialState {
@@ -85,10 +87,23 @@ export const GameProvider: React.FC<{ children: ReactNode; initialState?: Initia
     console.log("Is answer correct?", isCorrect);
 
     if (isCorrect) {
-      const tokensUsed = 1 - gameState.tokensLeft;
+      // Calculate total tokens used from the beginning of the game
+      const totalTokensUsed = Math.max(0, gameState.initialTokens - gameState.tokensLeft);
       const questionPoints = gameState.currentQuestion.points || 100;
-      const pointsEarned = Math.max(Math.floor(questionPoints * (1 - (0.1 * tokensUsed))), Math.floor(questionPoints * 0.6));
-      console.log("Points earned:", pointsEarned, "from question points:", questionPoints);
+      const pointsEarned = Math.max(Math.floor(questionPoints * (1 - (0.1 * totalTokensUsed))), Math.floor(questionPoints * 0.6));
+      
+      console.log("=== SCORE CALCULATION DETAILS ===");
+      console.log("Base question points:", questionPoints);
+      console.log("Initial tokens:", gameState.initialTokens);
+      console.log("Current tokens left:", gameState.tokensLeft);
+      console.log("Total tokens used so far:", totalTokensUsed);
+      console.log("Token penalty multiplier:", 0.1 * totalTokensUsed);
+      console.log("Points after token penalty:", Math.floor(questionPoints * (1 - (0.1 * totalTokensUsed))));
+      console.log("Minimum points (60% of base):", Math.floor(questionPoints * 0.6));
+      console.log("Final points earned:", pointsEarned);
+      console.log("Current total score before adding:", gameState.score);
+      console.log("New total score after adding:", gameState.score + pointsEarned);
+      console.log("=================================");
 
       setGameState((prev) => ({
         ...prev,
@@ -123,9 +138,11 @@ export const GameProvider: React.FC<{ children: ReactNode; initialState?: Initia
     setShowContinueButton(false);
   };
 
-  const calculateFinalScore = (roomTokensLeft?: number) => {
+  const calculateFinalScore = (roomTokensLeft?: number, roomStartTime?: Date) => {
     const completionTime = new Date();
-    const minutesTaken = Math.floor((completionTime.getTime() - gameState.startTime.getTime()) / (1000 * 60));
+    // Use room-specific start time if provided, otherwise fall back to gameState.startTime
+    const startTime = roomStartTime || gameState.startTime;
+    const minutesTaken = Math.floor((completionTime.getTime() - startTime.getTime()) / (1000 * 60));
 
     // Maximum time bonus is 200 points for the full game
     const maxTimeBonus = 200;
@@ -142,8 +159,22 @@ export const GameProvider: React.FC<{ children: ReactNode; initialState?: Initia
     const tokensUsed = Math.max(0, gameState.initialTokens - tokensLeft);
     const tokenMalus = tokensUsed * -50;
 
-    console.log(`Time bonus calculated: ${timeBonus} (Minutes: ${minutesTaken}, Linear formula: 200 - ${minutesTaken} * 5)`);
-    console.log(`Token malus calculated: ${tokenMalus} (Tokens used: ${tokensUsed})`);
+    console.log("=== FINAL SCORE CALCULATION DETAILS ===");
+    console.log("Game state start time:", gameState.startTime.toISOString());
+    console.log("Room start time (if provided):", roomStartTime?.toISOString() || "Not provided");
+    console.log("Start time used for calculation:", startTime.toISOString());
+    console.log("Game completion time:", completionTime.toISOString());
+    console.log("Total minutes taken:", minutesTaken);
+    console.log("Linear bonus calculation: 200 - (" + minutesTaken + " * 5) =", linearBonus);
+    console.log("Time bonus (clamped 50-200):", timeBonus);
+    console.log("Initial tokens:", gameState.initialTokens);
+    console.log("Tokens left (room):", roomTokensLeft);
+    console.log("Tokens left (gameState):", gameState.tokensLeft);
+    console.log("Tokens left used for calculation:", tokensLeft);
+    console.log("Total tokens used:", tokensUsed);
+    console.log("Token malus (-50 per token):", tokenMalus);
+    console.log("Final adjustment (timeBonus + tokenMalus):", timeBonus + tokenMalus);
+    console.log("=========================================");
 
     return { timeBonus, tokenMalus };
   };
@@ -161,6 +192,15 @@ export const GameProvider: React.FC<{ children: ReactNode; initialState?: Initia
     setGameState((prev) => ({
       ...prev,
       startTime
+    }));
+  };
+
+  const syncTokensWithRoom = (roomTokensLeft: number, roomInitialTokens?: number) => {
+    console.log("Syncing tokens with room - tokens left:", roomTokensLeft, "initial tokens:", roomInitialTokens);
+    setGameState((prev) => ({
+      ...prev,
+      tokensLeft: roomTokensLeft,
+      initialTokens: roomInitialTokens || prev.initialTokens
     }));
   };
 
@@ -204,6 +244,7 @@ export const GameProvider: React.FC<{ children: ReactNode; initialState?: Initia
         tokenMalus: gameState.tokenMalus,
         setTotalDoors,
         setStartTime,
+        syncTokensWithRoom,
       }}
     >
       {children}

@@ -45,6 +45,7 @@ export type Database = {
         Row: {
           current_door: number
           id: string
+          initial_tokens: number
           name: string
           score: number
           session_id: string | null
@@ -53,6 +54,7 @@ export type Database = {
         Insert: {
           current_door?: number
           id?: string
+          initial_tokens?: number
           name: string
           score?: number
           session_id?: string | null
@@ -61,6 +63,7 @@ export type Database = {
         Update: {
           current_door?: number
           id?: string
+          initial_tokens?: number
           name?: string
           score?: number
           session_id?: string | null

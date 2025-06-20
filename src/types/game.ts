@@ -27,6 +27,7 @@ export interface Room {
   sessionId: string;
   name: string;
   tokensLeft: number;
+  initialTokens: number;
   currentDoor: number;
   score: number;
   sessionStatus?: string;
