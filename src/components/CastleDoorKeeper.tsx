@@ -1,14 +1,14 @@
 import React from 'react';
 import { Question } from '../types/game';
 
-interface CastleDoorKeeperProps {
+interface DoorKeeperProps {
   isCorrect: boolean | null;
   isSpeaking: boolean;
   question?: Question;
   isDefeated?: boolean;
 }
 
-const CastleDoorKeeper: React.FC<CastleDoorKeeperProps> = ({ isCorrect, isSpeaking, question, isDefeated = false }) => {
+const DoorKeeper: React.FC<DoorKeeperProps> = ({ isCorrect, isSpeaking, question, isDefeated = false }) => {
   const [animatingDefeat, setAnimatingDefeat] = React.useState(false);
 
   React.useEffect(() => {
@@ -161,4 +161,4 @@ const CastleDoorKeeper: React.FC<CastleDoorKeeperProps> = ({ isCorrect, isSpeaki
   );
 };
 
-export default CastleDoorKeeper;
+export default DoorKeeper;

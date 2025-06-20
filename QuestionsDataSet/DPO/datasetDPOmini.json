@@ -1,0 +1,31 @@
+{
+  "questions": [
+    {
+      "id": 1,
+      "text": "Qui suis-je ?\n\nJe suis la personne ou l'organisation qui détermine pourquoi et comment les données sont traitées.",
+      "hint": "Je suis l’acteur principal dans la gestion des données personnelles.",
+      "answer": "Responsable de traitement",
+      "style": "direct",
+      "points": 100,
+      "prize": "R"
+    },
+    {
+      "id": 2,
+      "text": "Qui suis-je ?\n\nJe précède l’action, mais je ne suis pas une option.\n\nSans moi, tout traitement devient suspicion.\n\nJe dis pourquoi les données sont prises,\n\nEt je refuse qu’on me déguise.",
+      "hint": "Je suis la raison d’être du traitement, sans moi on ne sait pas pourquoi les données sont collectées.",
+      "answer": "Finalité",
+      "style": "direct",
+      "points": 100,
+      "prize": "F"
+    },
+    {
+      "id": 3,
+      "text": "Qui suis-je ?\n\nOn Parle souvent de moi,\n\nCar sans moi, pas de données, pas de droits,\n\nJe suis celui qu'on doit respecter, Informer, protéger,\n\nJe peux demander, refuser, effacer.",
+      "hint": "je suis au cœur de la protection des données. Ce sont mes droits qui doivent être respectés.",
+      "answer": "Personne concernée",
+      "style": "direct",
+      "points": 100,
+      "prize": "P"
+    }
+  ]
+}
