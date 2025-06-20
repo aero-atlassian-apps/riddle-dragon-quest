@@ -48,6 +48,7 @@ export interface Score {
 export interface GameState {
   currentQuestion?: Question;
   tokensLeft: number;
+  initialTokens: number;
   currentDoor: number;
   totalDoors: number;
   score: number;

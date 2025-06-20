@@ -8,6 +8,7 @@ import { Score } from "@/types/game";
 import confetti from "canvas-confetti";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useUser } from "@/hooks/useUser";
 
 const Leaderboard = () => {
   const [scores, setScores] = useState<Score[]>([]);
@@ -21,6 +22,9 @@ const Leaderboard = () => {
   
   // Audio reference for Game of Thrones theme
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  // Get authenticated user
+  const user = useUser();
 
   const fetchSessions = async () => {
     setIsLoading(true);
@@ -189,11 +193,13 @@ const Leaderboard = () => {
       <div className="max-w-4xl mx-auto relative after:absolute after:top-0 after:left-0 after:w-full after:h-full after:bg-[radial-gradient(circle,rgba(0,255,0,0.1)_0%,transparent_70%)] after:pointer-events-none">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center">
-            <Link to="/" className="mr-4">
-              <Button variant="ghost" size="sm" className="text-[#00FF00]/80 hover:text-[#00FF00] hover:bg-[#00FF00]/10 font-mono">
-                <ArrowLeft className="h-4 w-4 mr-1" /> retour
-              </Button>
-            </Link>
+            {user && (
+              <Link to="/" className="mr-4">
+                <Button variant="ghost" size="sm" className="text-[#00FF00]/80 hover:text-[#00FF00] hover:bg-[#00FF00]/10 font-mono">
+                  <ArrowLeft className="h-4 w-4 mr-1" /> retour
+                </Button>
+              </Link>
+            )}
             
             <h1 className="text-3xl font-bold text-[#00FF00] animate-pulse">LE MUR DES LÉGENDES</h1>
           </div>

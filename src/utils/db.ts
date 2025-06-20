@@ -137,7 +137,7 @@ export const getRoomDirectCheck = async (roomId: string): Promise<{exists: boole
   }
 };
 
-export const createRoom = async (sessionId: string, roomName: string, roomId?: string, sigil?: string, motto?: string): Promise<Room | null> => {
+export const createRoom = async (sessionId: string, roomName: string, roomId?: string, sigil?: string, motto?: string, tokensLeft?: number): Promise<Room | null> => {
   console.log(`[ROOM DEBUG] Creating room with name: ${roomName}, sessionId: ${sessionId}, roomId: ${roomId || 'auto-generated'}`);
   
   const roomData: {
@@ -146,11 +146,13 @@ export const createRoom = async (sessionId: string, roomName: string, roomId?: s
     id?: string;
     sigil: string;
     motto: string;
+    tokens_left?: number;
   } = {
     session_id: sessionId,
     name: roomName,
     sigil: sigil || '🏰', // Default sigil if none provided
-    motto: motto || '' // Default motto if none provided
+    motto: motto || '', // Default motto if none provided
+    tokens_left: tokensLeft !== undefined ? tokensLeft : 1 // Default to 1 token if not specified
   };
 
   if (roomId) {

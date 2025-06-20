@@ -97,16 +97,17 @@ const Room: React.FC = () => {
       setGeneratedRoomId(newRoomId);
 
       const response = await fetch('/api/createRoom', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          sessionId: room.sessionId,
-          roomName: newRoomName,
-          roomId: newRoomId,
-        }),
-      });
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            sessionId: room.sessionId,
+            roomName: newRoomName,
+            roomId: newRoomId,
+            tokensLeft: 1,
+          }),
+        });
 
       const data = await response.json();
 
@@ -361,7 +362,7 @@ const Room: React.FC = () => {
   }
 
   return (
-    <div className="w-full max-w-full mx-auto relative min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 bg-[url('/textures/stone-pattern.svg')] bg-repeat bg-opacity-50 before:absolute before:inset-0 before:bg-[url('/terminal-bg.png')] before:opacity-10 before:pointer-events-none after:absolute after:inset-0 after:bg-[radial-gradient(circle_at_center,rgba(0,255,0,0.1)_0%,transparent_70%)] after:pointer-events-none px-4 sm:px-6 lg:px-8 py-6 sm:py-8 overflow-x-hidden">
+    <div className="w-full max-w-full mx-auto relative min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 bg-[url('/textures/stone-pattern.svg')] bg-repeat bg-opacity-50 before:absolute before:inset-0 before:bg-[url('/terminal-bg.png')] before:opacity-10 before:pointer-events-none after:absolute after:inset-0 after:bg-[radial-gradient(circle_at_center,rgba(0,255,0,0.1)_0%,transparent_70%)] after:pointer-events-none px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
       {showConfetti && <Confetti ref={confettiRef} />}
       <div className="mb-8 lg:mb-12 text-center p-6 lg:p-8 bg-black/90 border-2 border-green-500 rounded-lg font-mono relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('/textures/stone-pattern.svg')] opacity-5" />
@@ -435,7 +436,7 @@ const Room: React.FC = () => {
       </div>
 
       {!showQuestion ? (
-        <div className="w-full max-w-full mx-auto px-4 sm:px-6 overflow-x-hidden">
+        <div className="w-full max-w-full mx-auto px-4 sm:px-6 pt-8 sm:pt-12 lg:pt-16 pb-8 sm:pb-12 lg:pb-16">
           {/* Challenge completion message - shown when all doors are open */}
           {room.currentDoor > totalDoors && (
             <div className="mb-8 sm:mb-12 text-center p-4 sm:p-6 bg-black/80 border-2 border-amber-500 rounded-lg font-mono relative overflow-hidden animate-pulse">
@@ -452,7 +453,7 @@ const Room: React.FC = () => {
               </div>
             </div>
           )}
-          <div className={`w-full max-w-full grid gap-4 sm:gap-6 lg:gap-8 overflow-x-hidden ${
+          <div className={`w-full max-w-full grid gap-4 sm:gap-6 lg:gap-8 overflow-x-hidden mt-12 sm:mt-16 lg:mt-20 ${
             totalDoors <= 4 ? 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4' :
             totalDoors <= 8 ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5' :
             totalDoors <= 12 ? 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-6' :

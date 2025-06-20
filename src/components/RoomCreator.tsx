@@ -22,10 +22,12 @@ interface RoomCreatorProps {
   sessionId: string;
   onCreateRooms: (roomNames: string[]) => void;
   onContinue: () => void;
+  hintEnabled?: boolean;
 }
 
-const RoomCreator: React.FC<RoomCreatorProps> = ({ sessionId, onCreateRooms, onContinue }) => {
+const RoomCreator: React.FC<RoomCreatorProps> = ({ sessionId, onCreateRooms, onContinue, hintEnabled = true }) => {
   const [numberOfRooms, setNumberOfRooms] = useState<number>(2);
+  const [tokensPerRoom, setTokensPerRoom] = useState<number>(1);
   const [createdRooms, setCreatedRooms] = useState<{name: string, link: string, sigil: string, motto: string, id: string}[]>([]);
   const [showLinks, setShowLinks] = useState(false);
   const { toast } = useToast();
@@ -39,6 +41,18 @@ const RoomCreator: React.FC<RoomCreatorProps> = ({ sessionId, onCreateRooms, onC
   const decrementRooms = () => {
     if (numberOfRooms > 2) {
       setNumberOfRooms(prev => prev - 1);
+    }
+  };
+
+  const incrementTokens = () => {
+    if (tokensPerRoom < 10) {
+      setTokensPerRoom(prev => prev + 1);
+    }
+  };
+
+  const decrementTokens = () => {
+    if (tokensPerRoom > 0) {
+      setTokensPerRoom(prev => prev - 1);
     }
   };
 
@@ -74,8 +88,11 @@ const RoomCreator: React.FC<RoomCreatorProps> = ({ sessionId, onCreateRooms, onC
   const createRoomsInDatabase = async (rooms: {name: string, id: string, sigil: string, motto: string}[]) => {
     const { createRoom } = await import('@/utils/db');
     
+    // Use tokensPerRoom only if hints are enabled, otherwise default to 1
+    const tokensToUse = hintEnabled ? tokensPerRoom : 1;
+    
     for (const room of rooms) {
-      const result = await createRoom(sessionId, room.name, room.id, room.sigil, room.motto);
+      const result = await createRoom(sessionId, room.name, room.id, room.sigil, room.motto, tokensToUse);
       
       if (!result) {
         toast({
@@ -157,6 +174,44 @@ const RoomCreator: React.FC<RoomCreatorProps> = ({ sessionId, onCreateRooms, onC
                         <Plus className="h-6 w-6 md:h-8 md:w-8" />
                       </Button>
                     </div>
+                    
+
+                    
+                    {hintEnabled && (
+                      <div className="space-y-6">
+                        <Label className="mb-4 block text-lg md:text-xl font-mono text-green-400 text-center">$ JETONS_PAR_SALLE (0-10):</Label>
+                        
+                        <div className="flex items-center justify-center space-x-6 md:space-x-8">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={decrementTokens}
+                            disabled={tokensPerRoom <= 0}
+                            className="border-green-500/50 text-green-400 hover:bg-green-500/20 disabled:opacity-50 min-h-[56px] min-w-[56px] md:min-h-[64px] md:min-w-[64px]"
+                          >
+                            <Minus className="h-6 w-6 md:h-8 md:w-8" />
+                          </Button>
+                          
+                          <span className="text-3xl md:text-4xl font-mono text-green-400 w-16 text-center">{tokensPerRoom}</span>
+                          
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={incrementTokens}
+                            disabled={tokensPerRoom >= 10}
+                            className="border-green-500/50 text-green-400 hover:bg-green-500/20 disabled:opacity-50 min-h-[56px] min-w-[56px] md:min-h-[64px] md:min-w-[64px]"
+                          >
+                            <Plus className="h-6 w-6 md:h-8 md:w-8" />
+                          </Button>
+                        </div>
+                        
+                        <div className="text-center text-sm md:text-base text-green-400/70 font-mono">
+                          <p>$ Chaque jeton utilisé = -50 points</p>
+                        </div>
+                      </div>
+                    )}
                     
                     <div className="pt-6">
                       <Button 

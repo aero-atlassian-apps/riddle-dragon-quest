@@ -1,12 +1,13 @@
 
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Crown, Swords, Trophy, ChevronRight } from "lucide-react";
+import { Crown, Swords, Trophy, ChevronRight, Gamepad2, X } from "lucide-react";
 import { useState } from "react";
 import GamesShield from "@/components/GamesShield";
 
 const Index = () => {
   const [rulesExpanded, setRulesExpanded] = useState(false);
+  const [showChallenge, setShowChallenge] = useState(false);
   return (
     <div className="min-h-screen flex flex-col bg-black bg-cover bg-center p-4">
       <div className="max-w-4xl w-full mx-auto text-center my-auto">
@@ -25,13 +26,23 @@ const Index = () => {
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
             <Link to="/admin" className="transform transition-transform hover:scale-105">
               <Button className="w-full h-16 text-lg bg-[#1a1a1a] hover:bg-[#2a2a2a] text-[#00ff00] border-2 border-[#00ff00]/30 group shadow-[0_0_5px_#00ff00]">
                 <Crown className="mr-2 h-5 w-5 group-hover:animate-pulse" />
                 Espace du Maître des jeux
               </Button>
             </Link>
+            
+            <button 
+              onClick={() => setShowChallenge(true)}
+              className="transform transition-transform hover:scale-105"
+            >
+              <Button className="w-full h-16 text-lg bg-[#2a2a2a] hover:bg-[#3a3a3a] text-[#ffd700] border-2 border-[#ffd700]/30 group shadow-[0_0_5px_#ffd700]">
+                 <Gamepad2 className="mr-2 h-5 w-5 group-hover:animate-pulse" />
+                 Défi du jour
+              </Button>
+            </button>
             
             <Link to="/leaderboard" className="transform transition-transform hover:scale-105">
               <Button className="w-full h-16 text-lg bg-[#2a2a2a] hover:bg-[#1a1a1a] text-[#39ff14] border-2 border-[#00ff00]/30 group shadow-[0_0_5px_#39ff14]">
@@ -75,6 +86,25 @@ const Index = () => {
       <footer className="mt-8 text-sm text-[#00ff00]/70 text-center font-medieval">
         &copy; {new Date().getFullYear()} AWB Serious GAMES. Tous droits réservés par ordre du Roi du jeu.
       </footer>
+      
+      {/* Challenge du jour Modal */}
+      {showChallenge && (
+        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4">
+          <div className="relative max-w-full max-h-full">
+            <button
+              onClick={() => setShowChallenge(false)}
+              className="absolute top-4 right-4 z-10 bg-[#1a1a1a] hover:bg-[#2a2a2a] text-[#00ff00] border-2 border-[#00ff00]/30 rounded-full p-2 shadow-[0_0_5px_#00ff00] transition-all"
+            >
+              <X className="h-6 w-6" />
+            </button>
+            <img
+              src="/images/DataPrivacyEscapeGame.png"
+              alt="Challenge du jour"
+              className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-[0_0_20px_#00ff00]"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -47,9 +47,11 @@ const AdminDashboard = () => {
     setIsLoading(false);
   };
 
-  const handleCreateSession = (sessionId: string) => {
+  const handleCreateSession = async (sessionId: string) => {
     setRoomCreationSessionId(sessionId);
     setCreationStep("questions");
+    // Refresh sessions to include the newly created session
+    await fetchSessions();
   };
 
   const handleUploadQuestions = (questions: Question[]) => {
@@ -260,6 +262,7 @@ const AdminDashboard = () => {
                 sessionId={roomCreationSessionId}
                 onCreateRooms={handleCreateRooms}
                 onContinue={handleFinishCreation}
+hintEnabled={sessions.find(s => s.id === roomCreationSessionId)?.hintEnabled ?? true}
               />
             )}
           </div>

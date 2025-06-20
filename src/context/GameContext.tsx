@@ -24,6 +24,7 @@ interface InitialState {
 
 const initialGameState: GameState = {
   tokensLeft: 1,
+  initialTokens: 1,
   currentDoor: 1,
   totalDoors: 6,
   score: 0,
@@ -46,6 +47,7 @@ export const GameProvider: React.FC<{ children: ReactNode; initialState?: Initia
       return {
         ...initialGameState,
         tokensLeft: initialState.tokensLeft,
+        initialTokens: initialState.tokensLeft, // Set initial tokens to the starting amount
         currentDoor: initialState.currentDoor,
         score: initialState.score,
       };
@@ -133,10 +135,11 @@ export const GameProvider: React.FC<{ children: ReactNode; initialState?: Initia
     const linearBonus = 200 - (minutesTaken * 5);
     const timeBonus = Math.max(50, Math.min(200, Math.floor(linearBonus)));
 
-    // Calculate token malus (-30 points per token used)
+    // Calculate token malus (-50 points per token used)
     // Use room tokens if provided, otherwise fall back to gameState
     const tokensLeft = roomTokensLeft !== undefined ? roomTokensLeft : gameState.tokensLeft;
-    const tokensUsed = 1 - tokensLeft;
+    // Calculate tokens used based on initial tokens minus current tokens left
+    const tokensUsed = Math.max(0, gameState.initialTokens - tokensLeft);
     const tokenMalus = tokensUsed * -50;
 
     console.log(`Time bonus calculated: ${timeBonus} (Minutes: ${minutesTaken}, Linear formula: 200 - ${minutesTaken} * 5)`);
@@ -168,13 +171,10 @@ export const GameProvider: React.FC<{ children: ReactNode; initialState?: Initia
     // Increased timeout to 1500ms to make transitions smoother and more visible
     setTimeout(() => {
       if (nextDoor > gameState.totalDoors) {
-        const { timeBonus, tokenMalus } = calculateFinalScore();
+        // Don't calculate final score here - Room.tsx handles final score calculation and database update
         setGameState((prev) => ({
           ...prev,
           isGameComplete: true,
-          timeBonus,
-          tokenMalus,
-          score: prev.score + timeBonus + tokenMalus
         }));
       } else {
         // Don't reset tokens when going to next door since tokens are per room, not per door
