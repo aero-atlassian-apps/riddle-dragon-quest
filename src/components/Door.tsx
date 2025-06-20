@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import { playAudio, AUDIO_PATHS } from '@/utils/audioUtils';
 
 interface DoorProps {
   doorNumber: number;
@@ -20,17 +21,15 @@ const [showUnlockEffect, setShowUnlockEffect] = useState(false);
   useEffect(() => {
     if (isUnlocking) {
       setShowUnlockEffect(true);
-      const unlockSound = new Audio('/unlock-sound.mp3');
-      unlockSound.volume = 0.3;
-      unlockSound.play().catch(e => console.log('Audio play failed:', e));
+      // Play unlock sound (using game winning sound as fallback)
+      playAudio(AUDIO_PATHS.GAME_WINNING, { volume: 0.3 });
       
       const timer = setTimeout(() => {
         setShowUnlockEffect(false);
         if (isOpen) {
           setAnimating(true);
-          const doorSound = new Audio('/door-open.mp3');
-          doorSound.volume = 0.3;
-          doorSound.play().catch(e => console.log('Audio play failed:', e));
+          // Play door open sound (using game winning sound as fallback)
+          playAudio(AUDIO_PATHS.GAME_WINNING, { volume: 0.3 });
           
           setTimeout(() => setAnimating(false), 1500);
         }
@@ -43,9 +42,10 @@ const [showUnlockEffect, setShowUnlockEffect] = useState(false);
   // Play hover sound when door is active and hovered
   useEffect(() => {
     if (hovered && isActive && !isOpen) {
-      const hoverSound = new Audio('/door-hover.mp3');
-      hoverSound.volume = 0.1;
-      hoverSound.play().catch(e => console.log('Audio play failed:', e));
+      // Note: door-hover.mp3 not available, skipping hover sound
+      // const hoverSound = new Audio('/door-hover.mp3');
+      // hoverSound.volume = 0.1;
+      // hoverSound.play().catch(e => console.log('Audio play failed:', e));
     }
   }, [hovered, isActive, isOpen]);
   

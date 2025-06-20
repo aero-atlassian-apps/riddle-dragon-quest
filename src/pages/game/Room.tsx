@@ -13,6 +13,7 @@ import { useUser } from '@/hooks/useUser';
 import Door from '@/components/Door';
 import { Modal } from "@/components/ui/modal";
 import { Input } from "@/components/ui/input";
+import { playAudio, AUDIO_PATHS } from "@/utils/audioUtils";
 import { Label } from "@/components/ui/label";
 import { Copy, Loader2 } from 'lucide-react';
 import { generateRoomId } from '@/utils/roomIdGenerator';
@@ -644,8 +645,9 @@ const Room: React.FC = () => {
 
                     // Trigger celebration effects
                     setShowConfetti(true);
-                    const audio = new Audio('/sounds/success.mp3');
-                    await audio.play().catch(console.error); // Handle audio play error gracefully
+                    
+                    // Play success sound
+                    playAudio(AUDIO_PATHS.GAME_WINNING, { volume: 0.5 });
 
                     // Check if all doors are now open (challenge completed)
                     const allDoorsOpen = updatedRoom.current_door > totalDoors;
@@ -687,8 +689,7 @@ const Room: React.FC = () => {
                       startConfetti();
 
                       // Play victory sound
-                      const victoryAudio = new Audio('/sounds/victory.mp3');
-                      await victoryAudio.play().catch(console.error);
+                      playAudio(AUDIO_PATHS.GAME_WINNING, { volume: 0.5 });
                     }
 
                     // Stop confetti after celebration but keep question view open for manual control

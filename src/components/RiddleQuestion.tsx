@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { HelpCircle, X, Copy, Check, Trophy } from "lucide-react";
+import { playAudio, AUDIO_PATHS } from "@/utils/audioUtils";
 
 interface RiddleQuestionProps {
   question: Question;
@@ -48,6 +49,19 @@ const RiddleQuestion = ({
     if (answer.trim()) {
       console.log("Submitting answer:", answer.trim());
       setIsSubmitting(true);
+      
+      // Check answer immediately and play sound for instant feedback
+      const normalizeString = (str: string) => str.toLowerCase().trim().replace(/\s+/g, ' ');
+      const isAnswerCorrect = normalizeString(answer.trim()) === normalizeString(question.answer);
+      
+      if (isAnswerCorrect) {
+        // Play winning sound immediately
+        playAudio(AUDIO_PATHS.GAME_WINNING, { volume: 0.3 });
+      } else {
+        // Play losing sound immediately for instant feedback
+        playAudio(AUDIO_PATHS.GAME_LOSING, { volume: 1 });
+      }
+      
       onSubmitAnswer(answer.trim());
 
       // Reset submission state after a delay
@@ -79,6 +93,8 @@ const RiddleQuestion = ({
     setUsedTokensForQuestion(prev => prev + 1);
     onUseToken();
   };
+
+  // Sound effects are now played immediately in handleSubmit for instant feedback
 
   // Animation classes for correct/incorrect answers
   const getCardAnimation = () => {

@@ -9,6 +9,7 @@ import confetti from "canvas-confetti";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUser } from "@/hooks/useUser";
+import { createAudio, AUDIO_PATHS } from "@/utils/audioUtils";
 
 const Leaderboard = () => {
   const [scores, setScores] = useState<Score[]>([]);
@@ -20,7 +21,7 @@ const Leaderboard = () => {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [sessions, setSessions] = useState<{ id: string; name: string }[]>([]);
   
-  // Audio reference for Game of Thrones theme
+  // Audio reference for leaderboard background music
   const audioRef = useRef<HTMLAudioElement | null>(null);
   
   // Get authenticated user
@@ -104,16 +105,19 @@ const Leaderboard = () => {
   useEffect(() => {
     fetchSessions();
     
-    // Initialize audio element
-    const audio = new Audio('/sounds/game-of-thrones.mp3');
-    audio.loop = true;
-    audio.volume = volume;
-    audioRef.current = audio;
-    
-    // Start playing the theme music
-    audio.play().catch(error => {
-      console.warn('Audio autoplay was prevented:', error);
-    });
+    // Initialize audio element with better error handling
+    createAudio(AUDIO_PATHS.GAME_LEADERBOARD, { volume, loop: true, preload: true })
+      .then(audio => {
+        if (audio) {
+          audioRef.current = audio;
+          audio.play().catch(error => {
+            console.warn('Leaderboard audio autoplay was prevented:', error);
+          });
+        }
+      })
+      .catch(error => {
+        console.warn('Leaderboard audio initialization failed:', error);
+      });
     
     // Cleanup function to stop audio when component unmounts
     return () => {
