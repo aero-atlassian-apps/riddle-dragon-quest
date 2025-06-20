@@ -29,7 +29,7 @@ const Index = () => {
             <Link to="/admin" className="transform transition-transform hover:scale-105">
               <Button className="w-full h-16 text-lg bg-[#1a1a1a] hover:bg-[#2a2a2a] text-[#00ff00] border-2 border-[#00ff00]/30 group shadow-[0_0_5px_#00ff00]">
                 <Crown className="mr-2 h-5 w-5 group-hover:animate-pulse" />
-                Maître des Métriques
+                Espace du Maître des jeux
               </Button>
             </Link>
             
@@ -56,7 +56,7 @@ const Index = () => {
               <ol className="text-left list-decimal pl-6 space-y-3 font-serif text-[#00ff00]">
                 <li>Le Maître du jeu crée un royaume et convoque ses gardiens</li>
                 <li>Chaque troupe reçoit un parchemin sacré (lien unique)</li>
-                <li>Des portes gardées par la garde du roi attendent chaque troupe</li>
+                <li>Des portes gardées par la garde du roi du jeu attendent chaque troupe</li>
                 <li>Répondez aux énigmes pour déverrouiller les portes et gagner du pouvoir (points)</li>
                 <li>Utilisez des jetons de sagesse pour obtenir de l'aide (mais attention, chaque jeton diminue votre gloire)</li>
                 <li>La troupe avec le plus de pouvoir règnera sur le royaume !</li>
@@ -73,7 +73,7 @@ const Index = () => {
       </div>
       
       <footer className="mt-8 text-sm text-[#00ff00]/70 text-center font-medieval">
-        &copy; {new Date().getFullYear()} AWB Serious GAMES. Tous droits réservés par ordre du Roi.
+        &copy; {new Date().getFullYear()} AWB Serious GAMES. Tous droits réservés par ordre du Roi du jeu.
       </footer>
     </div>
   );

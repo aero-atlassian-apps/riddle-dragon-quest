@@ -19,6 +19,7 @@ export interface Session {
   questions: Question[];
   status?: string;
   context?: string;
+  hintEnabled?: boolean;
 }
 
 export interface Room {

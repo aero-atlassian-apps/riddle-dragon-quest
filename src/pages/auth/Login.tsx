@@ -133,12 +133,6 @@ const Login = () => {
           >
             {loading ? 'Logging in...' : 'Login'}
           </Button>
-          
-          <div className="text-center text-sm text-[#00FF00]/70 font-mono mt-4">
-            <p>VALEURS TMP:</p>
-            <p>Email: {TEMP_EMAIL}</p>
-            <p>Mot de passe: {TEMP_PASSWORD}</p>
-          </div>
         </form>
       </div>
     </div>

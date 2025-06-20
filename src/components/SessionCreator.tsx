@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { Checkbox } from './ui/checkbox';
 import { createSession } from '@/utils/db';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2 } from 'lucide-react';
@@ -13,6 +14,7 @@ interface SessionCreatorProps {
 const SessionCreator: React.FC<SessionCreatorProps> = ({ onCreateSession }) => {
   const [sessionName, setSessionName] = useState('');
   const [sessionContext, setSessionContext] = useState('');
+  const [hintEnabled, setHintEnabled] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -32,7 +34,7 @@ const SessionCreator: React.FC<SessionCreatorProps> = ({ onCreateSession }) => {
 
     try {
       // Create session
-      const session = await createSession(sessionName, sessionContext.trim() || undefined);
+      const session = await createSession(sessionName, sessionContext.trim() || undefined, hintEnabled);
       
       if (!session) {
         toast({
@@ -51,6 +53,7 @@ const SessionCreator: React.FC<SessionCreatorProps> = ({ onCreateSession }) => {
       // Reset form
       setSessionName('');
       setSessionContext('');
+      setHintEnabled(true);
       
       // Notify parent component with the session ID
       onCreateSession(session.id);
@@ -100,6 +103,19 @@ const SessionCreator: React.FC<SessionCreatorProps> = ({ onCreateSession }) => {
                 className="w-full bg-black/50 border border-green-500/50 text-green-400 font-mono placeholder:text-green-600/30 focus:border-green-400 focus:ring-green-400/20 rounded-md px-3 py-2 resize-none"
                 disabled={isLoading}
               />
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="hint-enabled"
+                checked={hintEnabled}
+                onCheckedChange={(checked) => setHintEnabled(checked as boolean)}
+                disabled={isLoading}
+                className="border-green-500/50 data-[state=checked]:bg-green-500 data-[state=checked]:text-black"
+              />
+              <Label htmlFor="hint-enabled" className="font-mono text-green-400 cursor-pointer">
+                Avec Indice ?
+              </Label>
             </div>
             
             <div className="pt-4">

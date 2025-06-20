@@ -34,6 +34,7 @@ const Room: React.FC = () => {
   const [room, setRoom] = useState<RoomType | null>(null);
   const [sessionStatus, setSessionStatus] = useState<string | null>(null);
   const [sessionContext, setSessionContext] = useState<string | null>(null);
+  const [sessionHintEnabled, setSessionHintEnabled] = useState<boolean>(true);
   const [totalDoors, setTotalDoors] = useState<number>(6);
   const [isLoading, setIsLoading] = useState(true);
   const [isSessionActive, setIsSessionActive] = useState(false);
@@ -212,6 +213,10 @@ const Room: React.FC = () => {
               } else {
                 setSessionContext(null);
               }
+              
+              // Set session hint enabled setting
+              setSessionHintEnabled(session?.hintEnabled ?? true);
+              console.log('Session hint enabled set to:', session?.hintEnabled ?? true);
             } else {
               console.warn("Room does not have a session ID.");
               setSessionStatus(null);
@@ -370,10 +375,12 @@ const Room: React.FC = () => {
           </div>
 
           <div className="flex items-center justify-center space-x-6 mb-4">
-            <div className="flex items-center bg-black/50 px-4 py-2 rounded-lg border border-amber-500/30">
-              <span className="w-3 h-3 rounded-full bg-amber-500 animate-pulse mr-2" />
-              <span className="text-2xl text-amber-500 font-pixel">{room?.tokensLeft} Jetons</span>
-            </div>
+            {sessionHintEnabled && (
+              <div className="flex items-center bg-black/50 px-4 py-2 rounded-lg border border-amber-500/30">
+                <span className="w-3 h-3 rounded-full bg-amber-500 animate-pulse mr-2" />
+                <span className="text-2xl text-amber-500 font-pixel">{room?.tokensLeft} Jetons</span>
+              </div>
+            )}
             <div className="flex items-center bg-black/50 px-4 py-2 rounded-lg border border-green-500/30">
               <span className="w-3 h-3 rounded-full bg-green-500 animate-pulse mr-2" />
               <span className="text-2xl text-green-500 font-pixel">{room?.score} Points</span>
@@ -565,7 +572,8 @@ const Room: React.FC = () => {
           <div className="mt-8 w-full">
             <RiddleQuestion
               question={gameState.currentQuestion}
-              tokensLeft={room.tokensLeft}
+              tokensLeft={sessionHintEnabled ? room.tokensLeft : 0}
+              hintEnabled={sessionHintEnabled}
               onSubmitAnswer={async (answer: string) => {
                 try {
                   if (!gameState.currentQuestion || !room) {
@@ -576,8 +584,7 @@ const Room: React.FC = () => {
                   gameState.isAnswerCorrect = isCorrect;
 
                   if (isCorrect) {
-                    // Calculate points based on tokens used and question points
-                    const tokensUsed = 1 - room.tokensLeft;
+                    // Calculate points based on question points only (no per-door penalties)
                     const { data: questionData } = await supabase
                       .from('questions')
                       .select('points')
@@ -585,9 +592,8 @@ const Room: React.FC = () => {
                       .single();
 
                     const questionPoints = questionData?.points || 100;
-                    // Calculate points with token penalty (no time bonus per door, only at completion)
-                    const pointsWithPenalty = Math.max(Math.floor(questionPoints * (1 - (0.1 * tokensUsed))), Math.floor(questionPoints * 0.6));
-                    const finalScore = pointsWithPenalty;
+                    // Use full question points - token malus will be applied only at game completion
+                    const finalScore = questionPoints;
 
                     // Start a transaction to update the room state
                     const currentScore = room.score || 0; // Handle null scores
@@ -685,7 +691,7 @@ const Room: React.FC = () => {
                   });
                 }
               }}
-              onUseToken={async () => {
+              onUseToken={sessionHintEnabled ? async () => {
                 if (!room || !gameState.currentQuestion) return;
 
                 // Update tokens in the database
@@ -710,7 +716,7 @@ const Room: React.FC = () => {
 
                 // Call the context's useToken function
                 useToken();
-              }}
+              } : undefined}
               isCorrect={gameState.isAnswerCorrect}
             />
           </div>

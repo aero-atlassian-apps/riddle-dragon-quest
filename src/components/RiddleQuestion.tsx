@@ -15,6 +15,7 @@ interface RiddleQuestionProps {
   onUseToken: () => void;
   isCorrect: boolean | null;
   doorNumber?: number;
+  hintEnabled?: boolean;
 }
 
 const RiddleQuestion = ({
@@ -23,7 +24,8 @@ const RiddleQuestion = ({
   onSubmitAnswer,
   onUseToken,
   isCorrect,
-  doorNumber = 1
+  doorNumber = 1,
+  hintEnabled = true
 }: RiddleQuestionProps) => {
   const [answer, setAnswer] = useState("");
   const [hintRevealed, setHintRevealed] = useState(false);
@@ -71,7 +73,7 @@ const RiddleQuestion = ({
 
   const handleUseToken = () => {
     // Prevent using more than one token per question
-    if (usedTokensForQuestion > 0) return;
+    if (usedTokensForQuestion > 0 || !onUseToken) return;
 
     setHintRevealed(true);
     setUsedTokensForQuestion(prev => prev + 1);
@@ -244,31 +246,33 @@ const RiddleQuestion = ({
                       )}
                     </div>
 
-                    <div className="flex items-center justify-start space-x-3">
-                      <span className="text-amber-400 font-medieval text-lg">Jetons d'aide:</span>
-                      {[...Array(1)].map((_, i) => (
-                        <div
-                          key={i}
-                          className={`relative w-12 h-12 transition-all duration-300 transform ${
-                            i < tokensLeft ? 'scale-100 cursor-pointer hover:scale-110 active:scale-95' : 'scale-90 opacity-40'
-                          }`}
-                          onClick={() => i < tokensLeft && !hintRevealed && isCorrect !== true && handleUseToken()}
-                        >
-                          <div className={`absolute inset-0 ${i < tokensLeft ? 'animate-token-shine' : ''}`}>
-                            <svg viewBox="0 0 100 100" className="w-full h-full">
-                              <circle cx="50" cy="50" r="45" fill="#B8860B" className="token-border" />
-                              <circle cx="50" cy="50" r="40" fill="#FFD700" className="token-face" />
-                              <path d="M50 20v60M20 50h60" stroke="#B8860B" strokeWidth="4" />
-                              <circle cx="50" cy="50" r="15" fill="#B8860B" />
-                              <text x="50" y="55" textAnchor="middle" fill="#FFD700" fontSize="16" fontFamily="medieval">H</text>
-                            </svg>
+                    {tokensLeft > 0 && onUseToken && hintEnabled && (
+                      <div className="flex items-center justify-start space-x-3">
+                        <span className="text-amber-400 font-medieval text-lg">Jetons d'aide:</span>
+                        {[...Array(1)].map((_, i) => (
+                          <div
+                            key={i}
+                            className={`relative w-12 h-12 transition-all duration-300 transform ${
+                              i < tokensLeft ? 'scale-100 cursor-pointer hover:scale-110 active:scale-95' : 'scale-90 opacity-40'
+                            }`}
+                            onClick={() => i < tokensLeft && !hintRevealed && isCorrect !== true && handleUseToken()}
+                          >
+                            <div className={`absolute inset-0 ${i < tokensLeft ? 'animate-token-shine' : ''}`}>
+                              <svg viewBox="0 0 100 100" className="w-full h-full">
+                                <circle cx="50" cy="50" r="45" fill="#B8860B" className="token-border" />
+                                <circle cx="50" cy="50" r="40" fill="#FFD700" className="token-face" />
+                                <path d="M50 20v60M20 50h60" stroke="#B8860B" strokeWidth="4" />
+                                <circle cx="50" cy="50" r="15" fill="#B8860B" />
+                                <text x="50" y="55" textAnchor="middle" fill="#FFD700" fontSize="16" fontFamily="medieval">H</text>
+                              </svg>
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
-                  {hintRevealed && (
+                  {hintRevealed && hintEnabled && (
                     <div className="w-full bg-amber-900/30 border border-amber-600 rounded-lg p-4 md:p-6">
                       <p className="text-amber-300 font-medieval text-lg md:text-xl leading-relaxed">
                         💡 <strong>Indice:</strong> {question.hint}
@@ -329,26 +333,28 @@ const RiddleQuestion = ({
                     )}
                   </div>
 
-                  <div className="flex items-center justify-center sm:justify-start space-x-2 sm:ml-3">
-                    <span className="text-amber-400 font-medieval text-sm sm:text-base">Aide:</span>
-                    {[...Array(1)].map((_, i) => (
-                      <div
-                        key={i}
-                        className={`relative w-10 h-10 sm:w-10 sm:h-10 transition-all duration-300 transform ${i < tokensLeft ? 'scale-100 cursor-pointer hover:scale-110 active:scale-95' : 'scale-90 opacity-40'}`}
-                        onClick={() => i < tokensLeft && !hintRevealed && isCorrect !== true && handleUseToken()}
-                      >
-                        <div className={`absolute inset-0 ${i < tokensLeft ? 'animate-token-shine' : ''}`}>
-                          <svg viewBox="0 0 100 100" className="w-full h-full">
-                            <circle cx="50" cy="50" r="45" fill="#B8860B" className="token-border" />
-                            <circle cx="50" cy="50" r="40" fill="#FFD700" className="token-face" />
-                            <path d="M50 20v60M20 50h60" stroke="#B8860B" strokeWidth="4" />
-                            <circle cx="50" cy="50" r="15" fill="#B8860B" />
-                            <text x="50" y="55" textAnchor="middle" fill="#FFD700" fontSize="16" fontFamily="medieval">H</text>
-                          </svg>
+                  {tokensLeft > 0 && onUseToken && hintEnabled && (
+                    <div className="flex items-center justify-center sm:justify-start space-x-2 sm:ml-3">
+                      <span className="text-amber-400 font-medieval text-sm sm:text-base">Aide:</span>
+                      {[...Array(1)].map((_, i) => (
+                        <div
+                          key={i}
+                          className={`relative w-10 h-10 sm:w-10 sm:h-10 transition-all duration-300 transform ${i < tokensLeft ? 'scale-100 cursor-pointer hover:scale-110 active:scale-95' : 'scale-90 opacity-40'}`}
+                          onClick={() => i < tokensLeft && !hintRevealed && isCorrect !== true && handleUseToken()}
+                        >
+                          <div className={`absolute inset-0 ${i < tokensLeft ? 'animate-token-shine' : ''}`}>
+                            <svg viewBox="0 0 100 100" className="w-full h-full">
+                              <circle cx="50" cy="50" r="45" fill="#B8860B" className="token-border" />
+                              <circle cx="50" cy="50" r="40" fill="#FFD700" className="token-face" />
+                              <path d="M50 20v60M20 50h60" stroke="#B8860B" strokeWidth="4" />
+                              <circle cx="50" cy="50" r="15" fill="#B8860B" />
+                              <text x="50" y="55" textAnchor="middle" fill="#FFD700" fontSize="16" fontFamily="medieval">H</text>
+                            </svg>
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                  </div>
 
                  {hintRevealed && (

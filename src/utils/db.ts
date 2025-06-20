@@ -1,10 +1,10 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Session, Question, Room, Score } from "@/types/game";
 
-export const createSession = async (name: string, context?: string): Promise<Session | null> => {
+export const createSession = async (name: string, context?: string, hintEnabled: boolean = true): Promise<Session | null> => {
   const { data, error } = await supabase
     .from('sessions')
-    .insert([{ name, context }])
+    .insert([{ name, context, hint_enabled: hintEnabled }])
     .select()
     .single();
 
@@ -20,7 +20,8 @@ export const createSession = async (name: string, context?: string): Promise<Ses
     endTime: data.end_time ? new Date(data.end_time) : undefined,
     questions: [],
     status: data.status,
-    context: data.context
+    context: data.context,
+    hintEnabled: data.hint_enabled
   };
 };
 
@@ -42,7 +43,8 @@ export const getSessions = async (): Promise<Session[]> => {
     endTime: session.end_time ? new Date(session.end_time) : undefined,
     questions: session.questions || [],
     status: session.status,
-    context: session.context
+    context: session.context,
+    hintEnabled: session.hint_enabled
   }));
 };
 
@@ -410,6 +412,7 @@ export const getSession = async (sessionId: string): Promise<Session | null> => 
     endTime: data.end_time ? new Date(data.end_time) : undefined,
     questions: [],
     status: data.status,
-    context: data.context
+    context: data.context,
+    hintEnabled: data.hint_enabled
   };
 };
