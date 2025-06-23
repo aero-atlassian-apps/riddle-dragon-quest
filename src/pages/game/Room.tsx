@@ -319,7 +319,7 @@ const Room: React.FC = () => {
                 name: updatedRoom.name,
                 tokensLeft: updatedRoom.tokens_left,
                 currentDoor: updatedRoom.current_door,
-                score: updatedRoom.score,
+                score: updatedRoom.score || 0,
                 sessionStatus: sessionStatus || null,
                 sigil: updatedRoom.sigil,
                 motto: updatedRoom.motto
