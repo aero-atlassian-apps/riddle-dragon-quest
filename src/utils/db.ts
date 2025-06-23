@@ -36,16 +36,18 @@ export const getSessions = async (): Promise<Session[]> => {
     return [];
   }
 
-  return (data || []).map(session => ({
-    id: session.id,
-    name: session.name,
-    startTime: new Date(session.start_time),
-    endTime: session.end_time ? new Date(session.end_time) : undefined,
-    questions: session.questions || [],
-    status: session.status,
-    context: session.context,
-    hintEnabled: session.hint_enabled
-  }));
+  return (data || [])
+    .filter(session => session && session.id) // Filter out null/undefined sessions
+    .map(session => ({
+      id: session.id,
+      name: session.name,
+      startTime: new Date(session.start_time),
+      endTime: session.end_time ? new Date(session.end_time) : undefined,
+      questions: session.questions || [],
+      status: session.status,
+      context: session.context,
+      hintEnabled: session.hint_enabled
+    }));
 };
 
 export const getRoom = async (roomId: string): Promise<Room | null> => {

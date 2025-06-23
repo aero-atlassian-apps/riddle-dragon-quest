@@ -310,10 +310,12 @@ hintEnabled={sessions.find(s => s.id === roomCreationSessionId)?.hintEnabled ?? 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {sessions
                         .filter((session) => 
-                          tab === "all" || 
-                          (tab === "active" && session.status === "active") || 
-                          (tab === "en attente" && session.status === "en attente") || 
-                          (tab === "terminée" && session.status === "terminée")
+                          session && session.id && (
+                            tab === "all" || 
+                            (tab === "active" && session.status === "active") || 
+                            (tab === "en attente" && session.status === "en attente") || 
+                            (tab === "terminée" && session.status === "terminée")
+                          )
                         )
                         .map((session) => (
                           <div
