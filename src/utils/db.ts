@@ -388,18 +388,31 @@ export const updateSessionStatus = async (sessionId: string, status: 'en attente
 };
 
 export const getSessionStatus = async (sessionId: string): Promise<string | null> => {
+  console.log('🔍 Fetching session status for ID:', sessionId);
+  
   const { data, error } = await supabase
     .from('sessions')
     .select('status')
     .eq('id', sessionId)
     .single();
   
-  if (error || !data) {
-    console.error('Error fetching session status:', error);
+  if (error) {
+    console.error('❌ Error fetching session status:', error);
+    console.error('❌ Error details:', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code
+    });
     return null;
   }
   
-  console.log('Session status fetched (fresh):', data.status);
+  if (!data) {
+    console.warn('⚠️ No session data found for ID:', sessionId);
+    return null;
+  }
+  
+  console.log('✅ Session status fetched successfully:', data.status);
   return data.status;
 };
 
