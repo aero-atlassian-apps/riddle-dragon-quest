@@ -74,9 +74,8 @@ export default async function handler(req: Request) {
       });
     }
 
-    // Ensure required Supabase headers are present
+    // Start with forwarded headers
     const supabaseHeaders = {
-      'Content-Type': 'application/json',
       'apikey': SUPABASE_KEY,
       ...requestHeaders,
     };
@@ -89,7 +88,7 @@ export default async function handler(req: Request) {
     // Always include the API key for RLS policies
     supabaseHeaders['apikey'] = SUPABASE_KEY;
     
-    // Ensure proper content type for JSON requests
+    // Ensure proper content type for JSON requests (only if not already set)
     if (requestMethod !== 'GET' && !supabaseHeaders['content-type'] && !supabaseHeaders['Content-Type']) {
       supabaseHeaders['Content-Type'] = 'application/json';
     }
