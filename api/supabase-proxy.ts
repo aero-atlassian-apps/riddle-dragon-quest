@@ -6,15 +6,21 @@ const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5c
 export default async function handler(req: Request) {
   console.log('🔄 Proxy function invoked:', req.method, req.url);
   
+  // Enhanced CORS headers for Supabase
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-auth-token, cookie, set-cookie',
+    'Access-Control-Expose-Headers': 'x-supabase-auth-token, set-cookie',
+    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Max-Age': '86400'
+  };
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, {
       status: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey, x-client-info, x-supabase-auth-token',
-      },
+      headers: corsHeaders,
     });
   }
 
@@ -75,9 +81,17 @@ export default async function handler(req: Request) {
       ...requestHeaders,
     };
 
-    // If no Authorization header but we have apikey, set it
+    // Ensure critical Supabase authentication headers are present
     if (!supabaseHeaders['Authorization'] && !supabaseHeaders['authorization']) {
       supabaseHeaders['Authorization'] = `Bearer ${SUPABASE_KEY}`;
+    }
+    
+    // Always include the API key for RLS policies
+    supabaseHeaders['apikey'] = SUPABASE_KEY;
+    
+    // Ensure proper content type for JSON requests
+    if (requestMethod !== 'GET' && !supabaseHeaders['content-type'] && !supabaseHeaders['Content-Type']) {
+      supabaseHeaders['Content-Type'] = 'application/json';
     }
 
     console.log('🔑 Using API key:', SUPABASE_KEY.substring(0, 20) + '...');
