@@ -95,6 +95,23 @@ export default async function handler(req: Request) {
     }
 
     console.log('🔑 Using API key:', SUPABASE_KEY.substring(0, 20) + '...');
+    console.log('🎯 Target URL:', targetUrl);
+    console.log('📤 Request method:', requestMethod);
+    console.log('📋 Request headers:', Object.keys(supabaseHeaders));
+    console.log('🔐 Authorization header:', supabaseHeaders['Authorization'] ? 'present' : 'missing');
+    console.log('🔑 API key header:', supabaseHeaders['apikey'] ? 'present' : 'missing');
+    console.log('🍪 Cookie header:', supabaseHeaders['cookie'] ? 'present' : 'missing');
+    console.log('📦 Request body length:', requestBody ? requestBody.length : 0);
+    
+    // Log authentication context for debugging
+    if (supabaseHeaders['Authorization']) {
+      const authHeader = supabaseHeaders['Authorization'];
+      if (authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        console.log('🎫 Auth token type:', token.startsWith('eyJ') ? 'JWT' : 'other');
+        console.log('🎫 Auth token length:', token.length);
+      }
+    }
     
     // Forward the request to Supabase
     const fetchOptions: RequestInit = {

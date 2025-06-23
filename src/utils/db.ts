@@ -417,16 +417,36 @@ export const getSessionStatus = async (sessionId: string): Promise<string | null
 };
 
 export const getSession = async (sessionId: string): Promise<Session | null> => {
+  console.log('🔍 Fetching full session data for ID:', sessionId);
+  
   const { data, error } = await supabase
     .from('sessions')
     .select('*')
     .eq('id', sessionId)
     .single();
   
-  if (error || !data) {
-    console.error('Error fetching session:', error);
+  if (error) {
+    console.error('❌ Error fetching session:', error);
+    console.error('❌ Error details:', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code
+    });
     return null;
   }
+  
+  if (!data) {
+    console.warn('⚠️ No session data found for ID:', sessionId);
+    return null;
+  }
+  
+  console.log('✅ Session data fetched successfully:', {
+    id: data.id,
+    name: data.name,
+    status: data.status,
+    context: data.context ? 'present' : 'null'
+  });
   
   return {
     id: data.id,
