@@ -123,21 +123,27 @@ export type Database = {
       }
       sessions: {
         Row: {
+          context: string | null
           end_time: string | null
+          hint_enabled: boolean
           id: string
           name: string
           start_time: string | null
           status: string
         }
         Insert: {
+          context?: string | null
           end_time?: string | null
+          hint_enabled?: boolean
           id?: string
           name: string
           start_time?: string | null
           status?: string
         }
         Update: {
+          context?: string | null
           end_time?: string | null
+          hint_enabled?: boolean
           id?: string
           name?: string
           start_time?: string | null
