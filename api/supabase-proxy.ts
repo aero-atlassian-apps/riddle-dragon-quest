@@ -111,26 +111,41 @@ export default async function handler(req: Request) {
     const response = await fetch(targetUrl, fetchOptions);
     
     console.log('📡 Supabase response status:', response.status, response.statusText);
+    console.log('📡 Supabase response headers:', Object.fromEntries(response.headers.entries()));
 
-    let responseData;
-    const contentType = response.headers.get('content-type');
+    // Forward important headers from Supabase response
+    const responseHeaders = { ...corsHeaders };
     
-    if (contentType && contentType.includes('application/json')) {
-      responseData = await response.json();
-    } else {
-      responseData = await response.text();
+    // Forward content type
+    const contentType = response.headers.get('Content-Type');
+    if (contentType) {
+      responseHeaders['Content-Type'] = contentType;
     }
     
-    console.log('✅ Response received, status:', response.status);
-    
-    return new Response(JSON.stringify(responseData), {
+    // Forward authentication-related headers
+    const authHeaders = ['set-cookie', 'x-supabase-auth-token', 'authorization'];
+    authHeaders.forEach(header => {
+      const value = response.headers.get(header);
+      if (value) {
+        responseHeaders[header] = value;
+      }
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Supabase error response:', errorText);
+      return new Response(errorText, {
+        status: response.status,
+        headers: responseHeaders,
+      });
+    }
+
+    const data = await response.text();
+    console.log('✅ Supabase success response length:', data.length);
+
+    return new Response(data, {
       status: response.status,
-      headers: { 
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey, x-client-info, x-supabase-auth-token',
-      },
+      headers: responseHeaders,
     });
   } catch (error) {
     console.error('❌ Proxy error details:', {
