@@ -36,10 +36,10 @@ const SessionCreator: React.FC<SessionCreatorProps> = ({ onCreateSession }) => {
       // Create session
       const session = await createSession(sessionName, sessionContext.trim() || undefined, hintEnabled);
       
-      if (!session) {
+      if (!session || !session.id) {
         toast({
           title: "Erreur",
-          description: "Échec de la création de la session",
+          description: "Échec de la création de la session - ID manquant",
           variant: "destructive",
         });
         return;

@@ -111,7 +111,7 @@ const AdminDashboard = () => {
     
     if (success) {
       setSessions(sessions.map(session => 
-        session.id === sessionId ? { ...session, status } : session
+        (session && session.id === sessionId) ? { ...session, status } : session
       ));
       
       const statusMessage = status === 'active' ? 'started' : status === 'terminée' ? 'ended' : 'reset';
@@ -134,7 +134,7 @@ const AdminDashboard = () => {
     setShowRoomsDialog(true);
     
     try {
-      const session = sessions.find(s => s.id === sessionId);
+      const session = sessions.find(s => s && s.id && s.id === sessionId);
       if (session) {
         setCurrentSessionName(session.name);
       }
@@ -262,7 +262,7 @@ const AdminDashboard = () => {
                 sessionId={roomCreationSessionId}
                 onCreateRooms={handleCreateRooms}
                 onContinue={handleFinishCreation}
-hintEnabled={sessions.find(s => s.id === roomCreationSessionId)?.hintEnabled ?? true}
+hintEnabled={sessions.find(s => s && s.id && s.id === roomCreationSessionId)?.hintEnabled ?? true}
               />
             )}
           </div>

@@ -13,6 +13,11 @@ export const createSession = async (name: string, context?: string, hintEnabled:
     return null;
   }
 
+  if (!data || !data.id) {
+    console.error('Error: Session created but no valid data or ID returned');
+    return null;
+  }
+
   return {
     id: data.id,
     name: data.name,
