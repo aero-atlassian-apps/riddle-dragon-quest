@@ -137,8 +137,13 @@ const Leaderboard = () => {
         .channel('room_updates')
         .on('postgres_changes', 
           { event: '*', schema: 'public', table: 'rooms' }, 
-          () => {
-            fetchScores();
+          (payload) => {
+            try {
+              console.log('Leaderboard: Room update received', payload);
+              fetchScores();
+            } catch (error) {
+              console.error('Error in leaderboard subscription callback:', error);
+            }
           }
         )
         .subscribe();

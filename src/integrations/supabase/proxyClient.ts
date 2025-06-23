@@ -140,6 +140,10 @@ export const supabaseWithProxy = createClient<Database>(
       heartbeatIntervalMs: 30000,
       // Reconnect on connection loss
       reconnectAfterMs: (tries: number) => Math.min(tries * 1000, 10000),
+      // Add timeout for subscription operations
+      timeout: 10000,
+      // Enable debug mode for better error tracking
+      debug: process.env.NODE_ENV === 'development',
     },
   }
 );

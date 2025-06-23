@@ -177,7 +177,7 @@ const Room: React.FC = () => {
             setStoreRoomId(currentRoom.id);
             
             // Initialize room-specific start time if this is the beginning of the game
-            if (currentRoom.currentDoor === 1 && !roomStartTime) {
+            if ((currentRoom.currentDoor || 1) === 1 && !roomStartTime) {
               const now = new Date();
               console.log('Initializing room start time for room:', currentRoom.id);
               setRoomStartTime(now);
@@ -270,16 +270,17 @@ const Room: React.FC = () => {
   useEffect(() => {
     if (room) {
       // Calculate door states based on current door and total doors
+      const currentDoor = room.currentDoor || 1; // Handle null currentDoor
       const newDoorStates = Array(totalDoors).fill(false).map((_, index) => {
         // A door is considered open if its number is less than the current door
         // This means the player has already completed this door
         // If currentDoor > totalDoors, all doors should be open (challenge completed)
-        return room.currentDoor > totalDoors ? true : index + 1 < room.currentDoor;
+        return currentDoor > totalDoors ? true : index + 1 < currentDoor;
       });
       setDoorStates(newDoorStates);
 
       // If all doors are open, trigger celebration
-      if (room.currentDoor > totalDoors) {
+      if (currentDoor > totalDoors) {
         startConfetti();
         setShowConfetti(true);
       }
@@ -308,30 +309,35 @@ const Room: React.FC = () => {
     if (roomId && isDirectlyNavigated) {
       roomChannel = supabase
         .channel('room-status-subscription')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` },
+        .on('postgres_changes', 
+          { event: '*', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` },
           (payload) => {
-            console.log('=== REAL-TIME ROOM UPDATE ===');
-            console.log('Change received!', payload);
-            console.log('Event type:', payload.eventType);
-            console.log('Table:', payload.table);
-            if (payload.new) {
-              const updatedRoom = payload.new as any;
-              console.log('Updated room data:', updatedRoom);
-              console.log('Score update:', updatedRoom?.score);
-              setRoom({
-                id: updatedRoom.id,
-                sessionId: updatedRoom.session_id,
-                name: updatedRoom.name,
-                tokensLeft: updatedRoom.tokens_left,
-                currentDoor: updatedRoom.current_door,
-                score: updatedRoom?.score || 0,
-                sessionStatus: sessionStatus || null,
-                sigil: updatedRoom.sigil,
-                motto: updatedRoom.motto
-              });
-              console.log('Local room state updated successfully');
+            try {
+              console.log('=== REAL-TIME ROOM UPDATE ===');
+              console.log('Change received!', payload);
+              console.log('Event type:', payload.eventType);
+              console.log('Table:', payload.table);
+              if (payload.new) {
+                const updatedRoom = payload.new as any;
+                console.log('Updated room data:', updatedRoom);
+                console.log('Score update:', updatedRoom?.score);
+                setRoom({
+                  id: updatedRoom.id,
+                  sessionId: updatedRoom.session_id,
+                  name: updatedRoom.name,
+                  tokensLeft: updatedRoom.tokens_left,
+                  currentDoor: updatedRoom.current_door || 1,
+                  score: updatedRoom?.score || 0,
+                  sessionStatus: sessionStatus || null,
+                  sigil: updatedRoom.sigil,
+                  motto: updatedRoom.motto
+                });
+                console.log('Local room state updated successfully');
+              }
+              console.log('==============================');
+            } catch (error) {
+              console.error('Error in room subscription callback:', error);
             }
-            console.log('==============================');
           })
         .on('system', (status) => {
           console.log('Room subscription status:', status);
@@ -356,16 +362,21 @@ const Room: React.FC = () => {
 
       sessionChannel = supabase
         .channel('session-status-subscription')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' },
+        .on('postgres_changes', 
+          { event: '*', schema: 'public', table: 'sessions' },
           (payload) => {
-            console.log('=== REAL-TIME SESSION UPDATE ===');
-            console.log('Session status changed!', payload);
-            console.log('Event type:', payload.eventType);
-            if (room?.sessionId && payload.new && (payload.new as any).id === room?.sessionId) {
-              console.log('Session status update for current session:', (payload.new as any).status);
-              setSessionStatus((payload.new as any).status);
+            try {
+              console.log('=== REAL-TIME SESSION UPDATE ===');
+              console.log('Session status changed!', payload);
+              console.log('Event type:', payload.eventType);
+              if (room?.sessionId && payload.new && (payload.new as any).id === room?.sessionId) {
+                console.log('Session status update for current session:', (payload.new as any).status);
+                setSessionStatus((payload.new as any).status);
+              }
+              console.log('=================================');
+            } catch (error) {
+              console.error('Error in session subscription callback:', error);
             }
-            console.log('=================================');
           })
         .on('system', (status) => {
           console.log('Session subscription status:', status);
@@ -484,7 +495,7 @@ const Room: React.FC = () => {
       {!showQuestion ? (
         <div className="w-full max-w-full mx-auto px-2 sm:px-4 pt-2 sm:pt-4 pb-2 sm:pb-4">
           {/* Challenge completion message - shown when all doors are open */}
-          {room.currentDoor > totalDoors && (
+          {(room.currentDoor || 1) > totalDoors && (
             <div className="mb-4 sm:mb-6 text-center p-2 sm:p-3 bg-black/80 border-2 border-amber-500 rounded-lg font-mono relative overflow-hidden animate-pulse">
               <div className="absolute inset-0 bg-[url('/textures/stone-pattern.svg')] opacity-5" />
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,215,0,0.2)_0%,transparent_70%)]" />
@@ -509,11 +520,11 @@ const Room: React.FC = () => {
               <div key={index} className="flex flex-col items-center transform hover:scale-105 active:scale-95 transition-transform duration-300 w-full max-w-[200px]">
                 <Door
                   doorNumber={index + 1}
-                  isActive={index + 1 === room.currentDoor}
+                  isActive={index + 1 === (room.currentDoor || 1)}
                   isOpen={isOpen}
                   sessionStatus={sessionStatus}
                   onDoorClick={async () => {
-                    if (sessionStatus === 'active' && index + 1 === room.currentDoor && !isOpen) {
+                    if (sessionStatus === 'active' && index + 1 === (room.currentDoor || 1) && !isOpen) {
                       try {
                         console.log('Fetching question for door:', index + 1, 'session:', room.sessionId);
 
@@ -652,11 +663,12 @@ const Room: React.FC = () => {
 
                     // Start a transaction to update the room state
                     const currentScore = room.score || 0; // Handle null scores
+                    const currentDoor = room.currentDoor || 1; // Handle null currentDoor
                     const { data: updatedRoom, error: updateError } = await supabase
                       .from('rooms')
                       .update({
                         score: currentScore + finalScore,
-                        current_door: room.currentDoor + 1
+                        current_door: currentDoor + 1
                       })
                       .eq('id', room.id)
                       .select()
@@ -680,7 +692,7 @@ const Room: React.FC = () => {
                     setRoom({
                       ...room,
                       score: updatedRoom?.score || 0,
-                      currentDoor: updatedRoom.current_door
+                      currentDoor: updatedRoom?.current_door || currentDoor + 1
                     });
 
                     // Trigger celebration effects
@@ -690,7 +702,7 @@ const Room: React.FC = () => {
                     playAudio(AUDIO_PATHS.GAME_WINNING, { volume: 0.5 });
 
                     // Check if all doors are now open (challenge completed)
-                    const allDoorsOpen = updatedRoom.current_door > totalDoors;
+                    const allDoorsOpen = (updatedRoom?.current_door || currentDoor + 1) > totalDoors;
                     if (allDoorsOpen) {
                       // Calculate and apply final score with time bonus only (token malus already applied immediately)
                       const { timeBonus } = calculateFinalScore(room.tokensLeft, roomStartTime || undefined);
