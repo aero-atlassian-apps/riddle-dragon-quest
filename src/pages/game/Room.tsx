@@ -652,9 +652,9 @@ const Room: React.FC = () => {
                     // Check if all doors are now open (challenge completed)
                     const allDoorsOpen = updatedRoom.current_door > totalDoors;
                     if (allDoorsOpen) {
-                      // Calculate and apply final score with time bonus and token malus using room-specific start time
-                      const { timeBonus, tokenMalus } = calculateFinalScore(room.tokensLeft, roomStartTime || undefined);
-                      const finalScoreAdjustment = timeBonus + tokenMalus;
+                      // Calculate and apply final score with time bonus only (token malus already applied immediately)
+                      const { timeBonus } = calculateFinalScore(room.tokensLeft, roomStartTime || undefined);
+                      const finalScoreAdjustment = timeBonus; // Only time bonus, no token malus
                       
                       console.log("=== GAME COMPLETION SCORE ADJUSTMENT ===");
                       console.log("All doors completed! Applying final adjustments...");
@@ -662,11 +662,11 @@ const Room: React.FC = () => {
                       console.log("Room start time used:", roomStartTime?.toISOString() || "Not set - using game state time");
                       console.log("Current room score after last question:", updatedRoom.score || 0);
                       console.log("Time bonus:", timeBonus);
-                      console.log("Token malus:", tokenMalus);
-                      console.log("Total final adjustment:", finalScoreAdjustment);
+                      console.log("Token malus: SKIPPED (already applied immediately when tokens were used)");
+                      console.log("Total final adjustment (time bonus only):", finalScoreAdjustment);
                       console.log("Room tokens left:", room.tokensLeft);
                       
-                      // Update the room score with the final adjustments
+                      // Update the room score with the final adjustments (time bonus only)
                       const updatedScore = (updatedRoom.score || 0) + finalScoreAdjustment;
                       console.log("Final score after all adjustments:", updatedScore);
                       console.log("=========================================");
@@ -719,15 +719,30 @@ const Room: React.FC = () => {
               onUseToken={sessionHintEnabled ? async () => {
                 if (!room || !gameState.currentQuestion) return;
 
-                // Update tokens in the database
+                // Apply immediate token malus (-50 points per token used)
+                const tokenMalus = -50;
+                const currentScore = room.score || 0;
+                const newScore = currentScore + tokenMalus;
                 const newTokensLeft = room.tokensLeft - 1;
+
+                console.log("=== IMMEDIATE TOKEN MALUS APPLICATION ===");
+                console.log("Token used - applying immediate malus of -50 points");
+                console.log("Current room score:", currentScore);
+                console.log("New room score after token malus:", newScore);
+                console.log("Tokens left after usage:", newTokensLeft);
+                console.log("=========================================");
+
+                // Update tokens and apply immediate token malus in the database
                 const { error } = await supabase
                   .from('rooms')
-                  .update({ tokens_left: newTokensLeft })
+                  .update({ 
+                    tokens_left: newTokensLeft,
+                    score: newScore
+                  })
                   .eq('id', room.id);
 
                 if (error) {
-                  console.error('Error updating tokens:', error);
+                  console.error('Error updating tokens and score:', error);
                   toast({
                     title: "Error",
                     description: "Failed to update tokens",
@@ -736,8 +751,12 @@ const Room: React.FC = () => {
                   return;
                 }
 
-                // Update local state
-                setRoom(prev => prev ? { ...prev, tokensLeft: newTokensLeft } : null);
+                // Update local state with new score and tokens
+                setRoom(prev => prev ? { 
+                  ...prev, 
+                  tokensLeft: newTokensLeft,
+                  score: newScore
+                } : null);
 
                 // Call the context's useToken function
                 useToken();
