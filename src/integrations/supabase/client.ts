@@ -5,10 +5,10 @@ import { supabaseWithProxy, directSupabase } from './proxyClient';
 
 // Use environment variables only - no hardcoded credentials
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Validate required environment variables
-if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   throw new Error('Missing required environment variables: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY must be set');
 }
 
