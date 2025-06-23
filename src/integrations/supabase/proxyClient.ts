@@ -2,154 +2,210 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 import { proxyMonitor } from '../../utils/proxyMonitor';
 
-// Use environment variables with fallbacks
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://gwfrchlimaugqnosvmbs.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3ZnJjaGxpbWF1Z3Fub3N2bWJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ4MTI1MTQsImV4cCI6MjA2MDM4ODUxNH0.iuCiOJeQdEr_2s-Ighup4vpYrRgoSEcNSopbBri3wYI";
+// Use environment variables only - no hardcoded fallbacks for security
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+// Validate required environment variables
+if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+  throw new Error('Missing required environment variables: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY must be set');
+}
 const FORCE_PROXY = import.meta.env.VITE_FORCE_PROXY === 'true';
 const PROXY_TEST_TIMEOUT = parseInt(import.meta.env.VITE_PROXY_TEST_TIMEOUT || '3000');
 
-// Detect if we're in a corporate environment that might block Supabase
-let useProxy = FORCE_PROXY;
-let proxyTestCompleted = FORCE_PROXY;
+// Proxy state management with proper synchronization
+class ProxyState {
+  private _useProxy: boolean = FORCE_PROXY;
+  private _testCompleted: boolean = false;
+  private _testPromise: Promise<void> | null = null;
+  private _testInProgress: boolean = false;
 
-// Test if direct Supabase access works
-const testDirectAccess = async (): Promise<boolean> => {
-  if (proxyTestCompleted) return !useProxy;
-  
-  proxyMonitor.recordDirectConnectionAttempt();
-  
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), PROXY_TEST_TIMEOUT);
-    
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/`, {
-      method: 'HEAD',
-      headers: {
-        'apikey': SUPABASE_PUBLISHABLE_KEY,
-      },
-      signal: controller.signal,
-    });
-    
-    clearTimeout(timeoutId);
-    
-    if (response.ok) {
-      useProxy = false;
-      proxyTestCompleted = true;
-      proxyMonitor.recordDirectConnectionSuccess();
-      console.log('Direct Supabase access available');
-      return true;
-    }
-  } catch (error) {
-    proxyMonitor.recordDirectConnectionFailure();
-    console.log('Direct Supabase access blocked, using proxy:', error);
+  get useProxy(): boolean {
+    return this._useProxy;
   }
-  
-  useProxy = true;
-  proxyTestCompleted = true;
-  return false;
-};
+
+  get testCompleted(): boolean {
+    return this._testCompleted;
+  }
+
+  async testDirectAccess(): Promise<void> {
+    // If test already completed or forced proxy, return immediately
+    if (this._testCompleted || FORCE_PROXY) {
+      return;
+    }
+
+    // If test is already in progress, wait for it
+    if (this._testPromise) {
+      return this._testPromise;
+    }
+
+    // Start new test
+    this._testInProgress = true;
+    this._testPromise = this._performDirectAccessTest();
+    
+    try {
+      await this._testPromise;
+    } finally {
+      this._testInProgress = false;
+      this._testCompleted = true;
+    }
+  }
+
+  private async _performDirectAccessTest(): Promise<void> {
+    if (FORCE_PROXY) {
+      this._useProxy = true;
+      return;
+    }
+
+    proxyMonitor.recordDirectConnectionAttempt();
+    
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), PROXY_TEST_TIMEOUT);
+      
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/`, {
+         method: 'HEAD',
+         headers: {
+           'apikey': SUPABASE_ANON_KEY,
+           'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+         },
+         signal: controller.signal,
+       });
+      
+      clearTimeout(timeoutId);
+      
+      if (response.ok || response.status === 401) {
+        // 401 is expected for HEAD requests without proper auth
+        this._useProxy = false;
+        proxyMonitor.recordDirectConnectionSuccess();
+      } else {
+        this._useProxy = true;
+        proxyMonitor.recordDirectConnectionFailure();
+      }
+    } catch (error) {
+      this._useProxy = true;
+      proxyMonitor.recordDirectConnectionFailure();
+    }
+  }
+}
+
+const proxyState = new ProxyState();
 
 // Custom fetch function that routes through proxy when needed
 const proxyFetch = async (url: string, options: RequestInit = {}): Promise<Response> => {
   // Test direct access first
-  await testDirectAccess();
+  await proxyState.testDirectAccess();
   
-  if (!useProxy) {
-    // Direct access works, use normal fetch
-    return fetch(url, options);
+  if (!proxyState.useProxy) {
+    // Direct access works, use normal fetch with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      return response;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      throw error;
+    }
   }
   
-  // Use proxy
+  // Use proxy with retry logic
   const proxyUrl = `${window.location.origin}/api/supabase-proxy`;
+  const maxRetries = 2;
+  let lastError;
   
-  proxyMonitor.recordProxyConnectionAttempt();
-  
-  try {
-    let response;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    proxyMonitor.recordProxyConnectionAttempt();
     
-    if (options.method === 'GET' || !options.method) {
-      // For GET requests, use query parameter
-      response = await fetch(`${proxyUrl}?url=${encodeURIComponent(url)}`, {
-        ...options,
-        method: 'GET',
-      });
-    } else {
-      // For POST/PUT/DELETE, send URL and options in body
-      let requestBody;
-      try {
-        // Handle different body types safely
-        if (options.body) {
-          if (typeof options.body === 'string') {
-            try {
-              requestBody = JSON.parse(options.body);
-            } catch {
-              requestBody = options.body;
-            }
-          } else {
-            requestBody = options.body;
-          }
-        }
-      } catch (error) {
-        console.warn('Error parsing request body:', error);
-        requestBody = options.body;
+    try {
+      // Add timeout for proxy requests
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout for proxy
+      
+      let response;
+      
+      if (options.method === 'GET' || !options.method) {
+        // For GET requests, encode URL as query parameter
+        response = await fetch(`${proxyUrl}?url=${encodeURIComponent(url)}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            ...options.headers,
+          },
+          signal: controller.signal,
+        });
+      } else {
+        // For POST/PUT/DELETE, send URL in body
+        response = await fetch(proxyUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            url,
+            method: options.method,
+            headers: options.headers,
+            body: options.body,
+          }),
+          signal: controller.signal,
+        });
       }
       
-      response = await fetch(proxyUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          url,
-          method: options.method,
-          headers: options.headers,
-          body: requestBody,
-        }),
-      });
-    }
-    
-    if (response.ok) {
+      clearTimeout(timeoutId);
       proxyMonitor.recordProxyConnectionSuccess();
-    } else {
-      proxyMonitor.recordProxyConnectionFailure();
-      console.warn('Proxy request failed:', response.status, response.statusText);
+      return response;
+      
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      lastError = fetchError;
+      
+      if (attempt === maxRetries) {
+        proxyMonitor.recordProxyConnectionFailure();
+        throw lastError;
+      }
+      
+      // Wait before retry (exponential backoff)
+      await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
     }
-    
-    return response;
-  } catch (error) {
-    proxyMonitor.recordProxyConnectionFailure();
-    console.error('Proxy connection error:', error);
-    throw error;
   }
+  
+  // This should never be reached, but just in case
+  proxyMonitor.recordProxyConnectionFailure();
+  throw lastError || new Error('Proxy request failed after all retries');
 };
 
-// Create Supabase client with custom fetch and realtime configuration
-export const supabaseWithProxy = createClient<Database>(
-  SUPABASE_URL,
-  SUPABASE_PUBLISHABLE_KEY,
-  {
-    global: {
-      fetch: proxyFetch,
-    },
-    realtime: {
-      // Ensure realtime connections work in proxy mode
-      params: {
-        eventsPerSecond: 10,
-      },
-      // Add heartbeat to maintain connection
-      heartbeatIntervalMs: 30000,
-      // Reconnect on connection loss
-      reconnectAfterMs: (tries: number) => Math.min(tries * 1000, 10000),
-      // Add timeout for subscription operations
-      timeout: 10000,
-      // Enable debug mode for better error tracking
-      debug: process.env.NODE_ENV === 'development',
-    },
-  }
-);
+// Create Supabase client with proxy support
+export const supabaseWithProxy = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  global: {
+    fetch: proxyFetch,
+  },
+  realtime: {
+    eventsPerSecond: 2,
+    heartbeatIntervalMs: 30000,
+    reconnectAfterMs: (tries) => Math.min(tries * 1000, 30000),
+    timeout: 10000,
+    debug: process.env.NODE_ENV === 'development',
+  },
+});
 
-// Export both clients for flexibility
-export const directSupabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+// Direct Supabase client (for testing)
+export const directSupabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  realtime: {
+    eventsPerSecond: 2,
+    heartbeatIntervalMs: 30000,
+    reconnectAfterMs: (tries) => Math.min(tries * 1000, 30000),
+    timeout: 10000,
+    debug: process.env.NODE_ENV === 'development',
+  },
+});
+
+// Export proxy state for monitoring
+export { proxyState };
 
 // Default export uses proxy-enabled client
 export default supabaseWithProxy;

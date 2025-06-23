@@ -1,7 +1,16 @@
 export const config = { runtime: 'edge' };
 
-// Get environment variables (Edge Runtime compatible)
-const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3ZnJjaGxpbWF1Z3Fub3N2bWJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ4MTI1MTQsImV4cCI6MjA2MDM4ODUxNH0.iuCiOJeQdEr_2s-Ighup4vpYrRgoSEcNSopbBri3wYI';
+// Get environment variables (Edge Runtime compatible) - no hardcoded fallbacks
+const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY;
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
+
+// Validate required environment variables
+if (!SUPABASE_KEY || !SUPABASE_URL) {
+  throw new Error('Missing required environment variables: SUPABASE_ANON_KEY and VITE_SUPABASE_URL must be set');
+}
+
+// Extract domain from Supabase URL for strict validation
+const ALLOWED_DOMAIN = new URL(SUPABASE_URL).hostname;
 
 export default async function handler(req: Request) {
   console.log('🔄 Proxy function invoked:', req.method, req.url);
@@ -62,10 +71,48 @@ export default async function handler(req: Request) {
     console.log('📋 Method:', requestMethod);
     console.log('📝 Headers:', Object.keys(requestHeaders));
     
-    // Validate that the URL is for our Supabase instance
-    if (!targetUrl || !targetUrl.includes('gwfrchlimaugqnosvmbs.supabase.co')) {
-      console.error('❌ Invalid URL:', targetUrl);
-      return new Response(JSON.stringify({ error: 'Invalid URL' }), {
+    // Strict URL validation to prevent SSRF attacks
+    if (!targetUrl) {
+      console.error('❌ Missing target URL');
+      return new Response(JSON.stringify({ error: 'Missing target URL' }), {
+        status: 400,
+        headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
+    }
+
+    let parsedUrl;
+    try {
+      parsedUrl = new URL(targetUrl);
+    } catch (error) {
+      console.error('❌ Invalid URL format:', targetUrl);
+      return new Response(JSON.stringify({ error: 'Invalid URL format' }), {
+        status: 400,
+        headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
+    }
+
+    // Only allow requests to our specific Supabase domain
+    if (parsedUrl.hostname !== ALLOWED_DOMAIN) {
+      console.error('❌ Unauthorized domain:', parsedUrl.hostname, 'Expected:', ALLOWED_DOMAIN);
+      return new Response(JSON.stringify({ error: 'Unauthorized domain' }), {
+        status: 403,
+        headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
+    }
+
+    // Only allow HTTPS for security
+    if (parsedUrl.protocol !== 'https:') {
+      console.error('❌ Only HTTPS allowed:', parsedUrl.protocol);
+      return new Response(JSON.stringify({ error: 'Only HTTPS allowed' }), {
         status: 400,
         headers: { 
           'Content-Type': 'application/json',
