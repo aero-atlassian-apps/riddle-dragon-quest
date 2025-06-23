@@ -22,4 +22,4 @@ export const supabase = supabaseWithProxy;
 export const supabaseDirect = directSupabase;
 
 // Legacy export for backward compatibility
-export const supabaseOriginal = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+export const supabaseOriginal = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY);
