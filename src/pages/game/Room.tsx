@@ -347,16 +347,11 @@ const Room: React.FC = () => {
           if (status === 'SUBSCRIBED') {
             console.log('Successfully subscribed to room updates for room:', roomId);
           } else if (status === 'CHANNEL_ERROR') {
-            console.error('Room subscription error - attempting to reconnect');
-            // Attempt to resubscribe after a delay
-            setTimeout(() => {
-              if (roomChannel) {
-                supabase.removeChannel(roomChannel);
-              }
-              // Re-trigger the effect to recreate the subscription
-              setIsDirectlyNavigated(false);
-              setTimeout(() => setIsDirectlyNavigated(true), 100);
-            }, 2000);
+            console.error('Room subscription error - channel will be cleaned up and recreated on next effect');
+          } else if (status === 'TIMED_OUT') {
+            console.warn('Room subscription timed out - channel will be cleaned up');
+          } else if (status === 'CLOSED') {
+            console.log('Room subscription closed');
           }
         });
 
@@ -386,16 +381,29 @@ const Room: React.FC = () => {
           if (status === 'SUBSCRIBED') {
             console.log('Successfully subscribed to session updates');
           } else if (status === 'CHANNEL_ERROR') {
-            console.error('Session subscription error - attempting to reconnect');
+            console.error('Session subscription error - channel will be cleaned up and recreated on next effect');
+          } else if (status === 'TIMED_OUT') {
+            console.warn('Session subscription timed out - channel will be cleaned up');
+          } else if (status === 'CLOSED') {
+            console.log('Session subscription closed');
           }
         });
 
       return () => {
-        if (roomChannel) {
-          supabase.removeChannel(roomChannel);
+        try {
+          if (roomChannel) {
+            supabase.removeChannel(roomChannel);
+          }
+        } catch (error) {
+          console.warn('Error removing room channel:', error);
         }
-        if (sessionChannel) {
-          supabase.removeChannel(sessionChannel);
+        
+        try {
+          if (sessionChannel) {
+            supabase.removeChannel(sessionChannel);
+          }
+        } catch (error) {
+          console.warn('Error removing session channel:', error);
         }
       };
     }

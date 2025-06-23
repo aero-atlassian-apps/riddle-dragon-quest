@@ -51,7 +51,13 @@ export const useUser = () => {
     );
 
     return () => {
-      authListener?.subscription?.unsubscribe();
+      try {
+        if (authListener?.subscription) {
+          authListener.subscription.unsubscribe();
+        }
+      } catch (error) {
+        console.warn('Error unsubscribing from auth listener:', error);
+      }
     };
   }, []);
 

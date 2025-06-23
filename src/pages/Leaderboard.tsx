@@ -134,7 +134,7 @@ const Leaderboard = () => {
 
       // Subscribe to real-time updates
       const subscription = supabase
-        .channel('room_updates')
+        .channel('leaderboard_room_updates')
         .on('postgres_changes', 
           { event: '*', schema: 'public', table: 'rooms' }, 
           (payload) => {
@@ -146,10 +146,30 @@ const Leaderboard = () => {
             }
           }
         )
-        .subscribe();
+        .on('system', (status) => {
+          console.log('Leaderboard subscription system status:', status);
+        })
+        .subscribe((status) => {
+          console.log('Leaderboard channel subscription status:', status);
+          if (status === 'SUBSCRIBED') {
+            console.log('Successfully subscribed to leaderboard updates');
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error('Leaderboard subscription error');
+          } else if (status === 'TIMED_OUT') {
+            console.warn('Leaderboard subscription timed out');
+          } else if (status === 'CLOSED') {
+            console.log('Leaderboard subscription closed');
+          }
+        });
 
       return () => {
-        subscription.unsubscribe();
+        try {
+          if (subscription) {
+            subscription.unsubscribe();
+          }
+        } catch (error) {
+          console.warn('Error unsubscribing from leaderboard subscription:', error);
+        }
       };
     }
   }, [currentSessionId]);
