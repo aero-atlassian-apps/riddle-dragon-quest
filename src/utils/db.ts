@@ -2,21 +2,38 @@ import { supabase } from "@/integrations/supabase/client";
 import { Session, Question, Room, Score } from "@/types/game";
 
 export const createSession = async (name: string, context?: string, hintEnabled: boolean = true): Promise<Session | null> => {
+  console.log('Creating session with:', { name, context, hintEnabled });
+  
   const { data, error } = await supabase
     .from('sessions')
-    .insert([{ name, context, hint_enabled: hintEnabled }])
-    .select()
+    .insert([{ 
+      name, 
+      context, 
+      hint_enabled: hintEnabled,
+      status: 'active',
+      start_time: new Date().toISOString()
+    }])
+    .select('*')
     .single();
+
+  console.log('Supabase response:', { data, error });
 
   if (error) {
     console.error('Error creating session:', error);
     return null;
   }
 
-  if (!data || !data.id) {
-    console.error('Error: Session created but no valid data or ID returned');
+  if (!data) {
+    console.error('Error: No data returned from session creation');
     return null;
   }
+
+  if (!data.id) {
+    console.error('Error: Session created but no ID in response:', data);
+    return null;
+  }
+
+  console.log('Session created successfully:', data);
 
   return {
     id: data.id,
