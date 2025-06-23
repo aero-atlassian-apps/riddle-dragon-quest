@@ -10,6 +10,7 @@ import AdminDashboard from "./pages/admin/Dashboard";
 import GameRoom from "./pages/game/Room";
 import Leaderboard from "./pages/Leaderboard";
 import Login from "./pages/auth/Login";
+import ProxyTest from "./pages/ProxyTest";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { GameProvider } from "./context/GameContext";
 
@@ -25,6 +26,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth/login" element={<Login />} />
+            <Route path="/proxy-test" element={<ProxyTest />} />
             <Route 
               path="/admin" 
               element={
