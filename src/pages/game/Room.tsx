@@ -310,34 +310,74 @@ const Room: React.FC = () => {
         .channel('room-status-subscription')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` },
           (payload) => {
+            console.log('=== REAL-TIME ROOM UPDATE ===');
             console.log('Change received!', payload);
+            console.log('Event type:', payload.eventType);
+            console.log('Table:', payload.table);
             if (payload.new) {
               const updatedRoom = payload.new as any;
+              console.log('Updated room data:', updatedRoom);
+              console.log('Score update:', updatedRoom?.score);
               setRoom({
                 id: updatedRoom.id,
                 sessionId: updatedRoom.session_id,
                 name: updatedRoom.name,
                 tokensLeft: updatedRoom.tokens_left,
                 currentDoor: updatedRoom.current_door,
-                score: updatedRoom.score || 0,
+                score: updatedRoom?.score || 0,
                 sessionStatus: sessionStatus || null,
                 sigil: updatedRoom.sigil,
                 motto: updatedRoom.motto
               });
+              console.log('Local room state updated successfully');
             }
+            console.log('==============================');
           })
-        .subscribe();
+        .on('system', (status) => {
+          console.log('Room subscription status:', status);
+        })
+        .subscribe((status) => {
+          console.log('Room channel subscription status:', status);
+          if (status === 'SUBSCRIBED') {
+            console.log('Successfully subscribed to room updates for room:', roomId);
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error('Room subscription error - attempting to reconnect');
+            // Attempt to resubscribe after a delay
+            setTimeout(() => {
+              if (roomChannel) {
+                supabase.removeChannel(roomChannel);
+              }
+              // Re-trigger the effect to recreate the subscription
+              setIsDirectlyNavigated(false);
+              setTimeout(() => setIsDirectlyNavigated(true), 100);
+            }, 2000);
+          }
+        });
 
       sessionChannel = supabase
         .channel('session-status-subscription')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' },
           (payload) => {
+            console.log('=== REAL-TIME SESSION UPDATE ===');
             console.log('Session status changed!', payload);
+            console.log('Event type:', payload.eventType);
             if (room?.sessionId && payload.new && (payload.new as any).id === room?.sessionId) {
+              console.log('Session status update for current session:', (payload.new as any).status);
               setSessionStatus((payload.new as any).status);
             }
+            console.log('=================================');
           })
-        .subscribe();
+        .on('system', (status) => {
+          console.log('Session subscription status:', status);
+        })
+        .subscribe((status) => {
+          console.log('Session channel subscription status:', status);
+          if (status === 'SUBSCRIBED') {
+            console.log('Successfully subscribed to session updates');
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error('Session subscription error - attempting to reconnect');
+          }
+        });
 
       return () => {
         if (roomChannel) {
@@ -639,7 +679,7 @@ const Room: React.FC = () => {
 
                     setRoom({
                       ...room,
-                      score: updatedRoom.score || 0,
+                      score: updatedRoom?.score || 0,
                       currentDoor: updatedRoom.current_door
                     });
 
@@ -660,14 +700,14 @@ const Room: React.FC = () => {
                       console.log("All doors completed! Applying final adjustments...");
                       console.log("Room ID:", room.id);
                       console.log("Room start time used:", roomStartTime?.toISOString() || "Not set - using game state time");
-                      console.log("Current room score after last question:", updatedRoom.score || 0);
+                      console.log("Current room score after last question:", updatedRoom?.score || 0);
                       console.log("Time bonus:", timeBonus);
                       console.log("Token malus: SKIPPED (already applied immediately when tokens were used)");
                       console.log("Total final adjustment (time bonus only):", finalScoreAdjustment);
                       console.log("Room tokens left:", room.tokensLeft);
                       
                       // Update the room score with the final adjustments (time bonus only)
-                      const updatedScore = (updatedRoom.score || 0) + finalScoreAdjustment;
+                      const updatedScore = (updatedRoom?.score || 0) + finalScoreAdjustment;
                       console.log("Final score after all adjustments:", updatedScore);
                       console.log("=========================================");
                       const { error: finalScoreError } = await supabase

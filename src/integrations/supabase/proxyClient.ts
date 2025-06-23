@@ -123,13 +123,23 @@ const proxyFetch = async (url: string, options: RequestInit = {}): Promise<Respo
   }
 };
 
-// Create Supabase client with custom fetch
+// Create Supabase client with custom fetch and realtime configuration
 export const supabaseWithProxy = createClient<Database>(
   SUPABASE_URL,
   SUPABASE_PUBLISHABLE_KEY,
   {
     global: {
       fetch: proxyFetch,
+    },
+    realtime: {
+      // Ensure realtime connections work in proxy mode
+      params: {
+        eventsPerSecond: 10,
+      },
+      // Add heartbeat to maintain connection
+      heartbeatIntervalMs: 30000,
+      // Reconnect on connection loss
+      reconnectAfterMs: (tries: number) => Math.min(tries * 1000, 10000),
     },
   }
 );
