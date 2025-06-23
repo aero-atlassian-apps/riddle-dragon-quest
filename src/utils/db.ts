@@ -185,6 +185,7 @@ export const createRoom = async (sessionId: string, roomName: string, roomId?: s
     sessionId: data.session_id,
     name: data.name,
     tokensLeft: data.tokens_left,
+    initialTokens: data.initial_tokens,
     currentDoor: data.current_door,
     score: data.score,
     sigil: data.sigil,

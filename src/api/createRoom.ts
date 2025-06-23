@@ -11,6 +11,7 @@ export async function POST(req: Request) {
       });
     }
 
+    // Set both tokensLeft and initialTokens to the same value for new rooms
     const room = await createRoom(sessionId, roomName, roomId, undefined, undefined, tokensLeft, tokensLeft);
 
     if (!room) {
