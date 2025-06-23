@@ -4,47 +4,54 @@ import { Session, Question, Room, Score } from "@/types/game";
 export const createSession = async (name: string, context?: string, hintEnabled: boolean = true): Promise<Session | null> => {
   console.log('Creating session with:', { name, context, hintEnabled });
   
-  const { data, error } = await supabase
-    .from('sessions')
-    .insert([{ 
-      name, 
-      context, 
-      hint_enabled: hintEnabled,
-      status: 'active',
-      start_time: new Date().toISOString()
-    }])
-    .select('*')
-    .single();
+  try {
+    // First, try the insert without .single() to see if data is returned
+    const { data: insertData, error: insertError } = await supabase
+      .from('sessions')
+      .insert([{ 
+        name, 
+        context, 
+        hint_enabled: hintEnabled,
+        status: 'active',
+        start_time: new Date().toISOString()
+      }])
+      .select('*');
 
-  console.log('Supabase response:', { data, error });
+    console.log('Insert response:', { insertData, insertError });
 
-  if (error) {
-    console.error('Error creating session:', error);
+    if (insertError) {
+      console.error('Error creating session:', insertError);
+      return null;
+    }
+
+    if (!insertData || insertData.length === 0) {
+      console.error('Error: No data returned from session creation');
+      return null;
+    }
+
+    const sessionData = insertData[0];
+    
+    if (!sessionData.id) {
+      console.error('Error: Session created but no ID in response:', sessionData);
+      return null;
+    }
+
+    console.log('Session created successfully:', sessionData);
+
+    return {
+      id: sessionData.id,
+      name: sessionData.name,
+      startTime: new Date(sessionData.start_time),
+      endTime: sessionData.end_time ? new Date(sessionData.end_time) : undefined,
+      questions: [],
+      status: sessionData.status,
+      context: sessionData.context,
+      hintEnabled: sessionData.hint_enabled
+    };
+  } catch (err) {
+    console.error('Unexpected error in createSession:', err);
     return null;
   }
-
-  if (!data) {
-    console.error('Error: No data returned from session creation');
-    return null;
-  }
-
-  if (!data.id) {
-    console.error('Error: Session created but no ID in response:', data);
-    return null;
-  }
-
-  console.log('Session created successfully:', data);
-
-  return {
-    id: data.id,
-    name: data.name,
-    startTime: new Date(data.start_time),
-    endTime: data.end_time ? new Date(data.end_time) : undefined,
-    questions: [],
-    status: data.status,
-    context: data.context,
-    hintEnabled: data.hint_enabled
-  };
 };
 
 export const getSessions = async (): Promise<Session[]> => {
