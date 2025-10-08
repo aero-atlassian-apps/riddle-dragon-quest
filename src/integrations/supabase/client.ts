@@ -5,7 +5,22 @@ import type { Database } from './types';
 const SUPABASE_URL = "https://gwfrchlimaugqnosvmbs.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3ZnJjaGxpbWF1Z3Fub3N2bWJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ4MTI1MTQsImV4cCI6MjA2MDM4ODUxNH0.iuCiOJeQdEr_2s-Ighup4vpYrRgoSEcNSopbBri3wYI";
 
+// Get the appropriate Supabase URL based on environment
+const getSupabaseUrl = () => {
+  // Check if we should use proxy (for security compliance)
+  const useProxy = import.meta.env.VITE_USE_SUPABASE_PROXY === 'true';
+  
+  if (useProxy) {
+    // Use the current domain with /api/supabase prefix
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    return origin + '/api/supabase';
+  }
+  
+  // Default to direct Supabase URL
+  return SUPABASE_URL;
+};
+
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+export const supabase = createClient<Database>(getSupabaseUrl(), SUPABASE_PUBLISHABLE_KEY);
