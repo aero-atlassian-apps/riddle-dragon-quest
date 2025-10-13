@@ -643,6 +643,24 @@ const Room: React.FC = () => {
                       currentDoor: updatedRoom.current_door
                     });
 
+                    // Insert/update score record after each correct answer to keep universe leaderboard current
+                    if (room.sessionId && room.universeId) {
+                      const { insertGameScore } = await import('@/utils/db');
+                      const scoreInserted = await insertGameScore(
+                        room.id,
+                        room.sessionId,
+                        room.name,
+                        updatedRoom.score || 0,
+                        room.universeId
+                      );
+                      
+                      if (scoreInserted) {
+                        console.log('Score record updated successfully for universe leaderboard after correct answer');
+                      } else {
+                        console.error('Failed to update score record for universe leaderboard after correct answer');
+                      }
+                    }
+
                     // Trigger celebration effects
                     setShowConfetti(true);
                     
@@ -683,6 +701,24 @@ const Room: React.FC = () => {
                           ...prev,
                           score: updatedScore
                         } : null);
+                        
+                        // Final score insertion for universe leaderboard (with time bonus)
+                        if (room.sessionId && room.universeId) {
+                          const { insertGameScore } = await import('@/utils/db');
+                          const scoreInserted = await insertGameScore(
+                            room.id,
+                            room.sessionId,
+                            room.name,
+                            updatedScore,
+                            room.universeId
+                          );
+                          
+                          if (scoreInserted) {
+                            console.log('Final score record updated successfully for universe leaderboard with time bonus');
+                          } else {
+                            console.error('Failed to update final score record for universe leaderboard');
+                          }
+                        }
                       }
                       
                       // Trigger more intense celebration for challenge completion

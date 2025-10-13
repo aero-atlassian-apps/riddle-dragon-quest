@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Trash2, Play, Pause, RotateCcw, ExternalLink, Copy, X } from "lucide-react";
+import { PlusCircle, Trash2, Play, Pause, RotateCcw, ExternalLink, Copy, X, Globe, Users, Tag } from "lucide-react";
 import SessionCreator from "@/components/SessionCreator";
 import QuestionUploader from "@/components/QuestionUploader";
 import QuestionManager from "@/components/QuestionManager";
 import RoomCreator from "@/components/RoomCreator";
+import UniverseManager from "@/components/UniverseManager";
 import { getSessions, deleteSession, updateSessionStatus } from "@/utils/db";
 import { Session, Question, Room } from "@/types/game";
 import { useToast } from "@/components/ui/use-toast";
@@ -34,6 +35,7 @@ const AdminDashboard = () => {
   const [sessionRooms, setSessionRooms] = useState<Room[]>([]);
   const [loadingRooms, setLoadingRooms] = useState(false);
   const [currentSessionName, setCurrentSessionName] = useState("");
+  const [adminMode, setAdminMode] = useState<"sessions" | "universes">("sessions");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -215,90 +217,123 @@ const AdminDashboard = () => {
             <h3 className="text-2xl text-green-500 font-pixel glitch">[ CONSOLE DE CONTRÔLE ]</h3>
           </div>
           <p className="text-green-400 font-pixel typing-effect">$ Système initialisé et prêt à recevoir des commandes...</p>
+          
+          {/* Mode Toggle */}
+          <div className="mt-6 flex justify-center">
+            <div className="bg-black/50 border-2 border-green-500 rounded-lg p-1 flex">
+              <Button
+                variant={adminMode === "sessions" ? "default" : "ghost"}
+                className={`font-pixel ${
+                  adminMode === "sessions" 
+                    ? "bg-green-500 text-black hover:bg-green-600" 
+                    : "text-green-400 hover:bg-green-500/20"
+                }`}
+                onClick={() => setAdminMode("sessions")}
+              >
+                <Users className="mr-2" size={18} />
+                MODE SESSIONS
+              </Button>
+              <Button
+                variant={adminMode === "universes" ? "default" : "ghost"}
+                className={`font-pixel ${
+                  adminMode === "universes" 
+                    ? "bg-green-500 text-black hover:bg-green-600" 
+                    : "text-green-400 hover:bg-green-500/20"
+                }`}
+                onClick={() => setAdminMode("universes")}
+              >
+                <Globe className="mr-2" size={18} />
+                MODE UNIVERS
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
 
-      {showCreateForm ? (
-        <div className="mb-8 bg-black/90 border-2 border-green-500 rounded-lg p-6 relative overflow-hidden">
-          <div className="absolute inset-0 bg-[url('/textures/stone-pattern.svg')] opacity-5" />
-          <div className="absolute inset-0 bg-[url('/terminal-bg.png')] opacity-10" />
-          <div className="relative z-10">
-            <div className="mb-4 flex justify-between items-center">
-              <h2 className="text-xl font-bold font-medieval text-green-400">$ INITIALISER_NOUVELLE_SESSION</h2>
+      {/* Sessions Mode */}
+      {adminMode === "sessions" && (
+        <>
+          {showCreateForm ? (
+            <div className="mb-8 bg-black/90 border-2 border-green-500 rounded-lg p-6 relative overflow-hidden">
+              <div className="absolute inset-0 bg-[url('/textures/stone-pattern.svg')] opacity-5" />
+              <div className="absolute inset-0 bg-[url('/terminal-bg.png')] opacity-10" />
+              <div className="relative z-10">
+                <div className="mb-4 flex justify-between items-center">
+                  <h2 className="text-xl font-bold font-medieval text-green-400">$ INITIALISER_NOUVELLE_SESSION</h2>
+                  <Button
+                    variant="outline"
+                    className="border-green-500 text-green-400 hover:bg-green-500/20"
+                    onClick={() => {
+                      setShowCreateForm(false);
+                      setCreationStep("session");
+                      setRoomCreationSessionId(null);
+                    }}
+                  >
+                    <X className="mr-2" size={18} />
+                    ANNULER
+                  </Button>
+                </div>
+
+                {creationStep === "session" && (
+                  <SessionCreator onCreateSession={handleCreateSession} />
+                )}
+                
+                {creationStep === "questions" && roomCreationSessionId && (
+                  <QuestionUploader
+                    sessionId={roomCreationSessionId}
+                    onUpload={handleUploadQuestions}
+                  />
+                )}
+                
+                {creationStep === "images" && roomCreationSessionId && (
+                  <QuestionManager
+                    sessionId={roomCreationSessionId}
+                    onComplete={handleQuestionsWithImagesComplete}
+                  />
+                )}
+                
+                {creationStep === "rooms" && roomCreationSessionId && (
+                  <RoomCreator
+                    sessionId={roomCreationSessionId}
+                    onCreateRooms={handleCreateRooms}
+                    onContinue={handleFinishCreation}
+                    hintEnabled={sessions.find(s => s.id === roomCreationSessionId)?.hintEnabled ?? true}
+                  />
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="mb-8">
               <Button
-                variant="outline"
-                className="border-green-500 text-green-400 hover:bg-green-500/20"
-                onClick={() => {
-                  setShowCreateForm(false);
-                  setCreationStep("session");
-                  setRoomCreationSessionId(null);
-                }}
+                className="bg-green-500 hover:bg-green-600 text-black font-pixel"
+                onClick={() => setShowCreateForm(true)}
               >
-                <X className="mr-2" size={18} />
-                ANNULER
+                <PlusCircle className="mr-2" size={18} />
+                $ NOUVELLE_SESSION
               </Button>
             </div>
+          )}
 
-            {creationStep === "session" && (
-              <SessionCreator onCreateSession={handleCreateSession} />
-            )}
-            
-            {creationStep === "questions" && roomCreationSessionId && (
-              <QuestionUploader
-                sessionId={roomCreationSessionId}
-                onUpload={handleUploadQuestions}
-              />
-            )}
-            
-            {creationStep === "images" && roomCreationSessionId && (
-              <QuestionManager
-                sessionId={roomCreationSessionId}
-                onComplete={handleQuestionsWithImagesComplete}
-              />
-            )}
-            
-            {creationStep === "rooms" && roomCreationSessionId && (
-              <RoomCreator
-                sessionId={roomCreationSessionId}
-                onCreateRooms={handleCreateRooms}
-                onContinue={handleFinishCreation}
-hintEnabled={sessions.find(s => s.id === roomCreationSessionId)?.hintEnabled ?? true}
-              />
-            )}
-          </div>
-        </div>
-      ) : (
-        <div className="mb-8">
-          <Button
-            className="bg-green-500 hover:bg-green-600 text-black font-pixel"
-            onClick={() => setShowCreateForm(true)}
-          >
-            <PlusCircle className="mr-2" size={18} />
-            $ NOUVELLE_SESSION
-          </Button>
-        </div>
-      )}
-
-      {!showCreateForm && (
-        <div className="mt-8 bg-black/90 border-2 border-green-500 rounded-lg p-6 relative overflow-hidden">
-          <div className="absolute inset-0 bg-[url('/textures/stone-pattern.svg')] opacity-5" />
-          <div className="absolute inset-0 bg-[url('/terminal-bg.png')] opacity-10" />
-          <div className="relative z-10">
-            <Tabs defaultValue="active" className="w-full">
-              <TabsList className="w-full mb-6 font-pixel bg-black border-2 border-green-500">
-                <TabsTrigger value="all" className="flex-1 text-green-400 data-[state=active]:bg-green-500 data-[state=active]:text-black">
-                  TOUTES_SESSIONS
-                </TabsTrigger>
-                <TabsTrigger value="active" className="flex-1 text-green-400 data-[state=active]:bg-green-500 data-[state=active]:text-black">
-                  SESSIONS_ACTIVES
-                </TabsTrigger>
-                <TabsTrigger value="en attente" className="flex-1 text-green-400 data-[state=active]:bg-green-500 data-[state=active]:text-black">
-                  SESSIONS_EN_ATTENTE
-                </TabsTrigger>
-                <TabsTrigger value="terminée" className="flex-1 text-green-400 data-[state=active]:bg-green-500 data-[state=active]:text-black">
-                  SESSIONS_TERMINEES
-                </TabsTrigger>
-              </TabsList>
+          {!showCreateForm && (
+            <div className="mt-8 bg-black/90 border-2 border-green-500 rounded-lg p-6 relative overflow-hidden">
+              <div className="absolute inset-0 bg-[url('/textures/stone-pattern.svg')] opacity-5" />
+              <div className="absolute inset-0 bg-[url('/terminal-bg.png')] opacity-10" />
+              <div className="relative z-10">
+                <Tabs defaultValue="active" className="w-full">
+                  <TabsList className="w-full mb-6 font-pixel bg-black border-2 border-green-500">
+                    <TabsTrigger value="all" className="flex-1 text-green-400 data-[state=active]:bg-green-500 data-[state=active]:text-black">
+                      TOUTES_SESSIONS
+                    </TabsTrigger>
+                    <TabsTrigger value="active" className="flex-1 text-green-400 data-[state=active]:bg-green-500 data-[state=active]:text-black">
+                      SESSIONS_ACTIVES
+                    </TabsTrigger>
+                    <TabsTrigger value="en attente" className="flex-1 text-green-400 data-[state=active]:bg-green-500 data-[state=active]:text-black">
+                      SESSIONS_EN_ATTENTE
+                    </TabsTrigger>
+                    <TabsTrigger value="terminée" className="flex-1 text-green-400 data-[state=active]:bg-green-500 data-[state=active]:text-black">
+                      SESSIONS_TERMINEES
+                    </TabsTrigger>
+                  </TabsList>
 
               {["all", "active", "en attente", "terminée"].map((tab) => (
                 <TabsContent key={tab} value={tab} className="mt-0">
@@ -324,9 +359,19 @@ hintEnabled={sessions.find(s => s.id === roomCreationSessionId)?.hintEnabled ?? 
                             <div className="absolute inset-0 bg-[url('/terminal-bg.png')] opacity-10" />
                             <div className="relative z-10">
                               <div className="flex justify-between items-start mb-2">
-                                <h3 className="text-lg font-bold font-pixel text-green-400">
-                                  $ {session.name}
-                                </h3>
+                                <div className="flex items-center gap-2">
+                                  <h3 className="text-lg font-bold font-pixel text-green-400">
+                                    $ {session.name}
+                                  </h3>
+                                  {/* Session Type Indicator */}
+                                  <div className={`px-2 py-1 rounded text-xs font-pixel ${
+                                    session.sessionType === 'universe' 
+                                      ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' 
+                                      : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                                  }`}>
+                                    {session.sessionType === 'universe' ? 'UNIVERS' : 'STANDALONE'}
+                                  </div>
+                                </div>
                                 <Button
                                   variant="ghost"
                                   size="icon"
@@ -347,6 +392,12 @@ hintEnabled={sessions.find(s => s.id === roomCreationSessionId)?.hintEnabled ?? 
                                 <div>
                                   Statut: <span className="font-semibold uppercase">{session.status}</span>
                                 </div>
+                                {session.sessionType === 'universe' && session.universeId && (
+                                  <div className="text-purple-400">
+                                    <Tag size={12} className="inline mr-1" />
+                                    {session.universeName || 'Session d\'univers'}
+                                  </div>
+                                )}
                               </div>
 
                               <div className="flex space-x-2 justify-end">
@@ -410,7 +461,21 @@ hintEnabled={sessions.find(s => s.id === roomCreationSessionId)?.hintEnabled ?? 
                   )}
                 </TabsContent>
               ))}
+              
             </Tabs>
+          </div>
+        </div>
+      )}
+        </>
+      )}
+
+      {/* Universe Mode */}
+      {adminMode === "universes" && (
+        <div className="mt-8 bg-black/90 border-2 border-green-500 rounded-lg p-6 relative overflow-hidden">
+          <div className="absolute inset-0 bg-[url('/textures/stone-pattern.svg')] opacity-5" />
+          <div className="absolute inset-0 bg-[url('/terminal-bg.png')] opacity-10" />
+          <div className="relative z-10">
+            <UniverseManager />
           </div>
         </div>
       )}

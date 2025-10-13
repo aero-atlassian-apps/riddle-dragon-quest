@@ -11,12 +11,16 @@ import { Loader2 } from 'lucide-react';
 interface QuestionUploaderProps {
   sessionId: string;
   onUpload: (questions: Question[]) => void;
+  onClose?: () => void;
+  universeContext?: boolean; // New prop to indicate if this is used in universe context
 }
 
-const QuestionUploader: React.FC<QuestionUploaderProps> = ({ sessionId, onUpload }) => {
+const QuestionUploader: React.FC<QuestionUploaderProps> = ({ sessionId, onUpload, onClose, universeContext = false }) => {
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [uploadedQuestionsCount, setUploadedQuestionsCount] = useState(0);
   const { toast } = useToast();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -93,9 +97,11 @@ const QuestionUploader: React.FC<QuestionUploaderProps> = ({ sessionId, onUpload
           }
         }
 
-        // Validate door number is unique
+        // Validate door number is unique within this batch
         if (usedDoorNumbers.has(doorNumber)) {
-          throw new Error(`Numéro de porte en double trouvé : ${doorNumber}`);
+          setError(`Numéro de porte en double trouvé : ${doorNumber}`);
+          setIsLoading(false);
+          return null; // This will be filtered out
         }
         usedDoorNumbers.add(doorNumber);
 
@@ -108,7 +114,12 @@ const QuestionUploader: React.FC<QuestionUploaderProps> = ({ sessionId, onUpload
           points: q.points || 1, // Default to 1 point if not specified
           prize: q.prize || null
         };
-      });
+      }).filter(q => q !== null); // Filter out any null entries from duplicate errors
+
+      // Check if we had any duplicate errors
+      if (questionsToAdd.length !== parsedData.questions.length) {
+        return; // Error already set above
+      }
       
       // Store questions in the database
       const success = await addQuestionsToSession(sessionId, questionsToAdd);
@@ -120,10 +131,16 @@ const QuestionUploader: React.FC<QuestionUploaderProps> = ({ sessionId, onUpload
         });
         
         // Pass the questions to the parent component
-        onUpload(questionsToAdd.map((q: any, index: number) => ({ 
-          id: index + 1, // Temporary ID until we get real IDs from database
-          ...q 
-        })));
+        if (typeof onUpload === 'function') {
+          onUpload(questionsToAdd.map((q: any, index: number) => ({ 
+            id: index + 1, // Temporary ID until we get real IDs from database
+            ...q 
+          })));
+        }
+        
+        // Set success state
+        setUploadSuccess(true);
+        setUploadedQuestionsCount(questionsToAdd.length);
         
         // Reset file input
         setFile(null);
@@ -131,14 +148,16 @@ const QuestionUploader: React.FC<QuestionUploaderProps> = ({ sessionId, onUpload
           (document.getElementById('question-file') as HTMLInputElement).value = '';
         }
       } else {
+        setError("Échec de l'enregistrement des questions dans la base de données. Vérifiez les numéros de porte.");
         toast({
           title: "Erreur",
-          description: "Échec de l'enregistrement des questions dans la base de données",
+          description: "Échec de l'enregistrement des questions dans la base de données. Vérifiez les numéros de porte.",
           variant: "destructive",
         });
       }
       
     } catch (err) {
+      console.error('Error in question upload:', err);
       setError('Échec de l\'analyse du fichier JSON. Veuillez vérifier le format.');
       toast({
         title: "Erreur",
@@ -149,6 +168,58 @@ const QuestionUploader: React.FC<QuestionUploaderProps> = ({ sessionId, onUpload
       setIsLoading(false);
     }
   };
+
+  const handleUploadAnother = () => {
+    setUploadSuccess(false);
+    setUploadedQuestionsCount(0);
+    setError(null);
+  };
+
+  // Show success state after upload
+  if (uploadSuccess) {
+    return (
+      <div className="max-w-md mx-auto bg-black/90 border-2 border-green-500 rounded-lg p-6 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('/textures/stone-pattern.svg')] opacity-5" />
+        <div className="absolute inset-0 bg-[url('/terminal-bg.png')] opacity-10" />
+        <div className="relative z-10">
+          <div className="text-center space-y-4">
+            <div className="text-green-400 text-4xl mb-4">✓</div>
+            <h2 className="text-xl font-bold text-center font-pixel text-green-400">$ UPLOAD_REUSSI</h2>
+            <p className="text-green-400/70 font-mono text-sm">
+              {uploadedQuestionsCount} questions ont été ajoutées avec succès à la session
+            </p>
+            
+            <div className="space-y-3 pt-4">
+              {!universeContext && (
+                <Button 
+                  onClick={handleUploadAnother}
+                  className="w-full bg-blue-500 hover:bg-blue-600 text-white font-pixel"
+                >
+                  $ TELECHARGER_AUTRES_QUESTIONS
+                </Button>
+              )}
+              
+              {onClose ? (
+                <Button 
+                  onClick={onClose}
+                  className="w-full bg-green-500 hover:bg-green-600 text-black font-pixel"
+                >
+                  $ FERMER
+                </Button>
+              ) : (
+                <Button 
+                  onClick={handleUploadAnother}
+                  className="w-full bg-green-500 hover:bg-green-600 text-black font-pixel"
+                >
+                  $ FERMER
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-md mx-auto bg-black/90 border-2 border-green-500 rounded-lg p-6 relative overflow-hidden">

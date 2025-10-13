@@ -20,6 +20,9 @@ export interface Session {
   status?: string;
   context?: string;
   hintEnabled?: boolean;
+  sessionType?: 'standalone' | 'universe';
+  universeId?: string;
+  universeName?: string;
 }
 
 export interface Room {
@@ -37,6 +40,7 @@ export interface Room {
   startTime?: Date;
   completionTime?: Date;
   timeBonus?: number;
+  universeId?: string;
 }
 
 export interface Score {

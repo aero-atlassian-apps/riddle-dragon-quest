@@ -86,13 +86,19 @@ const RoomCreator: React.FC<RoomCreatorProps> = ({ sessionId, onCreateRooms, onC
   };
 
   const createRoomsInDatabase = async (rooms: {name: string, id: string, sigil: string, motto: string}[]) => {
-    const { createRoom } = await import('@/utils/db');
+    const { createRoom, getSession } = await import('@/utils/db');
+    
+    // Get session data to check for universe_id
+    const session = await getSession(sessionId);
+    const universeId = session?.universeId || null;
+    
+    console.log('[ROOM CREATOR DEBUG] Creating rooms for session:', sessionId, 'with universe_id:', universeId);
     
     // Use tokensPerRoom only if hints are enabled, otherwise default to 1
     const tokensToUse = hintEnabled ? tokensPerRoom : 1;
     
     for (const room of rooms) {
-      const result = await createRoom(sessionId, room.name, room.id, room.sigil, room.motto, tokensToUse, tokensToUse);
+      const result = await createRoom(sessionId, room.name, room.id, room.sigil, room.motto, tokensToUse, tokensToUse, universeId);
       
       if (!result) {
         toast({
@@ -100,6 +106,8 @@ const RoomCreator: React.FC<RoomCreatorProps> = ({ sessionId, onCreateRooms, onC
           description: `Failed to create room: ${room.name}`,
           variant: "destructive",
         });
+      } else {
+        console.log('[ROOM CREATOR DEBUG] Successfully created room:', room.name, 'with universe_id:', universeId);
       }
     }
     

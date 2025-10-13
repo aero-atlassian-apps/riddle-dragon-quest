@@ -10,6 +10,8 @@ import AdminDashboard from "./pages/admin/Dashboard";
 import GameRoom from "./pages/game/Room";
 import Leaderboard from "./pages/Leaderboard";
 import Login from "./pages/auth/Login";
+import Universes from "./pages/Universes";
+import Sessions from "./pages/Sessions";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { GameProvider } from "./context/GameContext";
 
@@ -35,6 +37,8 @@ const App = () => (
             />
             <Route path="/game/room/:roomId" element={<GameRoom />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/universes" element={<Universes />} />
+            <Route path="/sessions" element={<Sessions />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

@@ -12,23 +12,41 @@ export type Database = {
       questions: {
         Row: {
           answer: string
+          created_at: string | null
+          door_number: number | null
+          hint: string | null
           id: number
           image: string | null
+          points: number | null
+          prize: string | null
           session_id: string | null
+          style: string | null
           text: string
         }
         Insert: {
           answer: string
+          created_at?: string | null
+          door_number?: number | null
+          hint?: string | null
           id?: number
           image?: string | null
+          points?: number | null
+          prize?: string | null
           session_id?: string | null
+          style?: string | null
           text: string
         }
         Update: {
           answer?: string
+          created_at?: string | null
+          door_number?: number | null
+          hint?: string | null
           id?: number
           image?: string | null
+          points?: number | null
+          prize?: string | null
           session_id?: string | null
+          style?: string | null
           text?: string
         }
         Relationships: [

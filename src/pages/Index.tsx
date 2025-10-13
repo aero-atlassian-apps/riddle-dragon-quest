@@ -1,7 +1,7 @@
 
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Crown, Swords, Trophy, ChevronRight, Gamepad2, X } from "lucide-react";
+import { Crown, Swords, Trophy, ChevronRight, Gamepad2, X, Users } from "lucide-react";
 import { useState } from "react";
 import GamesShield from "@/components/GamesShield";
 
@@ -26,11 +26,25 @@ const Index = () => {
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 max-w-6xl mx-auto">
             <Link to="/admin" className="transform transition-transform hover:scale-105">
               <Button className="w-full h-16 text-lg bg-[#1a1a1a] hover:bg-[#2a2a2a] text-[#00ff00] border-2 border-[#00ff00]/30 group shadow-[0_0_5px_#00ff00]">
                 <Crown className="mr-2 h-5 w-5 group-hover:animate-pulse" />
                 Espace du Maître des jeux
+              </Button>
+            </Link>
+            
+            <Link to="/sessions" className="transform transition-transform hover:scale-105">
+              <Button className="w-full h-16 text-lg bg-[#2a2a2a] hover:bg-[#3a3a3a] text-[#00bfff] border-2 border-[#00bfff]/30 group shadow-[0_0_5px_#00bfff]">
+                <Users className="mr-2 h-5 w-5 group-hover:animate-pulse" />
+                Mode Sessions
+              </Button>
+            </Link>
+            
+            <Link to="/universes" className="transform transition-transform hover:scale-105">
+              <Button className="w-full h-16 text-lg bg-[#2a2a2a] hover:bg-[#3a3a3a] text-[#9333ea] border-2 border-[#9333ea]/30 group shadow-[0_0_5px_#9333ea]">
+                <Swords className="mr-2 h-5 w-5 group-hover:animate-pulse" />
+                Mode Univers
               </Button>
             </Link>
             

@@ -3,15 +3,16 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Checkbox } from './ui/checkbox';
-import { createSession } from '@/utils/db';
+import { createSession, generateRoomsFromTroupes } from '@/utils/db';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2 } from 'lucide-react';
 
 interface SessionCreatorProps {
   onCreateSession: (sessionId: string) => void;
+  universeId?: string; // Optional universe ID for universe sessions
 }
 
-const SessionCreator: React.FC<SessionCreatorProps> = ({ onCreateSession }) => {
+const SessionCreator: React.FC<SessionCreatorProps> = ({ onCreateSession, universeId }) => {
   const [sessionName, setSessionName] = useState('');
   const [sessionContext, setSessionContext] = useState('');
   const [hintEnabled, setHintEnabled] = useState(true);
@@ -33,8 +34,15 @@ const SessionCreator: React.FC<SessionCreatorProps> = ({ onCreateSession }) => {
     setIsLoading(true);
 
     try {
-      // Create session
-      const session = await createSession(sessionName, sessionContext.trim() || undefined, hintEnabled);
+      // Create session with universe support
+      const sessionType = universeId ? 'universe' : 'standalone';
+      const session = await createSession(
+        sessionName, 
+        sessionContext.trim() || undefined, 
+        hintEnabled, 
+        sessionType, 
+        universeId
+      );
       
       if (!session) {
         toast({
@@ -45,10 +53,29 @@ const SessionCreator: React.FC<SessionCreatorProps> = ({ onCreateSession }) => {
         return;
       }
 
-      toast({
-        title: "Succès",
-        description: "Session créée avec succès",
-      });
+      // If this is a universe session, automatically generate rooms from troupes
+      if (universeId && session.id) {
+        console.log('[SESSION DEBUG] Creating universe session, generating rooms from troupes...');
+        const generatedRooms = await generateRoomsFromTroupes(session.id, universeId);
+        
+        if (generatedRooms.length > 0) {
+          toast({
+            title: "Succès",
+            description: `Session créée avec ${generatedRooms.length} salles générées automatiquement`,
+          });
+        } else {
+          toast({
+            title: "Attention",
+            description: "Session créée mais aucune troupe trouvée pour générer les salles",
+            variant: "destructive",
+          });
+        }
+      } else {
+        toast({
+          title: "Succès",
+          description: "Session créée avec succès",
+        });
+      }
       
       // Reset form
       setSessionName('');

@@ -2,14 +2,16 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, RefreshCw, Volume2, VolumeX } from "lucide-react";
+import { ArrowLeft, RefreshCw, Volume2, VolumeX, Globe, Trophy } from "lucide-react";
 import LeaderboardTable from "@/components/LeaderboardTable";
+import UniverseLeaderboard from "@/components/UniverseLeaderboard";
 import { Score } from "@/types/game";
 import confetti from "canvas-confetti";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUser } from "@/hooks/useUser";
 import { createAudio, AUDIO_PATHS } from "@/utils/audioUtils";
+import { getUniverses } from "@/utils/db";
 
 const Leaderboard = () => {
   const [scores, setScores] = useState<Score[]>([]);
@@ -18,8 +20,16 @@ const Leaderboard = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(0.3); // Default volume at 30%
 
-  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(() => localStorage.getItem('leaderboard_session_id') || null);
   const [sessions, setSessions] = useState<{ id: string; name: string }[]>([]);
+  
+  // Universe leaderboard state
+  const [viewMode, setViewMode] = useState<'sessions' | 'universes'>(() => {
+    const saved = localStorage.getItem('leaderboard_view_mode');
+    return saved === 'universes' ? 'universes' : 'sessions';
+  });
+  const [currentUniverseId, setCurrentUniverseId] = useState<string | null>(() => localStorage.getItem('leaderboard_universe_id') || null);
+  const [universes, setUniverses] = useState<{ id: string; name: string; status: string }[]>([]);
   
   // Audio reference for leaderboard background music
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -27,6 +37,29 @@ const Leaderboard = () => {
   // Get authenticated user
   const user = useUser();
 
+  // Persist view mode and selections
+  useEffect(() => {
+    localStorage.setItem('leaderboard_view_mode', viewMode);
+  }, [viewMode]);
+
+  useEffect(() => {
+    if (currentSessionId) {
+      localStorage.setItem('leaderboard_session_id', currentSessionId);
+    } else {
+      localStorage.removeItem('leaderboard_session_id');
+    }
+  }, [currentSessionId]);
+
+  useEffect(() => {
+    if (currentUniverseId) {
+      localStorage.setItem('leaderboard_universe_id', currentUniverseId);
+    } else {
+      localStorage.removeItem('leaderboard_universe_id');
+    }
+  }, [currentUniverseId]);
+
+  // Refresh nonce for UniverseLeaderboard to force re-fetch
+  const [universeRefreshNonce, setUniverseRefreshNonce] = useState(0);
   const fetchSessions = async () => {
     setIsLoading(true);
     try {
@@ -52,6 +85,30 @@ const Leaderboard = () => {
       console.error('Error fetching sessions:', error);
       setSessions([]);
       setCurrentSessionId(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchUniverses = async () => {
+    setIsLoading(true);
+    try {
+      const data = await getUniverses();
+      const activeUniverses = data.filter(universe => universe.status === 'active');
+      
+      setUniverses(activeUniverses);
+      if (activeUniverses.length > 0) {
+        // Preserve saved selection if still valid, otherwise default to first active universe
+        if (!currentUniverseId || !activeUniverses.find(u => u.id === currentUniverseId)) {
+          setCurrentUniverseId(activeUniverses[0].id);
+        }
+      } else {
+        setCurrentUniverseId(null);
+      }
+    } catch (error) {
+      console.error('Error fetching universes:', error);
+      setUniverses([]);
+      setCurrentUniverseId(null);
     } finally {
       setIsLoading(false);
     }
@@ -90,7 +147,13 @@ const Leaderboard = () => {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await fetchScores();
+    if (viewMode === 'sessions') {
+      await fetchScores();
+    } else {
+      // Trigger a re-mount of UniverseLeaderboard to force data re-fetch
+      setUniverseRefreshNonce((n) => n + 1);
+      setIsRefreshing(false);
+    }
   };
   
   const toggleMute = () => {
@@ -103,7 +166,11 @@ const Leaderboard = () => {
   };
 
   useEffect(() => {
-    fetchSessions();
+    if (viewMode === 'sessions') {
+      fetchSessions();
+    } else {
+      fetchUniverses();
+    }
     
     // Initialize audio element with better error handling
     createAudio(AUDIO_PATHS.GAME_LEADERBOARD, { volume, loop: true, preload: true })
@@ -126,10 +193,10 @@ const Leaderboard = () => {
         audioRef.current = null;
       }
     };
-  }, []);
+  }, [viewMode]);
 
   useEffect(() => {
-    if (currentSessionId) {
+    if (currentSessionId && viewMode === 'sessions') {
       fetchScores();
 
       // Subscribe to real-time updates
@@ -147,7 +214,7 @@ const Leaderboard = () => {
         subscription.unsubscribe();
       };
     }
-  }, [currentSessionId]);
+  }, [currentSessionId, viewMode]);
   
   // Effect to handle volume changes
   useEffect(() => {
@@ -194,7 +261,7 @@ const Leaderboard = () => {
   
   return (
     <div className="min-h-screen p-4 bg-[#1A1F2C] bg-opacity-95 bg-[url('/grid.svg')] bg-repeat font-mono">
-      <div className="max-w-4xl mx-auto relative after:absolute after:top-0 after:left-0 after:w-full after:h-full after:bg-[radial-gradient(circle,rgba(0,255,0,0.1)_0%,transparent_70%)] after:pointer-events-none">
+      <div className="max-w-7xl mx-auto relative after:absolute after:top-0 after:left-0 after:w-full after:h-full after:bg-[radial-gradient(circle,rgba(0,255,0,0.1)_0%,transparent_70%)] after:pointer-events-none">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center">
             {user && (
@@ -209,18 +276,64 @@ const Leaderboard = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            <select
-              value={currentSessionId || ''}
-              onChange={(e) => setCurrentSessionId(e.target.value)}
-              className="bg-[#1A1F2C] text-[#00FF00] border border-[#00FF00]/30 rounded px-3 py-1 text-sm focus:outline-none focus:border-[#00FF00]/60 hover:border-[#00FF00]/60 transition-colors"
-            >
-              <option value="">Choisir une session</option>
-              {sessions.map((session) => (
-                <option key={session.id} value={session.id}>
-                  {session.name}
-                </option>
-              ))}
-            </select>
+            {/* View Mode Toggle */}
+            <div className="flex bg-[#1A1F2C] border border-[#00FF00]/30 rounded-lg overflow-hidden">
+              <Button
+                variant={viewMode === 'sessions' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('sessions')}
+                className={`font-mono border-0 rounded-none ${
+                  viewMode === 'sessions' 
+                    ? 'bg-[#00FF00]/20 text-[#00FF00] hover:bg-[#00FF00]/30' 
+                    : 'text-[#00FF00]/80 hover:text-[#00FF00] hover:bg-[#00FF00]/10'
+                }`}
+              >
+                <Trophy className="h-4 w-4 mr-1" />
+                Sessions
+              </Button>
+              <Button
+                variant={viewMode === 'universes' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('universes')}
+                className={`font-mono border-0 rounded-none ${
+                  viewMode === 'universes' 
+                    ? 'bg-[#00FF00]/20 text-[#00FF00] hover:bg-[#00FF00]/30' 
+                    : 'text-[#00FF00]/80 hover:text-[#00FF00] hover:bg-[#00FF00]/10'
+                }`}
+              >
+                <Globe className="h-4 w-4 mr-1" />
+                Univers
+              </Button>
+            </div>
+
+            {/* Session/Universe Selector */}
+            {viewMode === 'sessions' ? (
+              <select
+                value={currentSessionId || ''}
+                onChange={(e) => setCurrentSessionId(e.target.value)}
+                className="bg-[#1A1F2C] text-[#00FF00] border border-[#00FF00]/30 rounded px-3 py-1 text-sm focus:outline-none focus:border-[#00FF00]/60 hover:border-[#00FF00]/60 transition-colors"
+              >
+                <option value="">Choisir une session</option>
+                {sessions.map((session) => (
+                  <option key={session.id} value={session.id}>
+                    {session.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <select
+                value={currentUniverseId || ''}
+                onChange={(e) => setCurrentUniverseId(e.target.value)}
+                className="bg-[#1A1F2C] text-[#00FF00] border border-[#00FF00]/30 rounded px-3 py-1 text-sm focus:outline-none focus:border-[#00FF00]/60 hover:border-[#00FF00]/60 transition-colors"
+              >
+                <option value="">Choisir un univers</option>
+                {universes.map((universe) => (
+                  <option key={universe.id} value={universe.id}>
+                    {universe.name}
+                  </option>
+                ))}
+              </select>
+            )}
 
             <Button
               variant="ghost"
@@ -266,8 +379,16 @@ const Leaderboard = () => {
             <Skeleton className="h-12 w-full bg-[#00FF00]/5" />
             <Skeleton className="h-12 w-full bg-[#00FF00]/5" />
           </div>
-        ) : (
+        ) : viewMode === 'sessions' ? (
           <LeaderboardTable scores={scores} currentSessionId={currentSessionId || undefined} />
+        ) : (
+          currentUniverseId && (
+            <UniverseLeaderboard 
+              key={`ulb-${currentUniverseId}-${universeRefreshNonce}`}
+              universeId={currentUniverseId} 
+              universeName={universes.find(u => u.id === currentUniverseId)?.name}
+            />
+          )
         )}
         
         <div className="mt-12 text-center">
