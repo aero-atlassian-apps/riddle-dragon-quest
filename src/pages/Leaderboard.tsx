@@ -322,9 +322,27 @@ const Leaderboard = () => {
             <Skeleton className="h-12 w-full bg-[#00FF00]/5" />
           </div>
         ) : viewMode === 'sessions' ? (
-          <LeaderboardTable scores={scores} currentSessionId={currentSessionId || undefined} />
+          sessions.length === 0 ? (
+            <div className="max-w-7xl mx-auto bg-[#1A1F2C]/80 border border-[#00FF00]/30 rounded-lg p-6 text-center text-[#00FF00]/70">
+              Aucune session active pour le moment.
+            </div>
+          ) : !currentSessionId ? (
+            <div className="max-w-7xl mx-auto bg-[#1A1F2C]/80 border border-[#00FF00]/30 rounded-lg p-6 text-center text-[#00FF00]/70">
+              Aucune session sélectionnée. Choisissez une session dans la liste.
+            </div>
+          ) : (
+            <LeaderboardTable scores={scores} currentSessionId={currentSessionId || undefined} />
+          )
         ) : (
-          currentUniverseId && (
+          universes.length === 0 ? (
+            <div className="max-w-7xl mx-auto bg-[#1A1F2C]/80 border border-[#00FF00]/30 rounded-lg p-6 text-center text-[#00FF00]/70">
+              Aucun univers actif pour le moment.
+            </div>
+          ) : !currentUniverseId ? (
+            <div className="max-w-7xl mx-auto bg-[#1A1F2C]/80 border border-[#00FF00]/30 rounded-lg p-6 text-center text-[#00FF00]/70">
+              Aucun univers sélectionné. Choisissez un univers dans la liste.
+            </div>
+          ) : (
             <UniverseLeaderboard 
               key={`ulb-${currentUniverseId}-${universeRefreshNonce}`}
               universeId={currentUniverseId} 
