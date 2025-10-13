@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Trash2, Play, Pause, RotateCcw, ExternalLink, Copy, X, Globe, Users, Tag } from "lucide-react";
@@ -6,7 +7,7 @@ import SessionCreator from "@/components/SessionCreator";
 import QuestionUploader from "@/components/QuestionUploader";
 import QuestionManager from "@/components/QuestionManager";
 import RoomCreator from "@/components/RoomCreator";
-import UniverseManager from "@/components/UniverseManager";
+import UniverseManager, { UniverseManagerHandle } from "@/components/UniverseManager";
 import { getSessions, deleteSession, updateSessionStatus } from "@/utils/db";
 import { Session, Question, Room } from "@/types/game";
 import { useToast } from "@/components/ui/use-toast";
@@ -36,11 +37,19 @@ const AdminDashboard = () => {
   const [loadingRooms, setLoadingRooms] = useState(false);
   const [currentSessionName, setCurrentSessionName] = useState("");
   const [adminMode, setAdminMode] = useState<"sessions" | "universes">("sessions");
+  const universeManagerRef = useRef<UniverseManagerHandle | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchSessions();
   }, []);
+
+  // Reload sessions when switching back to sessions mode
+  useEffect(() => {
+    if (adminMode === "sessions") {
+      fetchSessions();
+    }
+  }, [adminMode]);
 
   const fetchSessions = async () => {
     setIsLoading(true);
@@ -211,6 +220,13 @@ const AdminDashboard = () => {
         <div className="absolute inset-0 bg-[url('/textures/stone-pattern.svg')] opacity-5" />
         <div className="absolute inset-0 bg-[url('/terminal-bg.png')] opacity-10" />
         <div className="relative z-10">
+          <div className="absolute top-4 right-4">
+            <Link to="/">
+              <Button variant="ghost" size="sm" className="text-green-400 hover:text-green-300 hover:bg-green-500/10 font-mono">
+                retour
+              </Button>
+            </Link>
+          </div>
           <h1 className="text-3xl font-bold font-medieval mb-6 text-green-400">Espace du Maître des Jeux</h1>
           <div className="flex items-center justify-center mb-3">
             <span className="w-3 h-3 rounded-full bg-green-500 animate-pulse mr-2" />
@@ -471,13 +487,24 @@ const AdminDashboard = () => {
 
       {/* Universe Mode */}
       {adminMode === "universes" && (
+        <>
+        <div className="mb-8">
+          <Button
+            className="bg-green-500 hover:bg-green-600 text-black font-pixel"
+            onClick={() => universeManagerRef.current?.openCreator()}
+          >
+            <PlusCircle className="mr-2" size={18} />
+            $ NOUVEL_UNIVERS
+          </Button>
+        </div>
         <div className="mt-8 bg-black/90 border-2 border-green-500 rounded-lg p-6 relative overflow-hidden">
           <div className="absolute inset-0 bg-[url('/textures/stone-pattern.svg')] opacity-5" />
           <div className="absolute inset-0 bg-[url('/terminal-bg.png')] opacity-10" />
           <div className="relative z-10">
-            <UniverseManager />
+            <UniverseManager ref={universeManagerRef} />
           </div>
         </div>
+        </>
       )}
 
       <AlertDialog open={!!deleteSessionId} onOpenChange={() => setDeleteSessionId(null)}>

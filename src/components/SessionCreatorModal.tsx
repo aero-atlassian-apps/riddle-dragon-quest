@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { Button } from './ui/button';
 import { useToast } from './ui/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
-import { BookOpen, Upload } from 'lucide-react';
+import { BookOpen, Upload, Image as ImageIcon } from 'lucide-react';
 
 // Import existing components
 import SessionCreator from './SessionCreator';
 import QuestionUploader from './QuestionUploader';
+import QuestionManager from './QuestionManager';
 
 interface SessionCreatorModalProps {
   isOpen: boolean;
@@ -24,7 +25,7 @@ const SessionCreatorModal: React.FC<SessionCreatorModalProps> = ({
   onSessionCreated
 }) => {
   const { toast } = useToast();
-  const [step, setStep] = useState<'session' | 'questions'>('session');
+  const [step, setStep] = useState<'session' | 'questions' | 'images'>('session');
   const [createdSessionId, setCreatedSessionId] = useState<string | null>(null);
 
   const handleSessionCreated = (sessionId: string) => {
@@ -37,11 +38,19 @@ const SessionCreatorModal: React.FC<SessionCreatorModalProps> = ({
   };
 
   const handleQuestionsUploaded = () => {
+    setStep('images');
+    toast({
+      title: "Questions ajoutées",
+      description: "Ajoutez maintenant des images aux questions.",
+    });
+  };
+
+  const handleImagesCompleted = () => {
     onSessionCreated();
     handleClose();
     toast({
       title: "Session complète!",
-      description: "Votre session et ses questions ont été créées avec succès.",
+      description: "Questions et images ont été configurées avec succès.",
     });
   };
 
@@ -56,7 +65,7 @@ const SessionCreatorModal: React.FC<SessionCreatorModalProps> = ({
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-black/95 border-2 border-green-500" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-green-400 font-pixel">
-            {step === 'session' ? '$ CRÉER_SESSION' : '$ AJOUTER_QUESTIONS'}
+            {step === 'session' ? '$ CRÉER_SESSION' : step === 'questions' ? '$ AJOUTER_QUESTIONS' : '$ AJOUTER_IMAGES'}
           </DialogTitle>
           <p className="text-green-300 font-mono">
             Univers: {universeName}
@@ -83,6 +92,15 @@ const SessionCreatorModal: React.FC<SessionCreatorModalProps> = ({
               </div>
               <span className="font-mono">Questions</span>
             </div>
+            <div className="flex-1 h-0.5 bg-green-600"></div>
+            <div className={`flex items-center space-x-2 ${step === 'images' ? 'text-green-400' : 'text-gray-500'}`}>
+              <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${
+                step === 'images' ? 'border-green-400 bg-green-400/20' : 'border-gray-500'
+              }`}>
+                <ImageIcon className="w-4 h-4" />
+              </div>
+              <span className="font-mono">Images</span>
+            </div>
           </div>
 
           {step === 'session' && (
@@ -106,6 +124,22 @@ const SessionCreatorModal: React.FC<SessionCreatorModalProps> = ({
                 onUpload={handleQuestionsUploaded}
                 onClose={handleQuestionsUploaded}
                 universeContext={true}
+              />
+            </div>
+          )}
+
+          {step === 'images' && createdSessionId && (
+            <div className="space-y-4">
+              <div className="bg-black/50 border border-green-500/50 rounded-lg p-4">
+                <h3 className="text-green-400 font-mono mb-2">Questions ajoutées!</h3>
+                <p className="text-green-300 text-sm">
+                  Ajoutez une image pour chaque question afin d’enrichir votre session.
+                </p>
+              </div>
+
+              <QuestionManager
+                sessionId={createdSessionId}
+                onComplete={handleImagesCompleted}
               />
             </div>
           )}

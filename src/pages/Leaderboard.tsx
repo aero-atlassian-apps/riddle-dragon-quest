@@ -1,8 +1,8 @@
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, RefreshCw, Volume2, VolumeX, Globe, Trophy } from "lucide-react";
+import { ArrowLeft, RefreshCw, Globe, Users } from "lucide-react";
 import LeaderboardTable from "@/components/LeaderboardTable";
 import UniverseLeaderboard from "@/components/UniverseLeaderboard";
 import { Score } from "@/types/game";
@@ -10,15 +10,14 @@ import confetti from "canvas-confetti";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUser } from "@/hooks/useUser";
-import { createAudio, AUDIO_PATHS } from "@/utils/audioUtils";
+// Audio removed from Leaderboard page
 import { getUniverses } from "@/utils/db";
 
 const Leaderboard = () => {
   const [scores, setScores] = useState<Score[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [volume, setVolume] = useState(0.3); // Default volume at 30%
+  // Audio controls removed
 
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(() => localStorage.getItem('leaderboard_session_id') || null);
   const [sessions, setSessions] = useState<{ id: string; name: string }[]>([]);
@@ -31,8 +30,7 @@ const Leaderboard = () => {
   const [currentUniverseId, setCurrentUniverseId] = useState<string | null>(() => localStorage.getItem('leaderboard_universe_id') || null);
   const [universes, setUniverses] = useState<{ id: string; name: string; status: string }[]>([]);
   
-  // Audio reference for leaderboard background music
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  // Audio reference removed
   
   // Get authenticated user
   const user = useUser();
@@ -156,14 +154,7 @@ const Leaderboard = () => {
     }
   };
   
-  const toggleMute = () => {
-    setIsMuted(!isMuted);
-  };
-  
-  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newVolume = parseFloat(e.target.value);
-    setVolume(newVolume);
-  };
+  // Audio control handlers removed
 
   useEffect(() => {
     if (viewMode === 'sessions') {
@@ -171,28 +162,7 @@ const Leaderboard = () => {
     } else {
       fetchUniverses();
     }
-    
-    // Initialize audio element with better error handling
-    createAudio(AUDIO_PATHS.GAME_LEADERBOARD, { volume, loop: true, preload: true })
-      .then(audio => {
-        if (audio) {
-          audioRef.current = audio;
-          audio.play().catch(error => {
-            console.warn('Leaderboard audio autoplay was prevented:', error);
-          });
-        }
-      })
-      .catch(error => {
-        console.warn('Leaderboard audio initialization failed:', error);
-      });
-    
-    // Cleanup function to stop audio when component unmounts
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-    };
+    // Audio initialization removed
   }, [viewMode]);
 
   useEffect(() => {
@@ -216,12 +186,7 @@ const Leaderboard = () => {
     }
   }, [currentSessionId, viewMode]);
   
-  // Effect to handle volume changes
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = isMuted ? 0 : volume;
-    }
-  }, [volume, isMuted]);
+  // Audio volume effect removed
   
   const launchConfetti = () => {
     const duration = 5 * 1000;
@@ -288,7 +253,7 @@ const Leaderboard = () => {
                     : 'text-[#00FF00]/80 hover:text-[#00FF00] hover:bg-[#00FF00]/10'
                 }`}
               >
-                <Trophy className="h-4 w-4 mr-1" />
+                <Users className="h-4 w-4 mr-1" />
                 Sessions
               </Button>
               <Button
@@ -346,30 +311,7 @@ const Leaderboard = () => {
               Actualiser
             </Button>
             
-            {/* Audio controls */}
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleMute}
-                className="text-[#00FF00]/80 hover:text-[#00FF00] hover:bg-[#00FF00]/10 font-mono"
-              >
-                {isMuted ? (
-                  <VolumeX className="h-4 w-4" />
-                ) : (
-                  <Volume2 className="h-4 w-4" />
-                )}
-              </Button>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                value={volume}
-                onChange={handleVolumeChange}
-                className="w-20 accent-[#00FF00] bg-[#1A1F2C] h-1 rounded-lg appearance-none cursor-pointer"
-              />
-            </div>
+            {/* Audio controls removed */}
           </div>
         </div>
         
@@ -391,11 +333,7 @@ const Leaderboard = () => {
           )
         )}
         
-        <div className="mt-12 text-center">
-          <Link to="/">
-            <Button className="bg-[#00FF00]/20 hover:bg-[#00FF00]/30 text-[#00FF00] border border-[#00FF00]/50 transition-all hover:shadow-[0_0_10px_rgba(0,255,0,0.3)] font-mono">quitter</Button>
-          </Link>
-        </div>
+        {/* Quitter button removed */}
       </div>
     </div>
   );

@@ -351,6 +351,12 @@ const UniverseSetupWizard: React.FC<UniverseSetupWizardProps> = ({
         [sessionId]: true
       }
     }));
+    // Persist progress and inform the user
+    saveProgressToStorage();
+    toast({
+      title: "Images ajoutées",
+      description: "Les images des questions de la session ont été gérées",
+    });
   };
 
   // Navigation functions
@@ -620,6 +626,39 @@ const UniverseSetupWizard: React.FC<UniverseSetupWizardProps> = ({
                         onUpload={(questions) => handleQuestionsUploaded(session.id, questions)}
                         universeContext={true}
                       />
+                    </TabsContent>
+                  ))}
+                </Tabs>
+              </div>
+            )}
+
+            {progress.sessionsCreated.length > 0 && (
+              <div className="mt-8 space-y-4">
+                <h4 className="text-lg font-bold text-green-400 font-mono">$ GESTION_IMAGES_QUESTIONS</h4>
+                <p className="text-green-400/70 font-mono text-sm">
+                  Après le téléchargement, ajoutez des images à chaque question des sessions.
+                </p>
+
+                <Tabs defaultValue={progress.sessionsCreated[0]?.id} className="w-full">
+                  <TabsList className="grid w-full grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                    {progress.sessionsCreated.map((session) => (
+                      <TabsTrigger key={session.id} value={session.id} className="font-mono">
+                        {session.name}
+                        {progress.imagesManaged[session.id] && (
+                          <Check className="ml-2 h-4 w-4 text-green-400" />
+                        )}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+
+                  {progress.sessionsCreated.map((session) => (
+                    <TabsContent key={session.id} value={session.id}>
+                      <div className="border border-green-500/30 rounded p-4 bg-black/30">
+                        <QuestionManager
+                          sessionId={session.id}
+                          onComplete={() => handleImagesManaged(session.id)}
+                        />
+                      </div>
                     </TabsContent>
                   ))}
                 </Tabs>

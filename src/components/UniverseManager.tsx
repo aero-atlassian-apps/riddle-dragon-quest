@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { createUniverse, updateUniverse } from "@/utils/db";
-import { PlusCircle, Edit, Trash2, Globe, Users, Trophy, Settings, Wand2 } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Globe, Users, Trophy, Settings } from "lucide-react";
 import SimpleUniverseCreator from "./SimpleUniverseCreator";
 import SessionCreatorModal from "./SessionCreatorModal";
 import UniverseCard from "./UniverseCard";
@@ -22,7 +22,11 @@ interface Universe {
   session_count?: number;
 }
 
-const UniverseManager = () => {
+export type UniverseManagerHandle = {
+  openCreator: () => void;
+};
+
+const UniverseManager = forwardRef<UniverseManagerHandle>((props, ref) => {
   const [universes, setUniverses] = useState<Universe[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreatorOpen, setIsCreatorOpen] = useState(false);
@@ -213,6 +217,14 @@ const UniverseManager = () => {
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
+  // Expose an imperative handle to open the creator from parent
+  useImperativeHandle(ref, () => ({
+    openCreator: () => {
+      setEditingUniverse(null);
+      setIsCreatorOpen(true);
+    },
+  }));
+
   if (isLoading) {
     return (
       <div className="text-center py-8 text-green-400 font-pixel">
@@ -223,23 +235,6 @@ const UniverseManager = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold font-medieval text-green-400">Gestion des Univers</h2>
-          <p className="text-green-300 font-pixel">Créez et gérez les univers de jeu avec l'assistant de configuration</p>
-        </div>
-        
-        <Button
-          className="bg-green-500 hover:bg-green-600 text-black font-pixel"
-          onClick={() => {
-            setEditingUniverse(null);
-            setIsCreatorOpen(true);
-          }}
-        >
-          <Wand2 className="mr-2" size={18} />
-          CRÉER_UNIVERS
-        </Button>
-      </div>
 
       {/* Simple Universe Creator */}
       <SimpleUniverseCreator
@@ -290,6 +285,6 @@ const UniverseManager = () => {
       )}
     </div>
   );
-};
+});
 
 export default UniverseManager;
