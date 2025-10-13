@@ -2,7 +2,8 @@ import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Globe, Users, Trophy, Clock, Star, Plus, BookOpen, Trash2, CheckCircle } from "lucide-react";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+import { Users, Trophy, Clock, Star, Plus, BookOpen, Trash2, CheckCircle } from "lucide-react";
 
 interface Universe {
   id: string;
@@ -98,38 +99,76 @@ const UniverseCard: React.FC<UniverseCardProps> = ({
   if (variant === 'compact') {
     return (
       <Card className="bg-black/50 border-2 border-green-500 hover:border-green-400 transition-all duration-300 hover:shadow-lg hover:shadow-green-500/20">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
+        <CardContent className="p-3 relative">
+          <div className="flex items-start justify-between">
             <div className="flex-1">
               <h3 className="font-medieval text-green-400 text-lg">{universe.name}</h3>
               <div className="flex items-center gap-2 mt-1">
                 {getStatusBadge(universe.status)}
-                <div className="flex items-center gap-1 text-xs text-green-300">
-                  <Users size={12} />
+              </div>
+              <CardDescription className="text-green-300 text-sm mt-2 line-clamp-2">
+                {universe.description}
+              </CardDescription>
+              <div className="flex items-center gap-4 mt-2 text-sm text-green-400 font-pixel">
+                <div className="flex items-center gap-1">
+                  <Users size={16} />
                   <span>{participantInfo.troupeCount} troupes</span>
                 </div>
-                <div className="flex items-center gap-1 text-xs text-green-300">
-                  <BookOpen size={12} />
+                <div className="flex items-center gap-1">
+                  <BookOpen size={16} />
                   <span>{participantInfo.sessionCount} sessions</span>
                 </div>
               </div>
             </div>
-            {showActions && (
-              <div className="flex gap-1">
-
-                {participantInfo.canAddSessions && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="border-green-500 text-green-400 hover:bg-green-500/20 font-pixel"
-                    onClick={() => onAddSession?.(universe.id)}
-                  >
-                    <Plus size={12} className="mr-1" />
-                    SESSION
-                  </Button>
+            <TooltipProvider>
+              <div className="absolute right-2 top-2 flex flex-col items-center gap-1">
+                {showActions && universe.status === 'draft' && onActivate && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-yellow-500 text-yellow-400 hover:bg-yellow-500/20 h-8 w-8 p-0"
+                        onClick={() => onActivate(universe.id)}
+                      >
+                        <CheckCircle className="h-3 w-3" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Activer</TooltipContent>
+                  </Tooltip>
+                )}
+                {showActions && universe.status === 'draft' && participantInfo.canAddSessions && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-blue-500 text-blue-400 hover:bg-blue-500/20 h-8 w-8 p-0"
+                        onClick={() => onAddSession?.(universe.id)}
+                      >
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Ajouter session</TooltipContent>
+                  </Tooltip>
+                )}
+                {onDelete && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-red-500 text-red-400 hover:bg-red-500/20 h-8 w-8 p-0"
+                        onClick={() => onDelete(universe.id)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Supprimer</TooltipContent>
+                  </Tooltip>
                 )}
               </div>
-            )}
+            </TooltipProvider>
           </div>
         </CardContent>
       </Card>
@@ -145,7 +184,7 @@ const UniverseCard: React.FC<UniverseCardProps> = ({
         <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-transparent" />
         <div className="relative z-10">
           <CardHeader className="pb-2">
-            <div className="flex justify-between items-start">
+            <div className="flex justify-between items-start relative">
               <div>
                 <CardTitle className="text-2xl font-medieval text-green-400 mb-2">
                   {universe.name}
@@ -158,7 +197,26 @@ const UniverseCard: React.FC<UniverseCardProps> = ({
                   </Badge>
                 </div>
               </div>
-              <Globe className="text-green-400" size={32} />
+              <TooltipProvider>
+                <div className="absolute right-2 top-2 flex flex-col items-center gap-1">
+                  {/* Consult (view) icon removed per request */}
+                  {onDelete && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-red-500 text-red-400 hover:bg-red-500/20 h-8 w-8 p-0"
+                          onClick={() => onDelete(universe.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Supprimer</TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
+              </TooltipProvider>
             </div>
           </CardHeader>
           <CardContent>
@@ -193,38 +251,7 @@ const UniverseCard: React.FC<UniverseCardProps> = ({
             Créé le {new Date(universe.created_at).toLocaleDateString('fr-FR')}
           </div>
 
-          {showActions && (
-            <div className="flex gap-2">
-
-              {universe.status === 'draft' && onActivate && (
-                <Button
-                  className="bg-yellow-500 hover:bg-yellow-600 text-black font-pixel flex-1"
-                  onClick={() => onActivate(universe.id)}
-                >
-                  <CheckCircle className="mr-2" size={16} />
-                  ACTIVER
-                </Button>
-              )}
-              {participantInfo.canAddSessions && (
-                   <Button
-                     className="bg-blue-500 hover:bg-blue-600 text-black font-pixel"
-                     onClick={() => onAddSession?.(universe.id)}
-                   >
-                     <Plus className="mr-2" size={16} />
-                     AJOUTER SESSION
-                   </Button>
-                 )}
-                 {onDelete && (
-                   <Button
-                     variant="outline"
-                     className="border-red-500 text-red-400 hover:bg-red-500/20 font-pixel"
-                     onClick={() => onDelete(universe.id)}
-                   >
-                     <Trash2 size={16} />
-                   </Button>
-                 )}
-            </div>
-          )}
+          {/* Actions moved to header cluster; footer actions removed for compactness */}
           </CardContent>
         </div>
       </Card>
@@ -240,26 +267,75 @@ const UniverseCard: React.FC<UniverseCardProps> = ({
       <div className="absolute inset-0 bg-[url('/textures/stone-pattern.svg')] opacity-5" />
       <div className="absolute inset-0 bg-[url('/terminal-bg.png')] opacity-10" />
       <div className="relative z-10">
-        <CardHeader>
-          <div className="flex justify-between items-start">
+        <CardHeader className="py-3">
+          <div className="flex justify-between items-start relative">
             <div>
-              <CardTitle className="text-green-400 font-medieval text-xl">
+              <CardTitle className="text-green-400 font-medieval text-lg">
                 {universe.name}
               </CardTitle>
               <div className="flex items-center gap-2 mt-2">
                 {getStatusBadge(universe.status)}
               </div>
             </div>
-            <Globe className="text-green-400" size={24} />
+            <TooltipProvider>
+              <div className="absolute right-2 top-2 flex flex-col items-center gap-1">
+                {showActions && universe.status === 'draft' && onActivate && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-yellow-500 text-yellow-400 hover:bg-yellow-500/20 h-8 w-8 p-0"
+                        onClick={() => onActivate(universe.id)}
+                      >
+                        <CheckCircle className="h-3 w-3" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Activer</TooltipContent>
+                  </Tooltip>
+                )}
+                {showActions && universe.status === 'draft' && participantInfo.canAddSessions && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-blue-500 text-blue-400 hover:bg-blue-500/20 h-8 w-8 p-0"
+                        onClick={() => onAddSession?.(universe.id)}
+                      >
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Ajouter session</TooltipContent>
+                  </Tooltip>
+                )}
+                {/* Consult (view) icon removed per request */}
+                {onDelete && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-red-500 text-red-400 hover:bg-red-500/20 h-8 w-8 p-0"
+                        onClick={() => onDelete(universe.id)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Supprimer</TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
+            </TooltipProvider>
           </div>
         </CardHeader>
         
         <CardContent>
-          <CardDescription className="text-green-300 mb-4 line-clamp-3">
+          <CardDescription className="text-green-300 text-sm mb-3 line-clamp-2">
             {universe.description}
           </CardDescription>
           
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-4 text-sm text-green-400 font-pixel">
               <div className="flex items-center gap-1">
                 <Users size={16} />
@@ -282,42 +358,11 @@ const UniverseCard: React.FC<UniverseCardProps> = ({
             )}
           </div>
 
-          {showActions && (
-            <div className="flex gap-2">
-
-              {universe.status === 'draft' && onActivate && (
-                <Button
-                  className="bg-yellow-500 hover:bg-yellow-600 text-black font-pixel flex-1"
-                  onClick={() => onActivate(universe.id)}
-                >
-                  <CheckCircle className="mr-2" size={16} />
-                  ACTIVER
-                </Button>
-              )}
-              {participantInfo.canAddSessions && (
-                <Button
-                  className="bg-blue-500 hover:bg-blue-600 text-black font-pixel"
-                  onClick={() => onAddSession?.(universe.id)}
-                >
-                  <Plus className="mr-2" size={16} />
-                  AJOUTER SESSION
-                </Button>
-              )}
-              {onDelete && (
-                <Button
-                  variant="outline"
-                  className="border-red-500 text-red-400 hover:bg-red-500/20 font-pixel"
-                  onClick={() => onDelete(universe.id)}
-                >
-                  <Trash2 size={16} />
-                </Button>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </div>
-    </Card>
-  );
+          {/* Actions moved to header cluster; footer actions removed for compactness */}
+          </CardContent>
+        </div>
+      </Card>
+    );
 };
 
 export default UniverseCard;

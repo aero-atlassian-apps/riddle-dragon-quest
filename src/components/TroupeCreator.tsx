@@ -185,7 +185,7 @@ const TroupeCreator: React.FC<TroupeCreatorProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 bg-[url('/textures/stone-pattern.svg')] bg-repeat bg-opacity-50 relative">
+    <div className="bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 bg-[url('/textures/stone-pattern.svg')] bg-repeat bg-opacity-50 relative">
       <div className="absolute inset-0 bg-[url('/terminal-bg.png')] opacity-10 pointer-events-none" />
       
       <div className="relative z-10 container mx-auto px-4 py-4">

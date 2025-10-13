@@ -16,6 +16,7 @@ export interface Session {
   name: string;
   startTime: Date;
   endTime?: Date;
+  createdAt?: Date;
   questions: Question[];
   status?: string;
   context?: string;
@@ -23,6 +24,7 @@ export interface Session {
   sessionType?: 'standalone' | 'universe';
   universeId?: string;
   universeName?: string;
+  universeStatus?: 'draft' | 'active' | 'archived' | string;
 }
 
 export interface Room {

@@ -469,7 +469,6 @@ const UniverseThemeManager: React.FC<UniverseThemeManagerProps> = ({ universeId,
                     size="sm"
                     onClick={() => handleActivateTheme(theme.id)}
                   >
-                    Activer
                   </Button>
                 )}
               </div>

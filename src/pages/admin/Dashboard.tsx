@@ -8,12 +8,15 @@ import QuestionUploader from "@/components/QuestionUploader";
 import QuestionManager from "@/components/QuestionManager";
 import RoomCreator from "@/components/RoomCreator";
 import UniverseManager, { UniverseManagerHandle } from "@/components/UniverseManager";
-import { getSessions, deleteSession, updateSessionStatus } from "@/utils/db";
+import { getSessions, deleteSession, updateSessionStatus, updateSessionName } from "@/utils/db";
 import { Session, Question, Room } from "@/types/game";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,6 +40,11 @@ const AdminDashboard = () => {
   const [loadingRooms, setLoadingRooms] = useState(false);
   const [currentSessionName, setCurrentSessionName] = useState("");
   const [adminMode, setAdminMode] = useState<"sessions" | "universes">("sessions");
+  const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState<string>("");
+  const [savingName, setSavingName] = useState<boolean>(false);
+  const [sortBy, setSortBy] = useState<"date" | "name">("date");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const universeManagerRef = useRef<UniverseManagerHandle | null>(null);
   const { toast } = useToast();
 
@@ -94,6 +102,18 @@ const AdminDashboard = () => {
   const confirmDeleteSession = async () => {
     if (!deleteSessionId) return;
 
+    // Prevent deletion of active sessions
+    const target = sessions.find(s => s.id === deleteSessionId);
+    if (target?.status === 'active') {
+      toast({
+        title: "Action not allowed",
+        description: "You cannot delete an active session.",
+        variant: "destructive",
+      });
+      setDeleteSessionId(null);
+      return;
+    }
+
     const success = await deleteSession(deleteSessionId);
     
     if (success) {
@@ -117,7 +137,51 @@ const AdminDashboard = () => {
     setDeleteSessionId(null);
   };
 
+  // Inline name editing handlers
+  const beginEditSessionName = (sessionId: string, currentName: string) => {
+    setEditingSessionId(sessionId);
+    setEditingName(currentName);
+  };
+
+  const cancelEditSessionName = () => {
+    setEditingSessionId(null);
+    setEditingName("");
+  };
+
+  const saveEditSessionName = async () => {
+    if (!editingSessionId) return;
+    const newName = editingName.trim();
+    if (!newName) {
+      toast({ title: "Nom requis", description: "Le nom ne peut pas être vide", variant: "destructive" });
+      return;
+    }
+    setSavingName(true);
+    const success = await updateSessionName(editingSessionId, newName);
+    setSavingName(false);
+    if (success) {
+      setSessions(prev => prev.map(s => s.id === editingSessionId ? { ...s, name: newName } : s));
+      toast({ title: "Nom mis à jour", description: "Le nom de la session a été modifié" });
+      cancelEditSessionName();
+    } else {
+      toast({ title: "Erreur", description: "Impossible de mettre à jour le nom", variant: "destructive" });
+    }
+  };
+
   const handleSessionStatusChange = async (sessionId: string, status: 'en attente' | 'active' | 'terminée') => {
+    // Prevent starting sessions for universes that are not active
+    const targetSession = sessions.find(s => s.id === sessionId);
+    if (status === 'active' && targetSession && targetSession.sessionType === 'universe') {
+      const parentStatus = targetSession.universeStatus;
+      if (parentStatus && parentStatus !== 'active') {
+        toast({
+          title: "Impossible de démarrer",
+          description: "Cet univers est en brouillon ou archivé. Activez l'univers avant de démarrer ses sessions.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     const success = await updateSessionStatus(sessionId, status);
     
     if (success) {
@@ -336,6 +400,30 @@ const AdminDashboard = () => {
               <div className="absolute inset-0 bg-[url('/terminal-bg.png')] opacity-10" />
               <div className="relative z-10">
                 <Tabs defaultValue="active" className="w-full">
+                  <div className="flex items-center justify-end mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-green-400 font-pixel text-sm">TRIER_PAR</span>
+                      <Select value={sortBy} onValueChange={(v: "date" | "name") => setSortBy(v)}>
+                        <SelectTrigger className="w-[220px] border-green-500 text-green-400 bg-black">
+                          <SelectValue placeholder="Choisir un tri" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-black border-green-500">
+                          <SelectItem value="date" className="text-green-400">Date de création</SelectItem>
+                          <SelectItem value="name" className="text-green-400">Nom</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <span className="text-green-400 font-pixel text-sm ml-3">ORDRE</span>
+                      <Select value={sortDir} onValueChange={(v: "asc" | "desc") => setSortDir(v)}>
+                        <SelectTrigger className="w-[160px] border-green-500 text-green-400 bg-black">
+                          <SelectValue placeholder="Choisir l'ordre" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-black border-green-500">
+                          <SelectItem value="asc" className="text-green-400">Ascendant</SelectItem>
+                          <SelectItem value="desc" className="text-green-400">Descendant</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                   <TabsList className="w-full mb-6 font-pixel bg-black border-2 border-green-500">
                     <TabsTrigger value="all" className="flex-1 text-green-400 data-[state=active]:bg-green-500 data-[state=active]:text-black">
                       TOUTES_SESSIONS
@@ -366,6 +454,19 @@ const AdminDashboard = () => {
                           (tab === "en attente" && session.status === "en attente") || 
                           (tab === "terminée" && session.status === "terminée")
                         )
+                        .sort((a, b) => {
+                          if (sortBy === "name") {
+                            const cmp = a.name.localeCompare(b.name);
+                            return sortDir === "asc" ? cmp : -cmp;
+                          }
+                          // Sort by creation date using createdAt if available, otherwise startTime
+                          const aDate = a.createdAt || a.startTime;
+                          const bDate = b.createdAt || b.startTime;
+                          const at = aDate ? new Date(aDate).getTime() : 0;
+                          const bt = bDate ? new Date(bDate).getTime() : 0;
+                          const cmp = at - bt; // asc by default
+                          return sortDir === "asc" ? cmp : -cmp;
+                        })
                         .map((session) => (
                           <div
                             key={session.id}
@@ -376,9 +477,28 @@ const AdminDashboard = () => {
                             <div className="relative z-10">
                               <div className="flex justify-between items-start mb-2">
                                 <div className="flex items-center gap-2">
-                                  <h3 className="text-lg font-bold font-pixel text-green-400">
-                                    $ {session.name}
-                                  </h3>
+                                  {editingSessionId === session.id ? (
+                                    <Input
+                                      autoFocus
+                                      value={editingName}
+                                      onChange={(e) => setEditingName(e.target.value)}
+                                      onBlur={saveEditSessionName}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') saveEditSessionName();
+                                        if (e.key === 'Escape') cancelEditSessionName();
+                                      }}
+                                      disabled={savingName}
+                                      className="h-8 bg-black/50 border-green-500 text-green-400 font-pixel"
+                                    />
+                                  ) : (
+                                    <h3
+                                      className="text-lg font-bold font-pixel text-green-400 cursor-text"
+                                      onClick={() => beginEditSessionName(session.id, session.name)}
+                                      title="Cliquer pour renommer"
+                                    >
+                                      $ {session.name}
+                                    </h3>
+                                  )}
                                   {/* Session Type Indicator */}
                                   <div className={`px-2 py-1 rounded text-xs font-pixel ${
                                     session.sessionType === 'universe' 
@@ -388,19 +508,24 @@ const AdminDashboard = () => {
                                     {session.sessionType === 'universe' ? 'UNIVERS' : 'STANDALONE'}
                                   </div>
                                 </div>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="text-red-500 hover:bg-red-500/20"
-                                  onClick={() => handleDeleteSession(session.id)}
-                                >
-                                  <Trash2 size={18} />
-                                </Button>
+                                {session.status !== 'active' && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="text-red-500 hover:bg-red-500/20"
+                                    onClick={() => handleDeleteSession(session.id)}
+                                  >
+                                    <Trash2 size={18} />
+                                  </Button>
+                                )}
                               </div>
 
                               <div className="text-sm text-green-400/80 font-mono mb-4 space-y-1">
                                 <div>
-                                  Créée le: {new Date(session.startTime).toLocaleString()}
+                                  {(() => {
+                                    const created = session.createdAt || session.startTime;
+                                    return <>Créée le: {created ? new Date(created).toLocaleString() : '—'}</>;
+                                  })()}
                                 </div>
                                 <div>
                                   Questions: {session.questions?.length || 0}
@@ -426,15 +551,39 @@ const AdminDashboard = () => {
                                   <ExternalLink size={16} className="mr-1" /> VOIR_TROUPES
                                 </Button>
                                 
-                                {session.status === 'en attente' && (
-                                  <Button 
-                                    size="sm" 
-                                    className="bg-green-500 hover:bg-green-600 text-black font-pixel"
-                                    onClick={() => handleSessionStatusChange(session.id, 'active')}
-                                  >
-                                    <Play size={16} className="mr-1" /> DEMARRER
-                                  </Button>
-                                )}
+                                {session.status === 'en attente' && (() => {
+                                  const isUniverseSession = session.sessionType === 'universe';
+                                  const isBlockedByUniverse = isUniverseSession && session.universeStatus !== 'active';
+                                  if (isBlockedByUniverse) {
+                                    return (
+                                      <TooltipProvider>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <Button 
+                                              size="sm" 
+                                              className="bg-green-500 text-black font-pixel opacity-50 cursor-not-allowed"
+                                              disabled
+                                            >
+                                              <Play size={16} className="mr-1" /> DEMARRER
+                                            </Button>
+                                          </TooltipTrigger>
+                                          <TooltipContent>
+                                            <span className="font-mono">Univers inactif. Activez l'univers pour démarrer.</span>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
+                                    );
+                                  }
+                                  return (
+                                    <Button 
+                                      size="sm" 
+                                      className="bg-green-500 hover:bg-green-600 text-black font-pixel"
+                                      onClick={() => handleSessionStatusChange(session.id, 'active')}
+                                    >
+                                      <Play size={16} className="mr-1" /> DEMARRER
+                                    </Button>
+                                  );
+                                })()}
                                 
                                 {session.status === 'active' && (
                                   <Button 

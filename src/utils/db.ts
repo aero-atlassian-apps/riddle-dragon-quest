@@ -62,6 +62,7 @@ export const createSession = async (
     name: data.name,
     startTime: new Date(data.start_time),
     endTime: data.end_time ? new Date(data.end_time) : undefined,
+    createdAt: data.created_at ? new Date(data.created_at) : undefined,
     questions: [],
     status: data.status,
     context: data.context,
@@ -77,7 +78,7 @@ export const getSessions = async (): Promise<Session[]> => {
     .select(`
       *, 
       questions(*),
-      universes(name)
+      universes(name, status)
     `)
     .order('start_time', { ascending: false });
 
@@ -91,13 +92,15 @@ export const getSessions = async (): Promise<Session[]> => {
     name: session.name,
     startTime: new Date(session.start_time),
     endTime: session.end_time ? new Date(session.end_time) : undefined,
+    createdAt: session.created_at ? new Date(session.created_at) : undefined,
     questions: session.questions || [],
     status: session.status,
     context: session.context,
     hintEnabled: session.hint_enabled,
     sessionType: session.session_type || 'standalone',
     universeId: session.universe_id,
-    universeName: session.universes?.name
+    universeName: session.universes?.name,
+    universeStatus: session.universes?.status
   }));
 };
 
@@ -478,6 +481,23 @@ export const updateSessionStatus = async (sessionId: string, status: 'en attente
     return false;
   }
   
+  return true;
+};
+
+export const updateSessionName = async (sessionId: string, name: string): Promise<boolean> => {
+  const newName = name.trim();
+  if (!newName) return false;
+
+  const { error } = await supabase
+    .from('sessions')
+    .update({ name: newName })
+    .eq('id', sessionId);
+
+  if (error) {
+    console.error('Error updating session name:', error);
+    return false;
+  }
+
   return true;
 };
 

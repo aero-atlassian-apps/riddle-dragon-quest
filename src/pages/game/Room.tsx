@@ -50,6 +50,7 @@ const Room: React.FC = () => {
   const [newRoomName, setNewRoomName] = useState('');
   const [showQuestion, setShowQuestion] = useState(false);
   const [roomStartTime, setRoomStartTime] = useState<Date | null>(null);
+  const [sessionName, setSessionName] = useState<string | null>(null);
 
   const { openModal, closeModal } = useModal();
   const { gameState, setQuestion, submitAnswer, useToken, setTotalDoors: setGameTotalDoors, calculateFinalScore, goToNextDoor, setStartTime, syncTokensWithRoom } = useGame();
@@ -213,6 +214,13 @@ const Room: React.FC = () => {
                 setSessionStatus(null);
               }
               
+              // Set session name for display
+              if (session?.name) {
+                setSessionName(session.name);
+              } else {
+                setSessionName(null);
+              }
+
               // Set session context if available
               if (session?.context) {
                 setSessionContext(session.context);
@@ -375,6 +383,15 @@ const Room: React.FC = () => {
         <div className="absolute inset-0 bg-[url('/terminal-bg.png')] opacity-10" />
         <div className="absolute inset-0 bg-cover bg-center opacity-5" style={{ backgroundImage: `url('/emblems/${room?.name?.toLowerCase().replace(/\s+/g, '-')}.svg')` }} />
         <div className="relative z-10">
+          {sessionName && (
+            <div className="mb-2 p-3 bg-black/30 rounded-lg border border-amber-500/40">
+              <div className="text-center">
+                <span className="text-lg sm:text-xl lg:text-2xl font-bold font-medieval text-amber-400">
+                  {sessionName}
+                </span>
+              </div>
+            </div>
+          )}
           <div className="mb-4 p-3 bg-black/30 rounded-lg border border-green-500/20 flex items-center gap-4">
             <p className="text-xl text-green-400 font-medieval">{room?.sigil || 'Loading...'}</p>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold font-medieval text-green-400">{room?.name || ''}</h1>

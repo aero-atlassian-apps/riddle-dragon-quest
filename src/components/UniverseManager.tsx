@@ -278,7 +278,7 @@ const UniverseManager = forwardRef<UniverseManagerHandle>((props, ref) => {
               onDelete={handleDelete}
               onActivate={handleActivate}
               showActions={true}
-              variant="default"
+              variant={'default'}
             />
           ))}
         </div>
