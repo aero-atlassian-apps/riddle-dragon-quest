@@ -82,6 +82,7 @@ CREATE TABLE sessions (
     end_time TIMESTAMPTZ,
     session_type session_type DEFAULT 'standalone',
     universe_id UUID REFERENCES universes(id) ON DELETE CASCADE,
+    session_order INTEGER, -- Optional explicit ordering within a universe
     context TEXT, -- Additional context for the session
     hint_enabled BOOLEAN DEFAULT true,
     created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -340,6 +341,8 @@ DROP INDEX IF EXISTS idx_universe_theme_presets_category;
 CREATE INDEX idx_sessions_universe_id ON sessions(universe_id);
 CREATE INDEX idx_sessions_status ON sessions(status);
 CREATE INDEX idx_sessions_type ON sessions(session_type);
+-- Optional ordering index when session_order is used
+CREATE INDEX IF NOT EXISTS idx_sessions_universe_order ON sessions(universe_id, session_order);
 
 -- Rooms indexes
 CREATE INDEX idx_rooms_session_id ON rooms(session_id);

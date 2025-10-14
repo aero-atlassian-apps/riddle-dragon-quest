@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import DoorKeeper from '@/components/DoorKeeper';
 import { toast } from '@/components/ui/use-toast';
-import { getRoom, getSessionStatus, getSession, getMaxDoorNumber } from '@/utils/db';
+import { getRoom, getSessionStatus, getSession, getMaxDoorNumber, getNextRoomForTroupe } from '@/utils/db';
 import { supabase } from '@/integrations/supabase/client';
 import { Session, Room as RoomType } from '@/types/game';
 import { Button } from '@/components/ui/button';
@@ -51,6 +51,7 @@ const Room: React.FC = () => {
   const [showQuestion, setShowQuestion] = useState(false);
   const [roomStartTime, setRoomStartTime] = useState<Date | null>(null);
   const [sessionName, setSessionName] = useState<string | null>(null);
+  const [nextRoomId, setNextRoomId] = useState<string | null>(null);
 
   const { openModal, closeModal } = useModal();
   const { gameState, setQuestion, submitAnswer, useToken, setTotalDoors: setGameTotalDoors, calculateFinalScore, goToNextDoor, setStartTime, syncTokensWithRoom } = useGame();
@@ -290,6 +291,21 @@ const Room: React.FC = () => {
       if (room.currentDoor > totalDoors) {
         startConfetti();
         setShowConfetti(true);
+
+        // Compute next room for troupe within the same universe if applicable
+        (async () => {
+          try {
+            if (room.universeId && room.sessionId && room.troupeId) {
+              const nextId = await getNextRoomForTroupe(room.universeId, room.sessionId, room.troupeId);
+              setNextRoomId(nextId);
+            } else {
+              setNextRoomId(null);
+            }
+          } catch (e) {
+            console.warn('Failed to compute next room for troupe', e);
+            setNextRoomId(null);
+          }
+        })();
       }
     }
   }, [room, totalDoors, startConfetti]);
@@ -326,11 +342,14 @@ const Room: React.FC = () => {
                 sessionId: updatedRoom.session_id,
                 name: updatedRoom.name,
                 tokensLeft: updatedRoom.tokens_left,
+                initialTokens: updatedRoom.initial_tokens ?? updatedRoom.tokens_left,
                 currentDoor: updatedRoom.current_door,
                 score: updatedRoom.score,
                 sessionStatus: sessionStatus || null,
                 sigil: updatedRoom.sigil,
-                motto: updatedRoom.motto
+                motto: updatedRoom.motto,
+                universeId: updatedRoom.universe_id,
+                troupeId: updatedRoom.troupe_id
               });
             }
           })
@@ -468,11 +487,19 @@ const Room: React.FC = () => {
               <div className="relative z-10">
                 <h2 className="text-2xl sm:text-3xl font-bold text-amber-400 font-medieval mb-2">DÉFI TERMINÉ!</h2>
                 <p className="text-lg sm:text-xl text-amber-300 font-medieval mb-3">Félicitations, brave aventurier! Vous avez vaincu tous les gardiens et déverrouillé toutes les portes.</p>
-                <Link to="/leaderboard">
-                  <Button className="bg-amber-500 hover:bg-amber-600 text-black font-pixel px-4 sm:px-6 py-3 text-base sm:text-lg min-h-[48px] w-full sm:w-auto">
-                    VOIR LE MUR DES HÉROS
+                {nextRoomId ? (
+                  <Button
+                    className="bg-green-500 hover:bg-green-600 text-black font-pixel px-4 sm:px-6 py-3 text-base sm:text-lg min-h-[48px] w-full sm:w-auto"
+                    onClick={() => navigate(`/game/room/${nextRoomId}`)}
+                  >
+                    CHALLENGE SUIVANT
                   </Button>
-                </Link>
+                ) : (
+                  <div className="text-amber-300 font-medieval text-lg sm:text-xl">
+                    Épreuves terminées. Bravo !
+                    <div className="text-amber-200 text-sm mt-1">Le mur des héros sera affiché par l’admin à la fin.</div>
+                  </div>
+                )}
               </div>
             </div>
           )}

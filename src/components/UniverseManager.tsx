@@ -4,11 +4,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { createUniverse, updateUniverse } from "@/utils/db";
+import { createUniverse, updateUniverse, deleteUniverse } from "@/utils/db";
 import { PlusCircle, Edit, Trash2, Globe, Users, Trophy, Settings } from "lucide-react";
 import SimpleUniverseCreator from "./SimpleUniverseCreator";
 import SessionCreatorModal from "./SessionCreatorModal";
 import UniverseCard from "./UniverseCard";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Universe {
   id: string;
@@ -33,6 +43,7 @@ const UniverseManager = forwardRef<UniverseManagerHandle>((props, ref) => {
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false);
   const [selectedUniverseId, setSelectedUniverseId] = useState<string | null>(null);
   const [editingUniverse, setEditingUniverse] = useState<Universe | null>(null);
+  const [deleteUniverseId, setDeleteUniverseId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -149,27 +160,28 @@ const UniverseManager = forwardRef<UniverseManagerHandle>((props, ref) => {
     }
   };
 
-  const handleDelete = async (universeId: string) => {
-    const universe = universes.find(u => u.id === universeId);
-    if (!universe) return;
+  const handleDelete = (universeId: string) => {
+    setDeleteUniverseId(universeId);
+  };
 
-    if (!confirm(`Êtes-vous sûr de vouloir supprimer l'univers "${universe.name}" ?\n\nCette action supprimera également toutes les troupes et sessions associées de manière définitive.`)) {
-      return;
-    }
-
+  const confirmDeleteUniverse = async () => {
+    if (!deleteUniverseId) return;
+    const universe = universes.find(u => u.id === deleteUniverseId);
     try {
-      const { error } = await supabase
-        .from('universes')
-        .delete()
-        .eq('id', universeId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Succès",
-        description: `Univers "${universe.name}" supprimé avec succès`,
-      });
-      fetchUniverses();
+      const success = await deleteUniverse(deleteUniverseId);
+      if (success) {
+        toast({
+          title: "Succès",
+          description: universe ? `Univers "${universe.name}" supprimé avec succès` : "Univers supprimé avec succès",
+        });
+        await fetchUniverses();
+      } else {
+        toast({
+          title: "Erreur",
+          description: "Impossible de supprimer l'univers",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       console.error('Error deleting universe:', error);
       toast({
@@ -177,6 +189,8 @@ const UniverseManager = forwardRef<UniverseManagerHandle>((props, ref) => {
         description: "Impossible de supprimer l'univers",
         variant: "destructive",
       });
+    } finally {
+      setDeleteUniverseId(null);
     }
   };
 
@@ -283,6 +297,30 @@ const UniverseManager = forwardRef<UniverseManagerHandle>((props, ref) => {
           ))}
         </div>
       )}
+
+      {/* Styled delete confirmation matching session deletion */}
+      <AlertDialog open={!!deleteUniverseId} onOpenChange={() => setDeleteUniverseId(null)}>
+        <AlertDialogContent className="bg-black border-2 border-red-500">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-red-500 font-pixel">! ATTENTION !</AlertDialogTitle>
+            <AlertDialogDescription className="text-red-400 font-mono">
+              Cette action supprimera définitivement l'univers, toutes les troupes, sessions,
+              salles, questions et scores associés. Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-green-500 text-green-400 hover:bg-green-500/20">
+              ANNULER
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteUniverse}
+              className="bg-red-500 hover:bg-red-600 text-black font-pixel"
+            >
+              CONFIRMER_SUPPRESSION
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 });

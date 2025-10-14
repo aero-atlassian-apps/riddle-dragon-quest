@@ -44,6 +44,24 @@ export const createSession = async (
   // Add universe_id if provided
   if (universeId) {
     sessionData.universe_id = universeId;
+
+    // Try to set session_order automatically to next position within the universe
+    try {
+      const { data: lastOrderRow, error: orderError } = await supabase
+        .from('sessions')
+        .select('session_order')
+        .eq('universe_id', universeId)
+        .order('session_order', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (!orderError) {
+        const lastOrder = (lastOrderRow?.session_order as number | null) ?? 0;
+        sessionData.session_order = (lastOrder || 0) + 1;
+      }
+    } catch (e) {
+      console.warn('session_order not available; fallback to created_at ordering', e);
+    }
   }
 
   const { data, error } = await supabase
@@ -68,7 +86,9 @@ export const createSession = async (
     context: data.context,
     hintEnabled: data.hint_enabled,
     sessionType: data.session_type || 'standalone',
-    universeId: data.universe_id
+    universeId: data.universe_id,
+    // Optional, present if DB has session_order
+    sessionOrder: (data as any).session_order
   };
 };
 
@@ -157,7 +177,8 @@ export const getRoom = async (roomId: string): Promise<Room | null> => {
       sessionStatus: sessionStatus,
       sigil: data.sigil,
       motto: data.motto,
-      universeId: data.universe_id
+      universeId: data.universe_id,
+      troupeId: (data as any).troupe_id || undefined
     };
   } catch (err) {
     console.error('Unexpected error in getRoom function:', err);
@@ -944,4 +965,90 @@ export const insertGameScore = async (
 
   console.log('[SCORE DEBUG] Score record inserted successfully:', data);
   return true;
+};
+// =====================================================
+// UNIVERSE SESSION CHAINING HELPERS
+// =====================================================
+
+export const getUniverseSessionsOrdered = async (universeId: string): Promise<Session[]> => {
+  // Order strictly by creation time to match "first added is first"
+  // Use session_order only as a secondary key when present (nulls last)
+  const res = await supabase
+    .from('sessions')
+    .select('*')
+    .eq('universe_id', universeId)
+    .order('created_at', { ascending: true })
+    .order('session_order', { ascending: true });
+
+  const data = res.data || [];
+
+  return data.map(s => ({
+    id: s.id,
+    name: s.name,
+    startTime: s.start_time ? new Date(s.start_time) : new Date(),
+    endTime: s.end_time ? new Date(s.end_time) : undefined,
+    createdAt: s.created_at ? new Date(s.created_at) : undefined,
+    questions: [],
+    status: s.status,
+    context: s.context,
+    hintEnabled: s.hint_enabled,
+    sessionType: s.session_type || 'standalone',
+    universeId: s.universe_id,
+    universeName: undefined,
+    universeStatus: undefined,
+    sessionOrder: (s as any).session_order
+  }));
+};
+
+export const getNextSessionIdInUniverse = async (
+  universeId: string,
+  currentSessionId: string
+): Promise<string | null> => {
+  const sessions = await getUniverseSessionsOrdered(universeId);
+  const idx = sessions.findIndex(s => s.id === currentSessionId);
+  if (idx >= 0 && idx + 1 < sessions.length) {
+    return sessions[idx + 1].id;
+  }
+  return null;
+};
+
+export const getRoomBySessionAndTroupe = async (
+  sessionId: string,
+  troupeId: string
+): Promise<Room | null> => {
+  const { data, error } = await supabase
+    .from('rooms')
+    .select('*')
+    .eq('session_id', sessionId)
+    .eq('troupe_id', troupeId)
+    .single();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return {
+    id: data.id,
+    sessionId: data.session_id,
+    name: data.name,
+    tokensLeft: data.tokens_left,
+    initialTokens: data.initial_tokens || data.tokens_left,
+    currentDoor: data.current_door,
+    score: data.score,
+    sigil: data.sigil,
+    motto: data.motto,
+    universeId: data.universe_id,
+    troupeId: (data as any).troupe_id || undefined
+  };
+};
+
+export const getNextRoomForTroupe = async (
+  universeId: string,
+  currentSessionId: string,
+  troupeId: string
+): Promise<string | null> => {
+  const nextSessionId = await getNextSessionIdInUniverse(universeId, currentSessionId);
+  if (!nextSessionId) return null;
+  const nextRoom = await getRoomBySessionAndTroupe(nextSessionId, troupeId);
+  return nextRoom?.id || null;
 };

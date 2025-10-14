@@ -25,6 +25,7 @@ export interface Session {
   universeId?: string;
   universeName?: string;
   universeStatus?: 'draft' | 'active' | 'archived' | string;
+  sessionOrder?: number;
 }
 
 export interface Room {
@@ -43,6 +44,7 @@ export interface Room {
   completionTime?: Date;
   timeBonus?: number;
   universeId?: string;
+  troupeId?: string;
 }
 
 export interface Score {
