@@ -824,6 +824,21 @@ CREATE TRIGGER update_universe_troupes_updated_at BEFORE UPDATE ON universe_trou
 CREATE TRIGGER update_universe_theme_presets_updated_at BEFORE UPDATE ON universe_theme_presets
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+-- Preserve created_at for sessions on any update
+CREATE OR REPLACE FUNCTION preserve_created_at_sessions()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.created_at := OLD.created_at;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS preserve_sessions_created_at ON sessions;
+CREATE TRIGGER preserve_sessions_created_at
+    BEFORE UPDATE ON sessions
+    FOR EACH ROW
+    EXECUTE FUNCTION preserve_created_at_sessions();
+
 -- =====================================================
 -- 8. SAMPLE DATA (Optional - for testing)
 -- =====================================================

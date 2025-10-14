@@ -497,7 +497,7 @@ const Room: React.FC = () => {
                 ) : (
                   <div className="text-amber-300 font-medieval text-lg sm:text-xl">
                     Épreuves terminées. Bravo !
-                    <div className="text-amber-200 text-sm mt-1">Le mur des héros sera affiché par l’admin à la fin.</div>
+                    <div className="text-amber-200 text-sm mt-1">Restez à l’écoute pour découvrir si vous règnerez sur le royaume.</div>
                   </div>
                 )}
               </div>
