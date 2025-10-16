@@ -18,26 +18,24 @@ import {
   Edit, 
   Trash2, 
   Upload, 
-  Users, 
-  Settings,
-  BookOpen,
-  Home,
-  Play,
+  Crown, 
+  Swords,
+  Castle,
   Pause,
   Save,
   AlertCircle
 } from 'lucide-react';
 
 // Import existing components
-import SessionCreator from './SessionCreator';
+import ChallengeCreator from './ChallengeCreator';
 import RoomCreator from './RoomCreator';
 import TroupeCreator from './TroupeCreator';
 import QuestionUploader from './QuestionUploader';
 import QuestionManager from './QuestionManager';
 
 // Import utilities
-import { createUniverse, getSessions, getRoomsBySession, getSessionQuestions } from '@/utils/db';
-import { Universe, Session, Room, Question } from '@/types/game';
+import { createUniverse, getChallenges, getRoomsByChallenge, getChallengeQuestions } from '@/utils/db';
+import { Universe, Challenge, Room, Question } from '@/types/game';
 
 interface UniverseSetupWizardProps {
   isOpen: boolean;
@@ -50,13 +48,13 @@ interface SetupProgress {
   universeCreated: boolean;
   universeRoomsCreated: Room[];
   troupesCreated: any[];
-  sessionsCreated: Session[];
-  roomsCreated: { [sessionId: string]: Room[] };
-  questionsUploaded: { [sessionId: string]: Question[] };
-  imagesManaged: { [sessionId: string]: boolean };
+  challengesCreated: Challenge[];
+  roomsCreated: { [challengeId: string]: Room[] };
+  questionsUploaded: { [challengeId: string]: Question[] };
+  imagesManaged: { [challengeId: string]: boolean };
 }
 
-type SetupStep = 'universe' | 'troupes' | 'sessions' | 'finalize';
+type SetupStep = 'universe' | 'troupes' | 'challenges' | 'finalize';
 
 const UniverseSetupWizard: React.FC<UniverseSetupWizardProps> = ({
   isOpen,
@@ -69,7 +67,7 @@ const UniverseSetupWizard: React.FC<UniverseSetupWizardProps> = ({
     universeCreated: false,
     universeRoomsCreated: [],
     troupesCreated: [],
-    sessionsCreated: [],
+    challengesCreated: [],
     roomsCreated: {},
     questionsUploaded: {},
     imagesManaged: {}
@@ -84,7 +82,7 @@ const UniverseSetupWizard: React.FC<UniverseSetupWizardProps> = ({
   });
   
   const [currentUniverse, setCurrentUniverse] = useState<Universe | null>(null);
-  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [currentChallengeId, setCurrentChallengeId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [canProceed, setCanProceed] = useState(false);
   
@@ -108,26 +106,26 @@ const UniverseSetupWizard: React.FC<UniverseSetupWizardProps> = ({
   // Load existing progress for editing universe
   const loadExistingProgress = async (universeId: string) => {
     try {
-      const sessions = await getSessions();
-      const universeSessions = sessions.filter(s => s.universeId === universeId);
+      const challenges = await getChallenges();
+      const universeChallenges = challenges.filter(c => c.universeId === universeId);
       
-      const roomsData: { [sessionId: string]: Room[] } = {};
-      const questionsData: { [sessionId: string]: Question[] } = {};
-      const imagesData: { [sessionId: string]: boolean } = {};
+      const roomsData: { [challengeId: string]: Room[] } = {};
+      const questionsData: { [challengeId: string]: Question[] } = {};
+      const imagesData: { [challengeId: string]: boolean } = {};
       
-      for (const session of universeSessions) {
-        const rooms = await getRoomsBySession(session.id);
-        const questions = await getSessionQuestions(session.id);
+      for (const challenge of universeChallenges) {
+        const rooms = await getRoomsByChallenge(challenge.id);
+        const questions = await getChallengeQuestions(challenge.id);
         
-        roomsData[session.id] = rooms;
-        questionsData[session.id] = questions;
-        imagesData[session.id] = questions.every(q => q.image);
+        roomsData[challenge.id] = rooms;
+        questionsData[challenge.id] = questions;
+        imagesData[challenge.id] = questions.every(q => q.image);
       }
       
       setProgress({
         universeCreated: true,
         universeRoomsCreated: [],
-        sessionsCreated: universeSessions,
+        challengesCreated: universeChallenges,
         roomsCreated: roomsData,
         questionsUploaded: questionsData,
         imagesManaged: imagesData
@@ -144,7 +142,7 @@ const UniverseSetupWizard: React.FC<UniverseSetupWizardProps> = ({
     
     if (progress.universeCreated) completed++;
     if (progress.universeRoomsCreated.length > 0) completed++;
-    if (progress.sessionsCreated.length > 0) completed++;
+    if (progress.challengesCreated.length > 0) completed++;
     
     const hasQuestions = Object.keys(progress.questionsUploaded).length > 0;
     if (hasQuestions) completed++;
@@ -165,10 +163,10 @@ const UniverseSetupWizard: React.FC<UniverseSetupWizardProps> = ({
         return universeData.name.trim() !== '';
       case 'troupes':
         return progress.universeRoomsCreated.length > 0;
-      case 'sessions':
-        return progress.sessionsCreated.length > 0;
+      case 'challenges':
+        return progress.challengesCreated.length > 0;
       case 'finalize':
-        return progress.universeCreated && progress.universeRoomsCreated.length > 0 && progress.sessionsCreated.length > 0;
+        return progress.universeCreated && progress.universeRoomsCreated.length > 0 && progress.challengesCreated.length > 0;
       default:
         return false;
     }
@@ -205,7 +203,7 @@ const UniverseSetupWizard: React.FC<UniverseSetupWizardProps> = ({
           });
         }
       }
-      setCurrentStep('rooms');
+      setCurrentStep('troupes');
     } catch (error) {
       toast({
         title: "Erreur",
@@ -231,8 +229,8 @@ const UniverseSetupWizard: React.FC<UniverseSetupWizardProps> = ({
     }));
     
     toast({
-      title: "Salles créées",
-      description: `${roomNames.length} salles ont été créées pour l'univers`
+      title: "Arènes créées",
+      description: `${roomNames.length} arènes ont été créées pour l’univers`
     });
   };
 
@@ -281,32 +279,32 @@ const UniverseSetupWizard: React.FC<UniverseSetupWizardProps> = ({
     }
   }, [isOpen, editingUniverse]);
 
-  // Handle session creation
-  const handleSessionCreated = (session: Session) => {
+  // Handle challenge creation
+  const handleChallengeCreated = (challenge: Challenge) => {
     setProgress(prev => ({
       ...prev,
-      sessionsCreated: [...prev.sessionsCreated, session]
+      challengesCreated: [...prev.challengesCreated, challenge]
     }));
     
-    // Save progress after session creation
+    // Save progress after challenge creation
     saveProgressToStorage();
     
     toast({
-      title: "Session créée",
-      description: `La session "${session.name}" a été créée avec succès.`
+      title: "Challenge créé",
+      description: `Le challenge "${challenge.name}" a été créé avec succès.`
     });
   };
 
   // Handle room creation
-  const handleRoomsCreated = (sessionId: string, roomNames: string[]) => {
+  const handleRoomsCreated = (challengeId: string, roomNames: string[]) => {
     setProgress(prev => ({
       ...prev,
       roomsCreated: {
         ...prev.roomsCreated,
-        [sessionId]: roomNames.map((name, index) => ({
+        [challengeId]: roomNames.map((name, index) => ({
           id: `temp-${index}`,
           name,
-          sessionId,
+          challengeId,
           currentDoor: 1,
           score: 0,
           tokensLeft: 1,
@@ -318,18 +316,18 @@ const UniverseSetupWizard: React.FC<UniverseSetupWizardProps> = ({
     }));
     
     toast({
-      title: "Salles créées",
-      description: `${roomNames.length} salles ont été créées pour cette session`
+      title: "Arènes créées",
+      description: `${roomNames.length} arènes ont été créées pour ce challenge`
     });
   };
 
   // Handle questions upload
-  const handleQuestionsUploaded = (sessionId: string, questions: Question[]) => {
+  const handleQuestionsUploaded = (challengeId: string, questions: Question[]) => {
     setProgress(prev => ({
       ...prev,
       questionsUploaded: {
         ...prev.questionsUploaded,
-        [sessionId]: questions
+        [challengeId]: questions
       }
     }));
     
@@ -338,24 +336,24 @@ const UniverseSetupWizard: React.FC<UniverseSetupWizardProps> = ({
     
     toast({
       title: "Questions téléchargées",
-      description: `${questions.length} questions ont été ajoutées à la session`
+      description: `${questions.length} questions ont été ajoutées au challenge`
     });
   };
 
   // Handle images management completion
-  const handleImagesManaged = (sessionId: string) => {
+  const handleImagesManaged = (challengeId: string) => {
     setProgress(prev => ({
       ...prev,
       imagesManaged: {
         ...prev.imagesManaged,
-        [sessionId]: true
+        [challengeId]: true
       }
     }));
     // Persist progress and inform the user
     saveProgressToStorage();
     toast({
       title: "Images ajoutées",
-      description: "Les images des questions de la session ont été gérées",
+      description: "Les images des questions du challenge ont été gérées",
     });
   };
 
@@ -365,7 +363,7 @@ const UniverseSetupWizard: React.FC<UniverseSetupWizardProps> = ({
   };
 
   const nextStep = () => {
-    const steps: SetupStep[] = ['universe', 'troupes', 'sessions', 'finalize'];
+    const steps: SetupStep[] = ['universe', 'troupes', 'challenges', 'finalize'];
     const currentIndex = steps.indexOf(currentStep);
     if (currentIndex < steps.length - 1) {
       setCurrentStep(steps[currentIndex + 1]);
@@ -373,7 +371,7 @@ const UniverseSetupWizard: React.FC<UniverseSetupWizardProps> = ({
   };
 
   const prevStep = () => {
-    const steps: SetupStep[] = ['universe', 'troupes', 'sessions', 'finalize'];
+    const steps: SetupStep[] = ['universe', 'troupes', 'challenges', 'finalize'];
     const currentIndex = steps.indexOf(currentStep);
     if (currentIndex > 0) {
       setCurrentStep(steps[currentIndex - 1]);
@@ -542,15 +540,15 @@ const UniverseSetupWizard: React.FC<UniverseSetupWizardProps> = ({
           </div>
         );
         
-      case 'sessions':
+      case 'challenges':
         return (
           <div className="space-y-6">
             <div>
               <h3 className="text-xl font-bold mb-4 text-green-400 font-pixel">
-                $ CREATION_SESSIONS_ET_QUESTIONS
+                $ CREATION_CHALLENGES_ET_QUESTIONS
               </h3>
               <p className="text-green-400/70 mb-6 font-mono">
-                Créez des sessions et téléchargez leurs questions.
+                Créez des challenges et téléchargez leurs questions.
               </p>
             </div>
             
@@ -567,23 +565,23 @@ const UniverseSetupWizard: React.FC<UniverseSetupWizardProps> = ({
               </div>
             )}
             
-            {progress.sessionsCreated.length > 0 && (
+            {progress.challengesCreated.length > 0 && (
               <div className="mb-6">
-                <h4 className="font-mono text-green-400 mb-3">$ SESSIONS_EXISTANTES:</h4>
+                <h4 className="font-mono text-green-400 mb-3">$ CHALLENGES_EXISTANTS:</h4>
                 <div className="space-y-2">
-                  {progress.sessionsCreated.map((session) => (
-                    <div key={session.id} className="flex items-center justify-between p-3 border border-green-500/30 rounded bg-black/30">
+                  {progress.challengesCreated.map((challenge) => (
+                    <div key={challenge.id} className="flex items-center justify-between p-3 border border-green-500/30 rounded bg-black/30">
                       <div>
-                        <span className="font-mono text-green-400">{session.name}</span>
-                        {session.context && (
-                          <p className="text-sm text-green-400/70">{session.context}</p>
+                        <span className="font-mono text-green-400">{challenge.name}</span>
+                        {challenge.context && (
+                          <p className="text-sm text-green-400/70">{challenge.context}</p>
                         )}
                       </div>
                       <div className="flex items-center space-x-2">
                         <Badge variant="outline" className="border-green-500/50 text-green-400">
-                          {session.status}
+                          {challenge.status}
                         </Badge>
-                        {progress.questionsUploaded[session.id] && (
+                        {progress.questionsUploaded[challenge.id] && (
                           <Badge variant="outline" className="border-blue-500/50 text-blue-400">
                             Questions
                           </Badge>
@@ -595,35 +593,35 @@ const UniverseSetupWizard: React.FC<UniverseSetupWizardProps> = ({
               </div>
             )}
             
-            <SessionCreator 
-              onCreateSession={handleSessionCreated} 
+            <ChallengeCreator 
+              onCreateChallenge={handleChallengeCreated} 
               universeId={currentUniverse?.id}
             />
             
-            {progress.sessionsCreated.length > 0 && (
+            {progress.challengesCreated.length > 0 && (
               <div className="mt-8 space-y-4">
                 <h4 className="text-lg font-bold text-green-400 font-mono">$ TELECHARGEMENT_QUESTIONS</h4>
                 <p className="text-green-400/70 font-mono text-sm">
-                  Téléchargez les questions pour chaque session créée.
+                  Téléchargez les questions pour chaque challenge créé.
                 </p>
                 
-                <Tabs defaultValue={progress.sessionsCreated[0]?.id} className="w-full">
+                <Tabs defaultValue={progress.challengesCreated[0]?.id} className="w-full">
                   <TabsList className="grid w-full grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                    {progress.sessionsCreated.map((session) => (
-                      <TabsTrigger key={session.id} value={session.id} className="font-mono">
-                        {session.name}
-                        {progress.questionsUploaded[session.id] && (
+                    {progress.challengesCreated.map((challenge) => (
+                      <TabsTrigger key={challenge.id} value={challenge.id} className="font-mono">
+                        {challenge.name}
+                        {progress.questionsUploaded[challenge.id] && (
                           <Check className="ml-2 h-4 w-4 text-green-400" />
                         )}
                       </TabsTrigger>
                     ))}
                   </TabsList>
                   
-                  {progress.sessionsCreated.map((session) => (
-                    <TabsContent key={session.id} value={session.id}>
+                  {progress.challengesCreated.map((challenge) => (
+                    <TabsContent key={challenge.id} value={challenge.id}>
                       <QuestionUploader
-                        sessionId={session.id}
-                        onUpload={(questions) => handleQuestionsUploaded(session.id, questions)}
+                        challengeId={challenge.id}
+                        onUpload={(questions) => handleQuestionsUploaded(challenge.id, questions)}
                         universeContext={true}
                       />
                     </TabsContent>
@@ -632,31 +630,31 @@ const UniverseSetupWizard: React.FC<UniverseSetupWizardProps> = ({
               </div>
             )}
 
-            {progress.sessionsCreated.length > 0 && (
+            {progress.challengesCreated.length > 0 && (
               <div className="mt-8 space-y-4">
                 <h4 className="text-lg font-bold text-green-400 font-mono">$ GESTION_IMAGES_QUESTIONS</h4>
                 <p className="text-green-400/70 font-mono text-sm">
-                  Après le téléchargement, ajoutez des images à chaque question des sessions.
+                  Après le téléchargement, ajoutez des images à chaque question des challenges.
                 </p>
 
-                <Tabs defaultValue={progress.sessionsCreated[0]?.id} className="w-full">
+                <Tabs defaultValue={progress.challengesCreated[0]?.id} className="w-full">
                   <TabsList className="grid w-full grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                    {progress.sessionsCreated.map((session) => (
-                      <TabsTrigger key={session.id} value={session.id} className="font-mono">
-                        {session.name}
-                        {progress.imagesManaged[session.id] && (
+                    {progress.challengesCreated.map((challenge) => (
+                      <TabsTrigger key={challenge.id} value={challenge.id} className="font-mono">
+                        {challenge.name}
+                        {progress.imagesManaged[challenge.id] && (
                           <Check className="ml-2 h-4 w-4 text-green-400" />
                         )}
                       </TabsTrigger>
                     ))}
                   </TabsList>
 
-                  {progress.sessionsCreated.map((session) => (
-                    <TabsContent key={session.id} value={session.id}>
+                  {progress.challengesCreated.map((challenge) => (
+                    <TabsContent key={challenge.id} value={challenge.id}>
                       <div className="border border-green-500/30 rounded p-4 bg-black/30">
                         <QuestionManager
-                          sessionId={session.id}
-                          onComplete={() => handleImagesManaged(session.id)}
+                          challengeId={challenge.id}
+                          onComplete={() => handleImagesManaged(challenge.id)}
                         />
                       </div>
                     </TabsContent>
@@ -684,7 +682,7 @@ const UniverseSetupWizard: React.FC<UniverseSetupWizardProps> = ({
               <Card className="bg-black/50 border-green-500/50">
                 <CardHeader>
                   <CardTitle className="text-green-400 font-pixel flex items-center">
-                    <Home className="mr-2 h-5 w-5" />
+                    <Castle className="mr-2 h-5 w-5" />
                     UNIVERS
                   </CardTitle>
                 </CardHeader>
@@ -702,7 +700,7 @@ const UniverseSetupWizard: React.FC<UniverseSetupWizardProps> = ({
               <Card className="bg-black/50 border-green-500/50">
                 <CardHeader>
                   <CardTitle className="text-green-400 font-pixel flex items-center">
-                    <Users className="mr-2 h-5 w-5" />
+                    <Crown className="mr-2 h-5 w-5" />
                     TROUPES ({progress.troupesCreated.length})
                   </CardTitle>
                 </CardHeader>
@@ -724,25 +722,25 @@ const UniverseSetupWizard: React.FC<UniverseSetupWizardProps> = ({
                 </CardContent>
               </Card>
               
-              {/* Sessions Summary */}
+              {/* Challenges Summary */}
               <Card className="bg-black/50 border-green-500/50">
                 <CardHeader>
                   <CardTitle className="text-green-400 font-pixel flex items-center">
-                    <Play className="mr-2 h-5 w-5" />
-                    SESSIONS ({progress.sessionsCreated.length})
+                    <Swords className="mr-2 h-5 w-5" />
+                    CHALLENGES ({progress.challengesCreated.length})
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {progress.sessionsCreated.length === 0 ? (
-                    <p className="text-amber-400 font-mono">Aucune session créée</p>
+                  {progress.challengesCreated.length === 0 ? (
+                    <p className="text-amber-400 font-mono">Aucun challenge créé</p>
                   ) : (
                     <div className="space-y-2">
-                      {progress.sessionsCreated.map((session) => (
-                        <div key={session.id} className="p-2 border border-green-500/30 rounded">
-                          <p className="text-green-400 font-mono font-bold">{session.name}</p>
+                      {progress.challengesCreated.map((challenge) => (
+                        <div key={challenge.id} className="p-2 border border-green-500/30 rounded">
+                          <p className="text-green-400 font-mono font-bold">{challenge.name}</p>
                           <div className="text-sm text-green-400/70 font-mono">
-                            <p>Questions: {progress.questionsUploaded[session.id]?.length || 0}</p>
-                            <p>Statut: {progress.questionsUploaded[session.id] ? 'Prêt' : 'En attente de questions'}</p>
+                            <p>Questions: {progress.questionsUploaded[challenge.id]?.length || 0}</p>
+                            <p>Statut: {progress.questionsUploaded[challenge.id] ? 'Prêt' : 'En attente de questions'}</p>
                           </div>
                         </div>
                       ))}
@@ -817,9 +815,9 @@ const UniverseSetupWizard: React.FC<UniverseSetupWizardProps> = ({
           {/* Step Navigation */}
           <div className="flex flex-wrap gap-2 justify-center">
             {[
-              { key: 'universe', label: 'UNIVERS', icon: Home },
-              { key: 'troupes', label: 'TROUPES', icon: Users },
-              { key: 'sessions', label: 'SESSIONS', icon: Settings },
+              { key: 'universe', label: 'UNIVERS', icon: Castle },
+              { key: 'troupes', label: 'TROUPES', icon: Crown },
+              { key: 'challenges', label: 'CHALLENGES', icon: Swords },
               { key: 'finalize', label: 'FINALISER', icon: Check }
             ].map(({ key, label, icon: Icon }) => (
               <Button

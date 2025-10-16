@@ -3,29 +3,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
-import { Users, Trophy, Clock, Star, Plus, BookOpen, Trash2, CheckCircle } from "lucide-react";
+import { Crown, Trophy, Clock, Star, Plus, Swords, Trash2, CheckCircle } from "lucide-react";
+import { Universe } from "@/types/game";
 
-interface Universe {
-  id: string;
-  name: string;
-  description: string;
-  status: 'draft' | 'active' | 'archived';
-  created_at: string;
-  updated_at: string;
-  troupe_count?: number;
-  session_count?: number;
-  theme?: {
-    name: string;
-    primary_color: string;
-    background_image?: string;
-  };
-}
+// Use shared Universe type from types/game (includes challenge_count)
 
 interface UniverseCardProps {
   universe: Universe;
   onView?: (universeId: string) => void;
   onDelete?: (universeId: string) => void;
-  onAddSession?: (universeId: string) => void;
+  onAddChallenge?: (universeId: string) => void;
   onActivate?: (universeId: string) => void;
   showActions?: boolean;
   variant?: 'default' | 'compact' | 'featured';
@@ -35,7 +22,7 @@ const UniverseCard: React.FC<UniverseCardProps> = ({
   universe,
   onView,
   onDelete,
-  onAddSession,
+  onAddChallenge,
   onActivate,
   showActions = true,
   variant = 'default'
@@ -75,12 +62,12 @@ const UniverseCard: React.FC<UniverseCardProps> = ({
 
   const getParticipantInfo = () => {
     const troupeCount = universe.troupe_count || 0;
-    const sessionCount = universe.session_count || 0;
+    const challengeCount = universe.challenge_count || 0;
     
     return {
       troupeCount,
-      sessionCount,
-      canAddSessions: universe.status === 'draft'
+      challengeCount,
+      canAddChallenges: universe.status === 'draft'
     };
   };
 
@@ -111,12 +98,12 @@ const UniverseCard: React.FC<UniverseCardProps> = ({
               </CardDescription>
               <div className="flex items-center gap-4 mt-2 text-sm text-green-400 font-pixel">
                 <div className="flex items-center gap-1">
-                  <Users size={16} />
+                  <Crown size={16} />
                   <span>{participantInfo.troupeCount} troupes</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <BookOpen size={16} />
-                  <span>{participantInfo.sessionCount} sessions</span>
+                  <Swords size={16} />
+                  <span>{participantInfo.challengeCount} challenges</span>
                 </div>
               </div>
             </div>
@@ -137,19 +124,19 @@ const UniverseCard: React.FC<UniverseCardProps> = ({
                     <TooltipContent>Activer</TooltipContent>
                   </Tooltip>
                 )}
-                {showActions && universe.status === 'draft' && participantInfo.canAddSessions && (
+                {showActions && universe.status === 'draft' && participantInfo.canAddChallenges && (
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
                         size="sm"
                         variant="outline"
                         className="border-blue-500 text-blue-400 hover:bg-blue-500/20 h-8 w-8 p-0"
-                        onClick={() => onAddSession?.(universe.id)}
+                        onClick={() => onAddChallenge?.(universe.id)}
                       >
                         <Plus className="h-3 w-3" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Ajouter session</TooltipContent>
+                    <TooltipContent>Ajouter challenge</TooltipContent>
                   </Tooltip>
                 )}
                 {onDelete && (
@@ -227,12 +214,12 @@ const UniverseCard: React.FC<UniverseCardProps> = ({
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-4 text-sm text-green-400 font-pixel">
                 <div className="flex items-center gap-1">
-                  <Users size={16} />
+              <Crown size={16} />
                   <span>{participantInfo.troupeCount} troupes</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <BookOpen size={16} />
-                  <span>{participantInfo.sessionCount} sessions</span>
+                  <Swords size={16} />
+                  <span>{participantInfo.challengeCount} challenges</span>
                 </div>
               </div>
               
@@ -294,19 +281,19 @@ const UniverseCard: React.FC<UniverseCardProps> = ({
                     <TooltipContent>Activer</TooltipContent>
                   </Tooltip>
                 )}
-                {showActions && universe.status === 'draft' && participantInfo.canAddSessions && (
+                {showActions && universe.status === 'draft' && participantInfo.canAddChallenges && (
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
                         size="sm"
                         variant="outline"
                         className="border-blue-500 text-blue-400 hover:bg-blue-500/20 h-8 w-8 p-0"
-                        onClick={() => onAddSession?.(universe.id)}
+                        onClick={() => onAddChallenge?.(universe.id)}
                       >
                         <Plus className="h-3 w-3" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Ajouter session</TooltipContent>
+                    <TooltipContent>Ajouter challenge</TooltipContent>
                   </Tooltip>
                 )}
                 {/* Consult (view) icon removed per request */}
@@ -338,12 +325,12 @@ const UniverseCard: React.FC<UniverseCardProps> = ({
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-4 text-sm text-green-400 font-pixel">
               <div className="flex items-center gap-1">
-                <Users size={16} />
+                <Crown size={16} />
                 <span>{participantInfo.troupeCount} troupes</span>
               </div>
               <div className="flex items-center gap-1">
-                <BookOpen size={16} />
-                <span>{participantInfo.sessionCount} sessions</span>
+                <Swords size={16} />
+                <span>{participantInfo.challengeCount} challenges</span>
               </div>
             </div>
             

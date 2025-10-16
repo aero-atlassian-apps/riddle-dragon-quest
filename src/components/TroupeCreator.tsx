@@ -7,14 +7,20 @@ import { useToast } from '@/components/ui/use-toast';
 
 const DEFAULT_TROUPES = [
   { name: "Stark", sigil: "🐺", motto: "Winter is Coming" },
-  { name: "Lannister", sigil: "🦁", motto: "Hear Me Roar" },
+  { name: "Lannister", sigil: "🦁", motto: "Hear Me Roar!" },
   { name: "Targaryen", sigil: "🐉", motto: "Fire and Blood" },
   { name: "Baratheon", sigil: "🦌", motto: "Ours is the Fury" },
   { name: "Greyjoy", sigil: "🦑", motto: "We Do Not Sow" },
   { name: "Tyrell", sigil: "🌹", motto: "Growing Strong" },
   { name: "Martell", sigil: "🌞", motto: "Unbowed, Unbent, Unbroken" },
+  { name: "Bolton", sigil: "🩸", motto: "Our Blades Are Sharp" },
   { name: "Tully", sigil: "🐟", motto: "Family, Duty, Honor" },
-  { name: "Arryn", sigil: "🦅", motto: "As High as Honor" }
+  { name: "Arryn", sigil: "🦅", motto: "As High as Honor" },
+  { name: "Mormont", sigil: "🐻", motto: "Here We Stand" },
+  { name: "Tarly", sigil: "🏹", motto: "First in Battle" },
+  { name: "Hightower", sigil: "🗼", motto: "We Light the Way" },
+  { name: "Mallister", sigil: "🦅", motto: "Above the Rest" },
+  { name: "Florent", sigil: "🦊", motto: "Proud and Free" }
 ];
 
 interface Troupe {
@@ -48,7 +54,7 @@ const TroupeCreator: React.FC<TroupeCreatorProps> = ({
   const { toast } = useToast();
 
   const incrementTroupes = () => {
-    if (numberOfTroupes < 10) {
+    if (numberOfTroupes < 15) {
       setNumberOfTroupes(prev => prev + 1);
     }
   };
@@ -60,7 +66,7 @@ const TroupeCreator: React.FC<TroupeCreatorProps> = ({
   };
 
   const incrementTokens = () => {
-    if (tokensPerTroupe < 10) {
+    if (tokensPerTroupe < 15) {
       setTokensPerTroupe(prev => prev + 1);
     }
   };
@@ -205,7 +211,7 @@ const TroupeCreator: React.FC<TroupeCreatorProps> = ({
                 <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
                   <div className="space-y-4">
                     <Label className="mb-2 block text-base md:text-lg font-mono text-green-400 text-center">
-                      $ NOMBRE_DE_TROUPES (2-10):
+                      $ NOMBRE_DE_TROUPES (2-15):
                     </Label>
                     
                     <div className="flex items-center justify-center space-x-4 md:space-x-6">
@@ -227,7 +233,7 @@ const TroupeCreator: React.FC<TroupeCreatorProps> = ({
                       <Button
                         type="button"
                         onClick={incrementTroupes}
-                        disabled={numberOfTroupes >= 10}
+                        disabled={numberOfTroupes >= 15}
                         className="bg-green-600 hover:bg-green-700 text-white font-pixel h-8 w-8 p-0"
                       >
                         <Plus className="h-3 w-3" />
@@ -237,7 +243,7 @@ const TroupeCreator: React.FC<TroupeCreatorProps> = ({
                     {hintEnabled && (
                       <div className="space-y-3">
                         <Label className="mb-2 block text-base md:text-lg font-mono text-green-400 text-center">
-                          $ JETONS_PAR_TROUPE (0-10):
+                          $ JETONS_PAR_TROUPE (0-15):
                         </Label>
                         
                         <div className="flex items-center justify-center space-x-4 md:space-x-6">
@@ -259,7 +265,7 @@ const TroupeCreator: React.FC<TroupeCreatorProps> = ({
                           <Button
                             type="button"
                             onClick={incrementTokens}
-                            disabled={tokensPerTroupe >= 10}
+                            disabled={tokensPerTroupe >= 15}
                             className="bg-green-600 hover:bg-green-700 text-white font-pixel h-8 w-8 p-0"
                           >
                             <Plus className="h-3 w-3" />
@@ -383,7 +389,7 @@ const TroupeCreator: React.FC<TroupeCreatorProps> = ({
               )}
               
               <div className="mt-4 border-t border-green-500/30 pt-4 text-xs md:text-sm text-center text-green-400/70 font-mono">
-                <p>$ Chaque troupe générera automatiquement des salles lors de la création des sessions_</p>
+                <p>$ Chaque troupe générera automatiquement des arènes lors de la création des challenges_</p>
               </div>
             </div>
           </div>

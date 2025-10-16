@@ -3,9 +3,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import DoorKeeper from '@/components/DoorKeeper';
 import { toast } from '@/components/ui/use-toast';
-import { getRoom, getSessionStatus, getSession, getMaxDoorNumber, getNextRoomForTroupe } from '@/utils/db';
+import { getRoom, getChallengeStatus, getChallenge, getMaxDoorNumberForChallenge, getNextRoomForTroupeByChallenge, updateRoomTroupeStartTime } from '@/utils/db';
 import { supabase } from '@/integrations/supabase/client';
-import { Session, Room as RoomType } from '@/types/game';
+import { Room as RoomType } from '@/types/game';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from 'react-router-dom';
@@ -23,6 +23,7 @@ import { useGameStore } from '@/store/gameStore';
 import { Confetti } from '@/components/Confetti';
 import RiddleQuestion from '@/components/RiddleQuestion';
 import { useGame } from '@/context/GameContext';
+import ChallengeTimer from '@/components/ChallengeTimer';
 
 const Room: React.FC = () => {
   const navigate = useNavigate();
@@ -33,13 +34,13 @@ const Room: React.FC = () => {
   const roomId = params.roomId || roomIdFromQuery; // Getting roomId from either params or query
 
   const [room, setRoom] = useState<RoomType | null>(null);
-  const [sessionStatus, setSessionStatus] = useState<string | null>(null);
-  const [sessionContext, setSessionContext] = useState<string | null>(null);
-  const [sessionHintEnabled, setSessionHintEnabled] = useState<boolean>(true);
+  const [challengeStatus, setChallengeStatus] = useState<string | null>(null);
+  const [challengeContext, setChallengeContext] = useState<string | null>(null);
+  const [challengeHintEnabled, setChallengeHintEnabled] = useState<boolean>(true);
   const [totalDoors, setTotalDoors] = useState<number>(6);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSessionActive, setIsSessionActive] = useState(false);
-  const [isSessionCompleted, setIsSessionCompleted] = useState(false);
+  const [isChallengeActive, setIsChallengeActive] = useState(false);
+  const [isChallengeCompleted, setIsChallengeCompleted] = useState(false);
   const [doorStates, setDoorStates] = useState<boolean[]>([false, false, false]);
   const [showConfetti, setShowConfetti] = useState(false);
   const [isGeneratingRoom, setIsGeneratingRoom] = useState(false);
@@ -50,7 +51,7 @@ const Room: React.FC = () => {
   const [newRoomName, setNewRoomName] = useState('');
   const [showQuestion, setShowQuestion] = useState(false);
   const [roomStartTime, setRoomStartTime] = useState<Date | null>(null);
-  const [sessionName, setSessionName] = useState<string | null>(null);
+  const [challengeName, setChallengeName] = useState<string | null>(null);
   const [nextRoomId, setNextRoomId] = useState<string | null>(null);
 
   const { openModal, closeModal } = useModal();
@@ -77,10 +78,10 @@ const Room: React.FC = () => {
   };
 
   const handleCreateRoom = async () => {
-    if (!room?.sessionId) {
+    if (!room?.challengeId) {
       toast({
         title: "Error",
-        description: "Session ID is missing. Cannot create a new room without a session.",
+        description: "Challenge ID is missing. Cannot create a new room without a challenge.",
         variant: "destructive",
       });
       return;
@@ -106,7 +107,7 @@ const Room: React.FC = () => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            sessionId: room.sessionId,
+            challengeId: room.challengeId,
             roomName: newRoomName,
             roomId: newRoomId,
             tokensLeft: 1,
@@ -178,12 +179,44 @@ const Room: React.FC = () => {
             setRoom(currentRoom);
             setStoreRoomId(currentRoom.id);
             
-            // Initialize room-specific start time if this is the beginning of the game
-            if (currentRoom.currentDoor === 1 && !roomStartTime) {
+            // Check challenge status before initializing troupe start time
+            let challengeStatus = null;
+            if (currentRoom.challengeId) {
+              challengeStatus = await getChallengeStatus(currentRoom.challengeId);
+            }
+            
+            // Initialize troupe-specific start time only if challenge is active and this is the beginning of the game and not already set
+            if (currentRoom.currentDoor === 1 && !currentRoom.troupeStartTime && challengeStatus === 'active') {
               const now = new Date();
-              console.log('Initializing room start time for room:', currentRoom.id);
+              console.log('Initializing troupe start time for room:', currentRoom.id, '(challenge is active)');
+              
+              // Update the database with troupe start time
+              const updateSuccess = await updateRoomTroupeStartTime(currentRoom.id);
+              if (updateSuccess) {
+                // Update local room state with the new troupe start time
+                setRoom(prev => prev ? {
+                  ...prev,
+                  troupeStartTime: now
+                } : null);
+                console.log('Troupe start time set successfully in database');
+              } else {
+                console.error('Failed to set troupe start time in database');
+              }
+              
+              // Set local room start time for UI display
               setRoomStartTime(now);
               // Also set the shared game start time for backward compatibility
+              setStartTime(now);
+            } else if (currentRoom.troupeStartTime) {
+              // Use existing troupe start time from database
+              console.log('Using existing troupe start time from database:', currentRoom.troupeStartTime);
+              setRoomStartTime(currentRoom.troupeStartTime);
+              setStartTime(currentRoom.troupeStartTime);
+            } else if (currentRoom.currentDoor === 1 && !roomStartTime) {
+              // Fallback for rooms without troupe timing (backward compatibility)
+              const now = new Date();
+              console.log('Fallback: Initializing room start time for room:', currentRoom.id);
+              setRoomStartTime(now);
               setStartTime(now);
             }
 
@@ -194,11 +227,11 @@ const Room: React.FC = () => {
             console.log('Room initial tokens from database:', roomInitialTokens, '(tokens left:', currentRoom.tokensLeft, ')');
             syncTokensWithRoom(currentRoom.tokensLeft, roomInitialTokens);
 
-            if (currentRoom.sessionId) {
-              const [status, session, maxDoorNumber] = await Promise.all([
-                getSessionStatus(currentRoom.sessionId),
-                getSession(currentRoom.sessionId),
-                getMaxDoorNumber(currentRoom.sessionId)
+            if (currentRoom.challengeId) {
+              const [status, challenge, maxDoorNumber] = await Promise.all([
+                getChallengeStatus(currentRoom.challengeId),
+                getChallenge(currentRoom.challengeId),
+                getMaxDoorNumberForChallenge(currentRoom.challengeId)
               ]);
               
               // Set dynamic total doors
@@ -206,37 +239,37 @@ const Room: React.FC = () => {
               setGameTotalDoors(maxDoorNumber);
               console.log('Total doors set to:', maxDoorNumber);
               
-              // Only set the session status if we got a valid response
+              // Only set the challenge status if we got a valid response
               if (status) {
-                setSessionStatus(status);
-                console.log('Session status set to:', status);
+                setChallengeStatus(status);
+                console.log('Challenge status set to:', status);
               } else {
-                console.warn("Invalid session status received");
-                setSessionStatus(null);
+                console.warn("Invalid challenge status received");
+                setChallengeStatus(null);
               }
               
-              // Set session name for display
-              if (session?.name) {
-                setSessionName(session.name);
+              // Set challenge name for display
+              if (challenge?.name) {
+                setChallengeName(challenge.name);
               } else {
-                setSessionName(null);
+                setChallengeName(null);
               }
 
-              // Set session context if available
-              if (session?.context) {
-                setSessionContext(session.context);
-                console.log('Session context set to:', session.context);
+              // Set challenge context if available
+              if (challenge?.context) {
+                setChallengeContext(challenge.context);
+                console.log('Challenge context set to:', challenge.context);
               } else {
-                setSessionContext(null);
+                setChallengeContext(null);
               }
               
-              // Set session hint enabled setting
-              setSessionHintEnabled(session?.hintEnabled ?? true);
-              console.log('Session hint enabled set to:', session?.hintEnabled ?? true);
+              // Set challenge hint enabled setting
+              setChallengeHintEnabled(challenge?.hintEnabled ?? true);
+              console.log('Challenge hint enabled set to:', challenge?.hintEnabled ?? true);
             } else {
-              console.warn("Room does not have a session ID.");
-              setSessionStatus(null);
-              setSessionContext(null);
+              console.warn("Room does not have a challenge ID.");
+              setChallengeStatus(null);
+              setChallengeContext(null);
             }
           } else {
             console.error("La troupe n'existe plus");
@@ -267,14 +300,14 @@ const Room: React.FC = () => {
   }, [roomId, navigate, setStoreRoomId]);
 
   useEffect(() => {
-    if (sessionStatus) {
-      setIsSessionActive(sessionStatus === "active");
-      setIsSessionCompleted(sessionStatus === "terminée");
+    if (challengeStatus) {
+      setIsChallengeActive(challengeStatus === "active");
+      setIsChallengeCompleted(challengeStatus === "terminée");
     } else {
-      setIsSessionActive(false);
-      setIsSessionCompleted(false);
+      setIsChallengeActive(false);
+      setIsChallengeCompleted(false);
     }
-  }, [sessionStatus]);
+  }, [challengeStatus]);
 
   useEffect(() => {
     if (room) {
@@ -295,8 +328,8 @@ const Room: React.FC = () => {
         // Compute next room for troupe within the same universe if applicable
         (async () => {
           try {
-            if (room.universeId && room.sessionId && room.troupeId) {
-              const nextId = await getNextRoomForTroupe(room.universeId, room.sessionId, room.troupeId);
+            if (room.universeId && room.challengeId && room.troupeId) {
+              const nextId = await getNextRoomForTroupeByChallenge(room.universeId, room.challengeId, room.troupeId);
               setNextRoomId(nextId);
             } else {
               setNextRoomId(null);
@@ -311,7 +344,7 @@ const Room: React.FC = () => {
   }, [room, totalDoors, startConfetti]);
 
   useEffect(() => {
-    if (isSessionCompleted) {
+    if (isChallengeCompleted) {
       startConfetti();
       setShowConfetti(true);
     } else {
@@ -323,11 +356,11 @@ const Room: React.FC = () => {
       stopConfetti();
       setShowConfetti(false);
     };
-  }, [isSessionCompleted, stopConfetti, startConfetti]);
+  }, [isChallengeCompleted, stopConfetti, startConfetti]);
 
   useEffect(() => {
     let roomChannel: any;
-    let sessionChannel: any;
+    let challengeChannel: any;
 
     if (roomId && isDirectlyNavigated) {
       roomChannel = supabase
@@ -339,13 +372,13 @@ const Room: React.FC = () => {
               const updatedRoom = payload.new as any;
               setRoom({
                 id: updatedRoom.id,
-                sessionId: updatedRoom.session_id,
+                challengeId: (updatedRoom as any).challenge_id,
                 name: updatedRoom.name,
                 tokensLeft: updatedRoom.tokens_left,
                 initialTokens: updatedRoom.initial_tokens ?? updatedRoom.tokens_left,
                 currentDoor: updatedRoom.current_door,
                 score: updatedRoom.score,
-                sessionStatus: sessionStatus || null,
+                challengeStatus: challengeStatus || null,
                 sigil: updatedRoom.sigil,
                 motto: updatedRoom.motto,
                 universeId: updatedRoom.universe_id,
@@ -355,13 +388,13 @@ const Room: React.FC = () => {
           })
         .subscribe();
 
-      sessionChannel = supabase
-        .channel('session-status-subscription')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' },
+      challengeChannel = supabase
+        .channel('challenge-status-subscription')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'challenges' },
           (payload) => {
-            console.log('Session status changed!', payload);
-            if (room?.sessionId && payload.new && (payload.new as any).id === room?.sessionId) {
-              setSessionStatus((payload.new as any).status);
+            console.log('Challenge status changed!', payload);
+            if (room?.challengeId && payload.new && (payload.new as any).id === room?.challengeId) {
+              setChallengeStatus((payload.new as any).status);
             }
           })
         .subscribe();
@@ -370,12 +403,12 @@ const Room: React.FC = () => {
         if (roomChannel) {
           supabase.removeChannel(roomChannel);
         }
-        if (sessionChannel) {
-          supabase.removeChannel(sessionChannel);
+        if (challengeChannel) {
+          supabase.removeChannel(challengeChannel);
         }
       };
     }
-  }, [roomId, sessionStatus, isDirectlyNavigated, room?.sessionId]);
+  }, [roomId, challengeStatus, isDirectlyNavigated, room?.challengeId]);
 
   if (isLoading) {
     return (
@@ -402,11 +435,11 @@ const Room: React.FC = () => {
         <div className="absolute inset-0 bg-[url('/terminal-bg.png')] opacity-10" />
         <div className="absolute inset-0 bg-cover bg-center opacity-5" style={{ backgroundImage: `url('/emblems/${room?.name?.toLowerCase().replace(/\s+/g, '-')}.svg')` }} />
         <div className="relative z-10">
-          {sessionName && (
+          {challengeName && (
             <div className="mb-2 p-3 bg-black/30 rounded-lg border border-amber-500/40">
               <div className="text-center">
                 <span className="text-lg sm:text-xl lg:text-2xl font-bold font-medieval text-amber-400">
-                  {sessionName}
+                  {challengeName}
                 </span>
               </div>
             </div>
@@ -418,56 +451,65 @@ const Room: React.FC = () => {
           </div>
 
           <div className="flex items-center justify-center space-x-6 mb-4">
-            {sessionHintEnabled && (
+            {challengeHintEnabled && (
               <div className="flex items-center bg-black/50 px-4 py-2 rounded-lg border border-amber-500/30">
                 <span className="w-3 h-3 rounded-full bg-amber-500 animate-pulse mr-2" />
-                <span className="text-2xl text-amber-500 font-pixel">{room?.tokensLeft} Jetons</span>
+                <span className="text-2xl text-amber-500 font-pixel">{room?.tokensLeft} Jeton(s)</span>
               </div>
             )}
             <div className="flex items-center bg-black/50 px-4 py-2 rounded-lg border border-green-500/30">
               <span className="w-3 h-3 rounded-full bg-green-500 animate-pulse mr-2" />
               <span className="text-2xl text-green-500 font-pixel">{room?.score} Points</span>
             </div>
+            {(challengeStatus === "active" || challengeStatus === "completed") && (room?.troupeStartTime || roomStartTime) && (
+              <div className="flex items-center bg-black/50 px-4 py-2 rounded-lg border border-blue-500/30">
+                <ChallengeTimer 
+                  startTime={(room?.troupeStartTime || roomStartTime)?.toISOString()} 
+                  endTime={room?.troupeEndTime?.toISOString()}
+                  className="text-xl font-pixel"
+                />
+              </div>
+            )}
           </div>
 
           <div className="flex items-center justify-center mb-3">
-            {sessionStatus === "en attente" && (
+            {challengeStatus === "en attente" && (
               <>
                 <span className="w-3 h-3 rounded-full bg-yellow-500 animate-pulse mr-2" />
-                <h3 className="text-2xl text-yellow-500 font-pixel glitch">[ SESSION DE JEU: EN ATTENTE ]</h3>
+                <h3 className="text-2xl text-yellow-500 font-pixel glitch">[ CHALLENGE: EN ATTENTE ]</h3>
               </>
             )}
-            {sessionStatus === "terminée" && (
+            {challengeStatus === "terminée" && (
               <>
                 <span className="w-3 h-3 rounded-full bg-blue-500 animate-pulse mr-2" />
-                <h3 className="text-2xl text-blue-500 font-pixel glitch">[ SESSION DE JEU: TERMINÉE ]</h3>
+                <h3 className="text-2xl text-blue-500 font-pixel glitch">[ CHALLENGE: TERMINÉ ]</h3>
               </>
             )}
-            {!sessionStatus && (
+            {!challengeStatus && (
               <>
                 <span className="w-3 h-3 rounded-full bg-red-500 animate-pulse mr-2" />
-                <h3 className="text-2xl text-red-500 font-pixel glitch">[ ERREUR: SESSION_NON_TROUVÉE ]</h3>
+                <h3 className="text-2xl text-red-500 font-pixel glitch">[ ERREUR: CHALLENGE_NON_TROUVÉ ]</h3>
               </>
             )}
           </div>
 
-          {sessionStatus === "active" && sessionContext && (
+          {challengeStatus === "active" && challengeContext && (
             <div className="text-center mb-4">
               <h4 className="text-xl font-bold text-amber-400 mb-2">Contexte</h4>
               <p className="text-gray-300 font-pixel text-sm leading-relaxed max-w-4xl mx-auto whitespace-pre-line">
-                {sessionContext}
+                {challengeContext}
               </p>
             </div>
           )}
 
           <div className="text-sm font-pixel typing-effect mt-2">
-            {sessionStatus === "terminée" && (
+            {challengeStatus === "terminée" && (
               <>
                 <p className="text-blue-400">$ MISSION ACCOMPLIE. TOUS LES DÉFIS RELEVÉS.</p>
                 <p className="text-blue-400">$ FÉLICITATIONS, BRAVE AVENTURIER !</p>
               </>
             )}
-            {!sessionStatus && (
+            {!challengeStatus && (
               <>
                 <p className="text-red-400">$ ÉCHEC DE LA CONNEXION. IMPOSSIBLE D'ÉTABLIR LE LIEN.</p>
                 <p className="text-red-400">$ VEUILLEZ VÉRIFIER LES IDENTIFIANTS DE LA TROUPE ET RÉESSAYER.</p>
@@ -515,16 +557,16 @@ const Room: React.FC = () => {
                   doorNumber={index + 1}
                   isActive={index + 1 === room.currentDoor}
                   isOpen={isOpen}
-                  sessionStatus={sessionStatus}
+                  challengeStatus={challengeStatus}
                   onDoorClick={async () => {
-                    if (sessionStatus === 'active' && index + 1 === room.currentDoor && !isOpen) {
+                    if (challengeStatus === 'active' && index + 1 === room.currentDoor && !isOpen) {
                       try {
-                        console.log('Fetching question for door:', index + 1, 'session:', room.sessionId);
+                        console.log('Fetching question for door:', index + 1, 'challenge:', room.challengeId);
 
                         const { data: questionData, error } = await supabase
                           .from('questions')
                           .select('*')
-                          .eq('session_id', room.sessionId)
+                          .eq('challenge_id', room.challengeId)
                           .eq('door_number', index + 1)
                           .maybeSingle();
 
@@ -623,8 +665,8 @@ const Room: React.FC = () => {
           <div className="mt-8 w-full">
             <RiddleQuestion
               question={gameState.currentQuestion}
-              tokensLeft={sessionHintEnabled ? room.tokensLeft : 0}
-              hintEnabled={sessionHintEnabled}
+              tokensLeft={challengeHintEnabled ? room.tokensLeft : 0}
+              hintEnabled={challengeHintEnabled}
               onSubmitAnswer={async (answer: string) => {
                 try {
                   if (!gameState.currentQuestion || !room) {
@@ -688,11 +730,11 @@ const Room: React.FC = () => {
                     });
 
                     // Insert/update score record after each correct answer to keep universe leaderboard current
-                    if (room.sessionId && room.universeId) {
+                    if (room.challengeId && room.universeId) {
                       const { insertGameScore } = await import('@/utils/db');
                       const scoreInserted = await insertGameScore(
                         room.id,
-                        room.sessionId,
+                        room.challengeId,
                         room.name,
                         updatedRoom.score || 0,
                         room.universeId
@@ -715,13 +757,14 @@ const Room: React.FC = () => {
                     const allDoorsOpen = updatedRoom.current_door > totalDoors;
                     if (allDoorsOpen) {
                       // Calculate and apply final score with time bonus only (token malus already applied immediately)
-                      const { timeBonus } = calculateFinalScore(room.tokensLeft, roomStartTime || undefined);
+                      const { timeBonus } = calculateFinalScore(room.tokensLeft, roomStartTime || undefined, room.troupeStartTime);
                       const finalScoreAdjustment = timeBonus; // Only time bonus, no token malus
                       
                       console.log("=== GAME COMPLETION SCORE ADJUSTMENT ===");
                       console.log("All doors completed! Applying final adjustments...");
                       console.log("Room ID:", room.id);
                       console.log("Room start time used:", roomStartTime?.toISOString() || "Not set - using game state time");
+                      console.log("Troupe start time used:", room.troupeStartTime?.toISOString() || "Not set - using room/game state time");
                       console.log("Current room score after last question:", updatedRoom.score || 0);
                       console.log("Time bonus:", timeBonus);
                       console.log("Token malus: SKIPPED (already applied immediately when tokens were used)");
@@ -747,11 +790,11 @@ const Room: React.FC = () => {
                         } : null);
                         
                         // Final score insertion for universe leaderboard (with time bonus)
-                        if (room.sessionId && room.universeId) {
+                        if (room.challengeId && room.universeId) {
                           const { insertGameScore } = await import('@/utils/db');
                           const scoreInserted = await insertGameScore(
                             room.id,
-                            room.sessionId,
+                            room.challengeId,
                             room.name,
                             updatedScore,
                             room.universeId
@@ -763,6 +806,22 @@ const Room: React.FC = () => {
                             console.error('Failed to update final score record for universe leaderboard');
                           }
                         }
+                      }
+                      
+                      // Set troupe end time when challenge is completed
+                      const { updateRoomTroupeEndTime } = await import('@/utils/db');
+                      const endTimeUpdated = await updateRoomTroupeEndTime(room.id);
+                      if (endTimeUpdated) {
+                        console.log('Troupe end time set successfully for completed challenge');
+                        
+                        // Refresh room data to get the updated troupe_end_time for UI
+                        const updatedRoomData = await getRoom(room.id);
+                        if (updatedRoomData) {
+                          setRoom(updatedRoomData);
+                          console.log('Room data refreshed with troupe end time');
+                        }
+                      } else {
+                        console.error('Failed to set troupe end time for completed challenge');
                       }
                       
                       // Trigger more intense celebration for challenge completion
@@ -796,7 +855,7 @@ const Room: React.FC = () => {
                   });
                 }
               }}
-              onUseToken={sessionHintEnabled ? async () => {
+              onUseToken={challengeHintEnabled ? async () => {
                 if (!room || !gameState.currentQuestion) return;
 
                 // Apply immediate token malus (-50 points per token used)
@@ -850,9 +909,9 @@ const Room: React.FC = () => {
       <div className="mt-6 flex justify-center">
         {user?.isAdmin ? (
           <>
-            <Link to="/game/sessions">
+            <Link to="/admin">
               <Button asChild className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                Manage Sessions
+                Manage Challenges
               </Button>
             </Link>
           </>

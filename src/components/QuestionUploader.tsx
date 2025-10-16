@@ -5,17 +5,17 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Question } from '../types/game';
 import { useToast } from '@/components/ui/use-toast';
-import { addQuestionsToSession } from '@/utils/db';
+import { addQuestionsToChallenge } from '@/utils/db';
 import { Loader2 } from 'lucide-react';
 
 interface QuestionUploaderProps {
-  sessionId: string;
+  challengeId: string;
   onUpload: (questions: Question[]) => void;
   onClose?: () => void;
   universeContext?: boolean; // New prop to indicate if this is used in universe context
 }
 
-const QuestionUploader: React.FC<QuestionUploaderProps> = ({ sessionId, onUpload, onClose, universeContext = false }) => {
+const QuestionUploader: React.FC<QuestionUploaderProps> = ({ challengeId, onUpload, onClose, universeContext = false }) => {
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -122,12 +122,12 @@ const QuestionUploader: React.FC<QuestionUploaderProps> = ({ sessionId, onUpload
       }
       
       // Store questions in the database
-      const success = await addQuestionsToSession(sessionId, questionsToAdd);
+      const success = await addQuestionsToChallenge(challengeId, questionsToAdd);
       
       if (success) {
         toast({
           title: "Questions téléchargées avec succès",
-          description: `${questionsToAdd.length} questions ont été ajoutées à la session`,
+          description: `${questionsToAdd.length} questions ont été ajoutées au challenge`,
         });
         
         // Pass the questions to the parent component
@@ -186,7 +186,7 @@ const QuestionUploader: React.FC<QuestionUploaderProps> = ({ sessionId, onUpload
             <div className="text-green-400 text-4xl mb-4">✓</div>
             <h2 className="text-xl font-bold text-center font-pixel text-green-400">$ UPLOAD_REUSSI</h2>
             <p className="text-green-400/70 font-mono text-sm">
-              {uploadedQuestionsCount} questions ont été ajoutées avec succès à la session
+              {uploadedQuestionsCount} questions ont été ajoutées avec succès au challenge
             </p>
             
             <div className="space-y-3 pt-4">

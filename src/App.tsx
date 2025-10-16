@@ -35,7 +35,7 @@ const App = () => (
             />
             <Route path="/game/room/:roomId" element={<GameRoom />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
-            {/* Universes and Sessions routes removed */}
+            {/* Universes and Challenges routes removed */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

@@ -6,10 +6,10 @@ import { Score } from '@/types/game';
 
 interface LeaderboardTableProps {
   scores: Score[];
-  currentSessionId?: string;
+  currentChallengeId?: string;
 }
 
-const LeaderboardTable: React.FC<LeaderboardTableProps> = ({ scores, currentSessionId }) => {
+const LeaderboardTable: React.FC<LeaderboardTableProps> = ({ scores, currentChallengeId }) => {
   // Sort scores descending by totalScore
   const sortedScores = [...scores].sort((a, b) => b.totalScore - a.totalScore);
   // Compute tie-aware ranks: equal scores share the same rank (competition ranking: 1,1,3)
@@ -36,9 +36,9 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({ scores, currentSess
         <tbody className="text-[#00FF00]">
           {sortedScores.map((score, index) => {
             const rank = ranks[index];
-            const isCurrentSession = score.sessionId === currentSessionId;
+            const isCurrentChallenge = score.challengeId === currentChallengeId;
             return (
-              <tr key={score.roomId} className={cn("border-b border-[#00FF00]/20 transition-colors hover:bg-[#00FF00]/10", isCurrentSession && 'bg-[#00FF00]/5')}>
+              <tr key={score.roomId} className={cn("border-b border-[#00FF00]/20 transition-colors hover:bg-[#00FF00]/10", isCurrentChallenge && 'bg-[#00FF00]/5')}>
                 <td className="px-4 py-4 text-left">
                   <div className="flex items-center">
                     {rank === 1 && (
@@ -66,9 +66,9 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({ scores, currentSess
           {scores.length === 0 && (
             <tr>
               <td colSpan={3} className="px-4 py-8 text-center text-[#00FF00]/50">
-                {currentSessionId
-                  ? 'Aucun score disponible pour cette session_'
-                  : 'Aucune session sélectionnée_'}
+                {currentChallengeId
+                  ? 'Aucun score disponible pour ce challenge_'
+                  : 'Aucun challenge sélectionné_'}
               </td>
             </tr>
           )}

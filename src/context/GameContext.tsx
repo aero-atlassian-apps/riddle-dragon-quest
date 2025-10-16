@@ -11,7 +11,7 @@ interface GameContextProps {
   goToNextDoor: () => void;
   showContinueButton: boolean;
   setShowContinueButton: (show: boolean) => void;
-  calculateFinalScore: (roomTokensLeft?: number, roomStartTime?: Date) => { timeBonus: number; tokenMalus: number };
+  calculateFinalScore: (roomTokensLeft?: number, roomStartTime?: Date, troupeStartTime?: Date) => { timeBonus: number; tokenMalus: number };
   tokenMalus: number;
   setTotalDoors: (totalDoors: number) => void;
   setStartTime: (startTime: Date) => void;
@@ -138,10 +138,10 @@ export const GameProvider: React.FC<{ children: ReactNode; initialState?: Initia
     setShowContinueButton(false);
   };
 
-  const calculateFinalScore = (roomTokensLeft?: number, roomStartTime?: Date) => {
+  const calculateFinalScore = (roomTokensLeft?: number, roomStartTime?: Date, troupeStartTime?: Date) => {
     const completionTime = new Date();
-    // Use room-specific start time if provided, otherwise fall back to gameState.startTime
-    const startTime = roomStartTime || gameState.startTime;
+    // Priority order: troupeStartTime > roomStartTime > gameState.startTime
+    const startTime = troupeStartTime || roomStartTime || gameState.startTime;
     const minutesTaken = Math.floor((completionTime.getTime() - startTime.getTime()) / (1000 * 60));
 
     // Maximum time bonus is 200 points for the full game
@@ -162,6 +162,7 @@ export const GameProvider: React.FC<{ children: ReactNode; initialState?: Initia
     console.log("=== FINAL SCORE CALCULATION DETAILS ===");
     console.log("Game state start time:", gameState.startTime.toISOString());
     console.log("Room start time (if provided):", roomStartTime?.toISOString() || "Not provided");
+    console.log("Troupe start time (if provided):", troupeStartTime?.toISOString() || "Not provided");
     console.log("Start time used for calculation:", startTime.toISOString());
     console.log("Game completion time:", completionTime.toISOString());
     console.log("Total minutes taken:", minutesTaken);

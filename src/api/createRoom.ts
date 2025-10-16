@@ -2,16 +2,16 @@ import { createRoom } from '@/utils/db';
 
 export async function POST(req: Request) {
   try {
-    const { sessionId, roomName, roomId, tokensLeft } = await req.json();
+    const { challengeId, roomName, roomId, tokensLeft } = await req.json();
 
-    if (!sessionId || !roomName) {
+    if (!challengeId || !roomName) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    const room = await createRoom(sessionId, roomName, roomId, undefined, undefined, tokensLeft, tokensLeft);
+    const room = await createRoom(challengeId, roomName, roomId, undefined, undefined, tokensLeft, tokensLeft);
 
     if (!room) {
       return new Response(JSON.stringify({ error: 'Failed to create room' }), {

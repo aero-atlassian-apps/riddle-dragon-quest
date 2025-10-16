@@ -8,24 +8,30 @@ import { useToast } from '@/components/ui/use-toast';
 
 const HOUSE_NAMES = [
   { name: "Stark", sigil: "🐺", motto: "Winter is Coming" },
-  { name: "Lannister", sigil: "🦁", motto: "Hear Me Roar" },
+  { name: "Lannister", sigil: "🦁", motto: "Hear Me Roar!" },
   { name: "Targaryen", sigil: "🐉", motto: "Fire and Blood" },
   { name: "Baratheon", sigil: "🦌", motto: "Ours is the Fury" },
   { name: "Greyjoy", sigil: "🦑", motto: "We Do Not Sow" },
   { name: "Tyrell", sigil: "🌹", motto: "Growing Strong" },
   { name: "Martell", sigil: "🌞", motto: "Unbowed, Unbent, Unbroken" },
+  { name: "Bolton", sigil: "🩸", motto: "Our Blades Are Sharp" },
   { name: "Tully", sigil: "🐟", motto: "Family, Duty, Honor" },
-  { name: "Arryn", sigil: "🦅", motto: "As High as Honor" }
+  { name: "Arryn", sigil: "🦅", motto: "As High as Honor" },
+  { name: "Mormont", sigil: "🐻", motto: "Here We Stand" },
+  { name: "Tarly", sigil: "🏹", motto: "First in Battle" },
+  { name: "Hightower", sigil: "🗼", motto: "We Light the Way" },
+  { name: "Mallister", sigil: "🦅", motto: "Above the Rest" },
+  { name: "Florent", sigil: "🦊", motto: "Proud and Free" }
 ];
 
 interface RoomCreatorProps {
-  sessionId: string;
+  challengeId: string;
   onCreateRooms: (roomNames: string[]) => void;
   onContinue: () => void;
   hintEnabled?: boolean;
 }
 
-const RoomCreator: React.FC<RoomCreatorProps> = ({ sessionId, onCreateRooms, onContinue, hintEnabled = true }) => {
+const RoomCreator: React.FC<RoomCreatorProps> = ({ challengeId, onCreateRooms, onContinue, hintEnabled = true }) => {
   const [numberOfRooms, setNumberOfRooms] = useState<number>(2);
   const [tokensPerRoom, setTokensPerRoom] = useState<number>(1);
   const [createdRooms, setCreatedRooms] = useState<{name: string, link: string, sigil: string, motto: string, id: string}[]>([]);
@@ -33,7 +39,7 @@ const RoomCreator: React.FC<RoomCreatorProps> = ({ sessionId, onCreateRooms, onC
   const { toast } = useToast();
 
   const incrementRooms = () => {
-    if (numberOfRooms < 10) {
+    if (numberOfRooms < 15) {
       setNumberOfRooms(prev => prev + 1);
     }
   };
@@ -45,7 +51,7 @@ const RoomCreator: React.FC<RoomCreatorProps> = ({ sessionId, onCreateRooms, onC
   };
 
   const incrementTokens = () => {
-    if (tokensPerRoom < 10) {
+    if (tokensPerRoom < 15) {
       setTokensPerRoom(prev => prev + 1);
     }
   };
@@ -86,19 +92,19 @@ const RoomCreator: React.FC<RoomCreatorProps> = ({ sessionId, onCreateRooms, onC
   };
 
   const createRoomsInDatabase = async (rooms: {name: string, id: string, sigil: string, motto: string}[]) => {
-    const { createRoom, getSession } = await import('@/utils/db');
+    const { createRoom, getChallenge } = await import('@/utils/db');
     
-    // Get session data to check for universe_id
-    const session = await getSession(sessionId);
-    const universeId = session?.universeId || null;
+    // Get challenge data to check for universe_id
+    const challenge = await getChallenge(challengeId);
+    const universeId = challenge?.universeId || null;
     
-    console.log('[ROOM CREATOR DEBUG] Creating rooms for session:', sessionId, 'with universe_id:', universeId);
+    console.log('[ROOM CREATOR DEBUG] Creating rooms for challenge:', challengeId, 'with universe_id:', universeId);
     
     // Use tokensPerRoom only if hints are enabled, otherwise default to 1
     const tokensToUse = hintEnabled ? tokensPerRoom : 1;
     
     for (const room of rooms) {
-      const result = await createRoom(sessionId, room.name, room.id, room.sigil, room.motto, tokensToUse, tokensToUse, universeId);
+      const result = await createRoom(challengeId, room.name, room.id, room.sigil, room.motto, tokensToUse, tokensToUse, universeId);
       
       if (!result) {
         toast({
@@ -112,8 +118,8 @@ const RoomCreator: React.FC<RoomCreatorProps> = ({ sessionId, onCreateRooms, onC
     }
     
     toast({
-      title: "Rooms created successfully",
-      description: `${rooms.length} rooms have been created`,
+      title: "Arènes créées",
+      description: `${rooms.length} arènes ont été créées`,
     });
   };
 
@@ -138,10 +144,10 @@ const RoomCreator: React.FC<RoomCreatorProps> = ({ sessionId, onCreateRooms, onC
       <div className="container mx-auto px-4 md:px-6 lg:px-8 py-8 md:py-12 relative z-10 max-w-7xl">
         <div className="text-center mb-8 md:mb-12">
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-green-400 mb-4 md:mb-6 font-mono tracking-wider">
-            CRÉATEUR DE SALLE
+            CRÉATEUR D’ARÈNE
           </h1>
           <p className="text-lg md:text-xl lg:text-2xl text-green-300 font-mono">
-            Configurez votre salle de quête
+            Configurez votre arène de quête
           </p>
         </div>
         
@@ -155,7 +161,7 @@ const RoomCreator: React.FC<RoomCreatorProps> = ({ sessionId, onCreateRooms, onC
               {!showLinks ? (
                 <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
                   <div className="space-y-6">
-                    <Label className="mb-4 block text-lg md:text-xl font-mono text-green-400 text-center">$ NOMBRE_DE_MAISONS (2-10):</Label>
+                    <Label className="mb-4 block text-lg md:text-xl font-mono text-green-400 text-center">$ NOMBRE_DE_TROUPES (2-15):</Label>
                     
                     <div className="flex items-center justify-center space-x-6 md:space-x-8">
                       <Button
@@ -176,7 +182,7 @@ const RoomCreator: React.FC<RoomCreatorProps> = ({ sessionId, onCreateRooms, onC
                         variant="outline"
                         size="icon"
                         onClick={incrementRooms}
-                        disabled={numberOfRooms >= 10}
+                        disabled={numberOfRooms >= 15}
                         className="border-green-500/50 text-green-400 hover:bg-green-500/20 disabled:opacity-50 min-h-[56px] min-w-[56px] md:min-h-[64px] md:min-w-[64px]"
                       >
                         <Plus className="h-6 w-6 md:h-8 md:w-8" />
@@ -187,7 +193,7 @@ const RoomCreator: React.FC<RoomCreatorProps> = ({ sessionId, onCreateRooms, onC
                     
                     {hintEnabled && (
                       <div className="space-y-6">
-                        <Label className="mb-4 block text-lg md:text-xl font-mono text-green-400 text-center">$ JETONS_PAR_SALLE (0-10):</Label>
+                        <Label className="mb-4 block text-lg md:text-xl font-mono text-green-400 text-center">$ JETONS_PAR_ARÈNE (0-15):</Label>
                         
                         <div className="flex items-center justify-center space-x-6 md:space-x-8">
                           <Button
@@ -208,7 +214,7 @@ const RoomCreator: React.FC<RoomCreatorProps> = ({ sessionId, onCreateRooms, onC
                             variant="outline"
                             size="icon"
                             onClick={incrementTokens}
-                            disabled={tokensPerRoom >= 10}
+                            disabled={tokensPerRoom >= 15}
                             className="border-green-500/50 text-green-400 hover:bg-green-500/20 disabled:opacity-50 min-h-[56px] min-w-[56px] md:min-h-[64px] md:min-w-[64px]"
                           >
                             <Plus className="h-6 w-6 md:h-8 md:w-8" />
@@ -226,7 +232,7 @@ const RoomCreator: React.FC<RoomCreatorProps> = ({ sessionId, onCreateRooms, onC
                         type="submit" 
                         className="w-full md:w-auto md:mx-auto md:block bg-green-500 hover:bg-green-600 text-black font-pixel min-h-[56px] md:min-h-[64px] text-lg md:text-xl px-8 md:px-12"
                       >
-                        $ CRÉER_ROOMS
+                        $ CRÉER_ARÈNES
                       </Button>
                     </div>
                   </div>

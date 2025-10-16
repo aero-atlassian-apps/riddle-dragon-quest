@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, RefreshCw, Globe, Users } from "lucide-react";
+import { ArrowLeft, RefreshCw, Castle, Swords } from "lucide-react";
 import LeaderboardTable from "@/components/LeaderboardTable";
 import UniverseLeaderboard from "@/components/UniverseLeaderboard";
 import { Score } from "@/types/game";
@@ -19,13 +19,13 @@ const Leaderboard = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   // Audio controls removed
 
-  const [currentSessionId, setCurrentSessionId] = useState<string | null>(() => localStorage.getItem('leaderboard_session_id') || null);
-  const [sessions, setSessions] = useState<{ id: string; name: string }[]>([]);
+  const [currentChallengeId, setCurrentChallengeId] = useState<string | null>(() => localStorage.getItem('leaderboard_challenge_id') || null);
+  const [challenges, setChallenges] = useState<{ id: string; name: string }[]>([]);
   
   // Universe leaderboard state
-  const [viewMode, setViewMode] = useState<'sessions' | 'universes'>(() => {
+  const [viewMode, setViewMode] = useState<'challenges' | 'universes'>(() => {
     const saved = localStorage.getItem('leaderboard_view_mode');
-    return saved === 'universes' ? 'universes' : 'sessions';
+    return saved === 'universes' ? 'universes' : 'challenges';
   });
   const [currentUniverseId, setCurrentUniverseId] = useState<string | null>(() => localStorage.getItem('leaderboard_universe_id') || null);
   const [universes, setUniverses] = useState<{ id: string; name: string; status: string }[]>([]);
@@ -41,12 +41,12 @@ const Leaderboard = () => {
   }, [viewMode]);
 
   useEffect(() => {
-    if (currentSessionId) {
-      localStorage.setItem('leaderboard_session_id', currentSessionId);
+    if (currentChallengeId) {
+      localStorage.setItem('leaderboard_challenge_id', currentChallengeId);
     } else {
-      localStorage.removeItem('leaderboard_session_id');
+      localStorage.removeItem('leaderboard_challenge_id');
     }
-  }, [currentSessionId]);
+  }, [currentChallengeId]);
 
   useEffect(() => {
     if (currentUniverseId) {
@@ -58,31 +58,31 @@ const Leaderboard = () => {
 
   // Refresh nonce for UniverseLeaderboard to force re-fetch
   const [universeRefreshNonce, setUniverseRefreshNonce] = useState(0);
-  const fetchSessions = async () => {
+  const fetchChallenges = async () => {
     setIsLoading(true);
     try {
       const { data, error } = await supabase
-        .from('sessions')
+        .from('challenges')
         .select('id, name, status')
         .eq('status', 'active')
         .order('start_time', { ascending: false });
 
       if (error) throw error;
       
-      // Set sessions and handle currentSessionId
+      // Set challenges and handle currentChallengeId
       if (data && data.length > 0) {
-        setSessions(data);
-        if (!currentSessionId || !data.find(session => session.id === currentSessionId)) {
-          setCurrentSessionId(data[0].id);
+        setChallenges(data);
+        if (!currentChallengeId || !data.find(challenge => challenge.id === currentChallengeId)) {
+          setCurrentChallengeId(data[0].id);
         }
       } else {
-        setSessions([]);
-        setCurrentSessionId(null);
+        setChallenges([]);
+        setCurrentChallengeId(null);
       }
     } catch (error) {
-      console.error('Error fetching sessions:', error);
-      setSessions([]);
-      setCurrentSessionId(null);
+      console.error('Error fetching challenges:', error);
+      setChallenges([]);
+      setCurrentChallengeId(null);
     } finally {
       setIsLoading(false);
     }
@@ -116,15 +116,15 @@ const Leaderboard = () => {
     try {
       const { data, error } = await supabase
         .from('rooms')
-        .select('id, name, session_id, score')
-        .eq('session_id', currentSessionId)
+        .select('id, name, challenge_id, score')
+        .eq('challenge_id', currentChallengeId)
         .order('score', { ascending: false });
 
       if (error) throw error;
 
       const formattedScores: Score[] = data.map(room => ({
         roomId: room.id,
-        sessionId: room.session_id,
+        challengeId: (room as any).challenge_id,
         totalScore: room.score || 0,
         roomName: room.name
       }));
@@ -145,7 +145,7 @@ const Leaderboard = () => {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    if (viewMode === 'sessions') {
+    if (viewMode === 'challenges') {
       await fetchScores();
     } else {
       // Trigger a re-mount of UniverseLeaderboard to force data re-fetch
@@ -157,8 +157,8 @@ const Leaderboard = () => {
   // Audio control handlers removed
 
   useEffect(() => {
-    if (viewMode === 'sessions') {
-      fetchSessions();
+    if (viewMode === 'challenges') {
+      fetchChallenges();
     } else {
       fetchUniverses();
     }
@@ -166,7 +166,7 @@ const Leaderboard = () => {
   }, [viewMode]);
 
   useEffect(() => {
-    if (currentSessionId && viewMode === 'sessions') {
+    if (currentChallengeId && viewMode === 'challenges') {
       fetchScores();
 
       // Subscribe to real-time updates
@@ -184,7 +184,7 @@ const Leaderboard = () => {
         subscription.unsubscribe();
       };
     }
-  }, [currentSessionId, viewMode]);
+  }, [currentChallengeId, viewMode]);
   
   // Audio volume effect removed
   
@@ -244,17 +244,17 @@ const Leaderboard = () => {
             {/* View Mode Toggle */}
             <div className="flex bg-[#1A1F2C] border border-[#00FF00]/30 rounded-lg overflow-hidden">
               <Button
-                variant={viewMode === 'sessions' ? 'default' : 'ghost'}
+                variant={viewMode === 'challenges' ? 'default' : 'ghost'}
                 size="sm"
-                onClick={() => setViewMode('sessions')}
+                onClick={() => setViewMode('challenges')}
                 className={`font-mono border-0 rounded-none ${
-                  viewMode === 'sessions' 
+                  viewMode === 'challenges' 
                     ? 'bg-[#00FF00]/20 text-[#00FF00] hover:bg-[#00FF00]/30' 
                     : 'text-[#00FF00]/80 hover:text-[#00FF00] hover:bg-[#00FF00]/10'
                 }`}
               >
-                <Users className="h-4 w-4 mr-1" />
-                Sessions
+                <Swords className="h-4 w-4 mr-1" />
+                Challenges
               </Button>
               <Button
                 variant={viewMode === 'universes' ? 'default' : 'ghost'}
@@ -266,22 +266,22 @@ const Leaderboard = () => {
                     : 'text-[#00FF00]/80 hover:text-[#00FF00] hover:bg-[#00FF00]/10'
                 }`}
               >
-                <Globe className="h-4 w-4 mr-1" />
+                <Castle className="h-4 w-4 mr-1" />
                 Univers
               </Button>
             </div>
 
-            {/* Session/Universe Selector */}
-            {viewMode === 'sessions' ? (
+            {/* Challenge/Universe Selector */}
+            {viewMode === 'challenges' ? (
               <select
-                value={currentSessionId || ''}
-                onChange={(e) => setCurrentSessionId(e.target.value)}
+                value={currentChallengeId || ''}
+                onChange={(e) => setCurrentChallengeId(e.target.value)}
                 className="bg-[#1A1F2C] text-[#00FF00] border border-[#00FF00]/30 rounded px-3 py-1 text-sm focus:outline-none focus:border-[#00FF00]/60 hover:border-[#00FF00]/60 transition-colors"
               >
-                <option value="">Choisir une session</option>
-                {sessions.map((session) => (
-                  <option key={session.id} value={session.id}>
-                    {session.name}
+                <option value="">Choisir un challenge</option>
+                {challenges.map((challenge) => (
+                  <option key={challenge.id} value={challenge.id}>
+                    {challenge.name}
                   </option>
                 ))}
               </select>
@@ -321,17 +321,17 @@ const Leaderboard = () => {
             <Skeleton className="h-12 w-full bg-[#00FF00]/5" />
             <Skeleton className="h-12 w-full bg-[#00FF00]/5" />
           </div>
-        ) : viewMode === 'sessions' ? (
-          sessions.length === 0 ? (
+        ) : viewMode === 'challenges' ? (
+          challenges.length === 0 ? (
             <div className="max-w-7xl mx-auto bg-[#1A1F2C]/80 border border-[#00FF00]/30 rounded-lg p-6 text-center text-[#00FF00]/70">
-              Aucune session active pour le moment.
+              Aucun challenge actif pour le moment.
             </div>
-          ) : !currentSessionId ? (
+          ) : !currentChallengeId ? (
             <div className="max-w-7xl mx-auto bg-[#1A1F2C]/80 border border-[#00FF00]/30 rounded-lg p-6 text-center text-[#00FF00]/70">
-              Aucune session sélectionnée. Choisissez une session dans la liste.
+              Aucun challenge sélectionné. Choisissez un challenge dans la liste.
             </div>
           ) : (
-            <LeaderboardTable scores={scores} currentSessionId={currentSessionId || undefined} />
+            <LeaderboardTable scores={scores} currentChallengeId={currentChallengeId || undefined} />
           )
         ) : (
           universes.length === 0 ? (

@@ -19,7 +19,7 @@ export type Database = {
           image: string | null
           points: number | null
           prize: string | null
-          session_id: string | null
+          challenge_id: string | null
           style: string | null
           text: string
         }
@@ -32,7 +32,7 @@ export type Database = {
           image?: string | null
           points?: number | null
           prize?: string | null
-          session_id?: string | null
+          challenge_id?: string | null
           style?: string | null
           text: string
         }
@@ -45,16 +45,16 @@ export type Database = {
           image?: string | null
           points?: number | null
           prize?: string | null
-          session_id?: string | null
+          challenge_id?: string | null
           style?: string | null
           text?: string
         }
         Relationships: [
           {
-            foreignKeyName: "questions_session_id_fkey"
-            columns: ["session_id"]
+            foreignKeyName: "questions_challenge_id_fkey"
+            columns: ["challenge_id"]
             isOneToOne: false
-            referencedRelation: "sessions"
+            referencedRelation: "challenges"
             referencedColumns: ["id"]
           },
         ]
@@ -66,7 +66,7 @@ export type Database = {
           initial_tokens: number
           name: string
           score: number
-          session_id: string | null
+          challenge_id: string | null
           tokens_left: number
         }
         Insert: {
@@ -75,7 +75,7 @@ export type Database = {
           initial_tokens?: number
           name: string
           score?: number
-          session_id?: string | null
+          challenge_id?: string | null
           tokens_left?: number
         }
         Update: {
@@ -84,15 +84,15 @@ export type Database = {
           initial_tokens?: number
           name?: string
           score?: number
-          session_id?: string | null
+          challenge_id?: string | null
           tokens_left?: number
         }
         Relationships: [
           {
-            foreignKeyName: "rooms_session_id_fkey"
-            columns: ["session_id"]
+            foreignKeyName: "rooms_challenge_id_fkey"
+            columns: ["challenge_id"]
             isOneToOne: false
-            referencedRelation: "sessions"
+            referencedRelation: "challenges"
             referencedColumns: ["id"]
           },
         ]
@@ -103,7 +103,7 @@ export type Database = {
           id: string
           room_id: string | null
           room_name: string
-          session_id: string | null
+          challenge_id: string | null
           total_score: number
         }
         Insert: {
@@ -111,7 +111,7 @@ export type Database = {
           id?: string
           room_id?: string | null
           room_name: string
-          session_id?: string | null
+          challenge_id?: string | null
           total_score?: number
         }
         Update: {
@@ -119,7 +119,7 @@ export type Database = {
           id?: string
           room_id?: string | null
           room_name?: string
-          session_id?: string | null
+          challenge_id?: string | null
           total_score?: number
         }
         Relationships: [
@@ -131,15 +131,15 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "scores_session_id_fkey"
-            columns: ["session_id"]
+            foreignKeyName: "scores_challenge_id_fkey"
+            columns: ["challenge_id"]
             isOneToOne: false
-            referencedRelation: "sessions"
+            referencedRelation: "challenges"
             referencedColumns: ["id"]
           },
         ]
       }
-      sessions: {
+      challenges: {
         Row: {
           end_time: string | null
           id: string

@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { Session, Question, Room, Score } from "@/types/game";
+import { Question, Room, Challenge, Score } from "@/types/game";
 
 // Universe types
 export interface Universe {
@@ -27,51 +27,50 @@ export interface UniverseTheme {
   updated_at: string;
 }
 
-export const createSession = async (
-  name: string, 
-  context?: string, 
+
+export const createChallenge = async (
+  name: string,
+  context?: string,
   hintEnabled: boolean = true,
-  sessionType: 'standalone' | 'universe' = 'standalone',
+  challengeType: 'standalone' | 'universe' = 'standalone',
   universeId?: string
-): Promise<Session | null> => {
-  const sessionData: any = { 
-    name, 
-    context, 
+): Promise<Challenge | null> => {
+  const challengeData: any = {
+    name,
+    context,
     hint_enabled: hintEnabled,
-    session_type: sessionType
+    challenge_type: challengeType
   };
 
-  // Add universe_id if provided
   if (universeId) {
-    sessionData.universe_id = universeId;
+    challengeData.universe_id = universeId;
 
-    // Try to set session_order automatically to next position within the universe
     try {
       const { data: lastOrderRow, error: orderError } = await supabase
-        .from('sessions')
-        .select('session_order')
+        .from('challenges')
+        .select('challenge_order')
         .eq('universe_id', universeId)
-        .order('session_order', { ascending: false })
+        .order('challenge_order', { ascending: false })
         .limit(1)
         .single();
 
       if (!orderError) {
-        const lastOrder = (lastOrderRow?.session_order as number | null) ?? 0;
-        sessionData.session_order = (lastOrder || 0) + 1;
+        const lastOrder = (lastOrderRow?.challenge_order as number | null) ?? 0;
+        challengeData.challenge_order = (lastOrder || 0) + 1;
       }
     } catch (e) {
-      console.warn('session_order not available; fallback to created_at ordering', e);
+      console.warn('challenge_order not available on challenges; fallback to created_at ordering', e);
     }
   }
 
   const { data, error } = await supabase
-    .from('sessions')
-    .insert([sessionData])
+    .from('challenges')
+    .insert([challengeData])
     .select()
     .single();
 
   if (error) {
-    console.error('Error creating session:', error);
+    console.error('Error creating challenge:', error);
     return null;
   }
 
@@ -85,43 +84,163 @@ export const createSession = async (
     status: data.status,
     context: data.context,
     hintEnabled: data.hint_enabled,
-    sessionType: data.session_type || 'standalone',
+    challengeType: (data as any).challenge_type || 'standalone',
     universeId: data.universe_id,
-    // Optional, present if DB has session_order
-    sessionOrder: (data as any).session_order
-  };
+    challengeOrder: (data as any).challenge_order
+  } as Challenge;
 };
 
-export const getSessions = async (): Promise<Session[]> => {
+// Challenge utilities
+
+// ---------------------------------------------
+// Challenge utilities
+// ---------------------------------------------
+
+export const getChallenges = async (): Promise<Challenge[]> => {
   const { data, error } = await supabase
-    .from('sessions')
+    .from('challenges')
     .select(`
-      *, 
+      *,
       questions(*),
       universes(name, status)
     `)
     .order('start_time', { ascending: false });
 
   if (error) {
-    console.error('Error fetching sessions:', error);
+    console.error('Error fetching challenges:', error);
     return [];
   }
 
-  return (data || []).map(session => ({
-    id: session.id,
-    name: session.name,
-    startTime: new Date(session.start_time),
-    endTime: session.end_time ? new Date(session.end_time) : undefined,
-    createdAt: session.created_at ? new Date(session.created_at) : undefined,
-    questions: session.questions || [],
-    status: session.status,
-    context: session.context,
-    hintEnabled: session.hint_enabled,
-    sessionType: session.session_type || 'standalone',
-    universeId: session.universe_id,
-    universeName: session.universes?.name,
-    universeStatus: session.universes?.status
-  }));
+  return (data || []).map((c: any) => ({
+    id: c.id,
+    name: c.name,
+    startTime: new Date(c.start_time),
+    endTime: c.end_time ? new Date(c.end_time) : undefined,
+    createdAt: c.created_at ? new Date(c.created_at) : undefined,
+    questions: c.questions || [],
+    status: c.status,
+    context: c.context,
+    hintEnabled: c.hint_enabled,
+    challengeType: (c as any).challenge_type || 'standalone',
+    universeId: c.universe_id,
+    universeName: c.universes?.name,
+    universeStatus: c.universes?.status,
+    challengeOrder: (c as any).challenge_order
+  })) as Challenge[];
+};
+
+export const deleteChallenge = async (challengeId: string): Promise<boolean> => {
+  const { error: roomsError } = await supabase
+    .from('rooms')
+    .delete()
+    .eq('challenge_id', challengeId);
+
+  if (roomsError) {
+    console.error('Error deleting rooms:', roomsError);
+    return false;
+  }
+
+  const { error: questionsError } = await supabase
+    .from('questions')
+    .delete()
+    .eq('challenge_id', challengeId);
+
+  if (questionsError) {
+    console.error('Error deleting questions:', questionsError);
+    return false;
+  }
+
+  const { error: challengeError } = await supabase
+    .from('challenges')
+    .delete()
+    .eq('id', challengeId);
+
+  if (challengeError) {
+    console.error('Error deleting challenge:', challengeError);
+    return false;
+  }
+
+  return true;
+};
+
+export const updateChallengeStatus = async (
+  challengeId: string,
+  status: 'en attente' | 'active' | 'terminée'
+): Promise<boolean> => {
+  const { error } = await supabase
+    .from('challenges')
+    .update({ status })
+    .eq('id', challengeId);
+  if (error) {
+    console.error('Error updating challenge status:', error);
+    return false;
+  }
+  return true;
+};
+
+export const updateChallengeName = async (challengeId: string, name: string): Promise<boolean> => {
+  const newName = name.trim();
+  if (!newName) return false;
+  const { error } = await supabase
+    .from('challenges')
+    .update({ name: newName })
+    .eq('id', challengeId);
+  if (error) {
+    console.error('Error updating challenge name:', error);
+    return false;
+  }
+  return true;
+};
+
+export const getChallengeStatus = async (challengeId: string): Promise<string | null> => {
+  const { data, error } = await supabase
+    .from('challenges')
+    .select('status')
+    .eq('id', challengeId)
+    .single();
+  if (error || !data) {
+    console.error('Error fetching challenge status:', error);
+    return null;
+  }
+  return data.status;
+};
+
+export const getChallenge = async (challengeId: string): Promise<Challenge | null> => {
+  const { data, error } = await supabase
+    .from('challenges')
+    .select('*')
+    .eq('id', challengeId)
+    .single();
+  if (error || !data) {
+    console.error('Error fetching challenge:', error);
+    return null;
+  }
+  return {
+    id: data.id,
+    name: data.name,
+    startTime: new Date(data.start_time),
+    endTime: data.end_time ? new Date(data.end_time) : undefined,
+    createdAt: data.created_at ? new Date(data.created_at) : undefined,
+    questions: [],
+    status: data.status,
+    context: data.context,
+    hintEnabled: data.hint_enabled,
+    challengeType: (data as any).challenge_type || 'standalone',
+    universeId: data.universe_id,
+  } as Challenge;
+};
+
+export const getRoomsByChallenge = async (challengeId: string) => {
+  const { data, error } = await supabase
+    .from('rooms')
+    .select('*')
+    .eq('challenge_id', challengeId)
+    .order('created_at', { ascending: true });
+  if (error) {
+    console.error('Error fetching rooms by challenge:', error);
+    return [];
+  }
+  return data || [];
 };
 
 export const getRoom = async (roomId: string): Promise<Room | null> => {
@@ -151,34 +270,37 @@ export const getRoom = async (roomId: string): Promise<Room | null> => {
     
     console.log('Room found successfully:', data);
     
-    let sessionStatus = null;
-    if (data.session_id) {
-      // Use cache control headers to always get fresh data
-      const { data: sessionData, error: sessionError } = await supabase
-        .from('sessions')
+    let challengeStatus = null;
+    const challengeRefId = (data as any).challenge_id;
+    if (challengeRefId) {
+      // Fetch status from challenges using the referenced challenge id
+      const { data: challengeData, error: challengeError } = await supabase
+        .from('challenges')
         .select('status')
-        .eq('id', data.session_id)
+        .eq('id', challengeRefId)
         .single();
-        
-      if (!sessionError && sessionData) {
-        sessionStatus = sessionData.status;
-        console.log('Session status fetched (fresh):', sessionStatus);
+
+      if (!challengeError && challengeData) {
+        challengeStatus = challengeData.status;
+        console.log('Challenge status fetched (fresh):', challengeStatus);
       }
     }
     
     return {
       id: data.id,
-      sessionId: data.session_id,
+      challengeId: (data as any).challenge_id,
       name: data.name,
       tokensLeft: data.tokens_left,
       initialTokens: data.initial_tokens || data.tokens_left, // Fallback for existing rooms
       currentDoor: data.current_door,
       score: data.score,
-      sessionStatus: sessionStatus,
+      challengeStatus: challengeStatus,
       sigil: data.sigil,
       motto: data.motto,
       universeId: data.universe_id,
-      troupeId: (data as any).troupe_id || undefined
+      troupeId: (data as any).troupe_id || undefined,
+      troupeStartTime: data.troupe_start_time ? new Date(data.troupe_start_time) : undefined,
+      troupeEndTime: data.troupe_end_time ? new Date(data.troupe_end_time) : undefined
     };
   } catch (err) {
     console.error('Unexpected error in getRoom function:', err);
@@ -216,8 +338,8 @@ export const getRoomDirectCheck = async (roomId: string): Promise<{exists: boole
   }
 };
 
-export const createRoom = async (sessionId: string, roomName: string, roomId?: string, sigil?: string, motto?: string, tokensLeft?: number, initialTokens?: number, universeId?: string): Promise<Room | null> => {
-  console.log(`[ROOM DEBUG] Creating room with name: ${roomName}, sessionId: ${sessionId}, roomId: ${roomId || 'auto-generated'}, universeId: ${universeId || 'none'}`);
+export const createRoom = async (challengeId: string, roomName: string, roomId?: string, sigil?: string, motto?: string, tokensLeft?: number, initialTokens?: number, universeId?: string): Promise<Room | null> => {
+  console.log(`[ROOM DEBUG] Creating room with name: ${roomName}, challengeId: ${challengeId}, roomId: ${roomId || 'auto-generated'}, universeId: ${universeId || 'none'}`);
   
   // Initial tokens are set once at room creation and never change
   const roomInitialTokens = initialTokens !== undefined ? initialTokens : 0;
@@ -225,7 +347,7 @@ export const createRoom = async (sessionId: string, roomName: string, roomId?: s
   const roomTokensLeft = tokensLeft !== undefined ? tokensLeft : roomInitialTokens;
   
   const roomData: {
-    session_id: string;
+    challenge_id?: string;
     name: string;
     id?: string;
     sigil: string;
@@ -234,7 +356,7 @@ export const createRoom = async (sessionId: string, roomName: string, roomId?: s
     initial_tokens?: number;
     universe_id?: string;
   } = {
-    session_id: sessionId,
+    challenge_id: challengeId,
     name: roomName,
     sigil: sigil || '🏰', // Default sigil if none provided
     motto: motto || '', // Default motto if none provided
@@ -265,7 +387,7 @@ export const createRoom = async (sessionId: string, roomName: string, roomId?: s
   
   return {
     id: data.id,
-    sessionId: data.session_id,
+    challengeId: (data as any).challenge_id,
     name: data.name,
     tokensLeft: data.tokens_left,
     currentDoor: data.current_door,
@@ -275,13 +397,13 @@ export const createRoom = async (sessionId: string, roomName: string, roomId?: s
   };
 };
 
-export const addQuestionsToSession = async (sessionId: string, questions: Omit<Question, 'id'>[]): Promise<boolean> => {
+export const addQuestionsToChallenge = async (challengeId: string, questions: Omit<Question, 'id'>[]): Promise<boolean> => {
   try {
-    // First, check for existing questions in this session to avoid duplicates
+    // First, check for existing questions in this challenge to avoid duplicates
     const { data: existingQuestions, error: fetchError } = await supabase
       .from('questions')
       .select('door_number')
-      .eq('session_id', sessionId);
+      .eq('challenge_id', challengeId);
 
     if (fetchError) {
       console.error('Error fetching existing questions:', fetchError);
@@ -307,7 +429,7 @@ export const addQuestionsToSession = async (sessionId: string, questions: Omit<Q
       existingDoorNumbers.add(doorNumber);
       
       return {
-        session_id: sessionId,
+        challenge_id: challengeId,
         text: question.text,
         answer: question.answer,
         door_number: doorNumber,
@@ -329,7 +451,7 @@ export const addQuestionsToSession = async (sessionId: string, questions: Omit<Q
 
     return true;
   } catch (err) {
-    console.error('Unexpected error in addQuestionsToSession:', err);
+    console.error('Unexpected error in addQuestionsToChallenge:', err);
     return false;
   }
 };
@@ -348,14 +470,14 @@ export const updateQuestionImage = async (questionId: number, imageUrl: string):
   return true;
 };
 
-export const getSessionQuestions = async (sessionId: string): Promise<Question[]> => {
+export const getChallengeQuestions = async (challengeId: string): Promise<Question[]> => {
   const { data, error } = await supabase
     .from('questions')
     .select('*')
-    .eq('session_id', sessionId);
+    .eq('challenge_id', challengeId);
 
   if (error) {
-    console.error('Error fetching session questions:', error);
+    console.error('Error fetching challenge questions:', error);
     return [];
   }
 
@@ -372,25 +494,25 @@ export const getSessionQuestions = async (sessionId: string): Promise<Question[]
   }));
 };
 
-export const getSessionQuestionCount = async (sessionId: string): Promise<number> => {
+export const getChallengeQuestionCount = async (challengeId: string): Promise<number> => {
   const { count, error } = await supabase
     .from('questions')
     .select('*', { count: 'exact', head: true })
-    .eq('session_id', sessionId);
+    .eq('challenge_id', challengeId);
 
   if (error) {
-    console.error('Error fetching session question count:', error);
+    console.error('Error fetching challenge question count:', error);
     return 1; // Default fallback to 1 doors
   }
 
   return count || 1; // Default fallback to 1 doors if count is null
 };
 
-export const getMaxDoorNumber = async (sessionId: string): Promise<number> => {
+export const getMaxDoorNumberForChallenge = async (challengeId: string): Promise<number> => {
   const { data, error } = await supabase
     .from('questions')
     .select('door_number')
-    .eq('session_id', sessionId)
+    .eq('challenge_id', challengeId)
     .order('door_number', { ascending: false })
     .limit(1)
     .single();
@@ -457,112 +579,6 @@ export const updateRoomTokens = async (roomId: string, tokensLeft: number): Prom
   return true;
 };
 
-export const deleteSession = async (sessionId: string): Promise<boolean> => {
-  const { error: roomsError } = await supabase
-    .from('rooms')
-    .delete()
-    .eq('session_id', sessionId);
-  
-  if (roomsError) {
-    console.error('Error deleting rooms:', roomsError);
-    return false;
-  }
-
-  const { error: questionsError } = await supabase
-    .from('questions')
-    .delete()
-    .eq('session_id', sessionId);
-  
-  if (questionsError) {
-    console.error('Error deleting questions:', questionsError);
-    return false;
-  }
-
-  const { error: sessionError } = await supabase
-    .from('sessions')
-    .delete()
-    .eq('id', sessionId);
-  
-  if (sessionError) {
-    console.error('Error deleting session:', sessionError);
-    return false;
-  }
-
-  return true;
-};
-
-export const updateSessionStatus = async (sessionId: string, status: 'en attente' | 'active' | 'terminée'): Promise<boolean> => {
-  const { error } = await supabase
-    .from('sessions')
-    .update({ status })
-    .eq('id', sessionId);
-  
-  if (error) {
-    console.error('Error updating session status:', error);
-    return false;
-  }
-  
-  return true;
-};
-
-export const updateSessionName = async (sessionId: string, name: string): Promise<boolean> => {
-  const newName = name.trim();
-  if (!newName) return false;
-
-  const { error } = await supabase
-    .from('sessions')
-    .update({ name: newName })
-    .eq('id', sessionId);
-
-  if (error) {
-    console.error('Error updating session name:', error);
-    return false;
-  }
-
-  return true;
-};
-
-export const getSessionStatus = async (sessionId: string): Promise<string | null> => {
-  const { data, error } = await supabase
-    .from('sessions')
-    .select('status')
-    .eq('id', sessionId)
-    .single();
-  
-  if (error || !data) {
-    console.error('Error fetching session status:', error);
-    return null;
-  }
-  
-  console.log('Session status fetched (fresh):', data.status);
-  return data.status;
-};
-
-export const getSession = async (sessionId: string): Promise<Session | null> => {
-  const { data, error } = await supabase
-    .from('sessions')
-    .select('*')
-    .eq('id', sessionId)
-    .single();
-  
-  if (error || !data) {
-    console.error('Error fetching session:', error);
-    return null;
-  }
-  
-  return {
-    id: data.id,
-    name: data.name,
-    startTime: new Date(data.start_time),
-    endTime: data.end_time ? new Date(data.end_time) : undefined,
-    questions: [],
-    status: data.status,
-    context: data.context,
-    hintEnabled: data.hint_enabled,
-    sessionType: data.session_type || 'standalone',
-    universeId: data.universe_id
-  };
-};
 
 // =====================================================
 // UNIVERSE OPERATIONS
@@ -582,24 +598,7 @@ export const getUniverses = async (): Promise<Universe[]> => {
   return data || [];
 };
 
-// =====================================================
-// ROOM OPERATIONS BY SESSION
-// =====================================================
 
-export const getRoomsBySession = async (sessionId: string) => {
-  const { data, error } = await supabase
-    .from('rooms')
-    .select('*')
-    .eq('session_id', sessionId)
-    .order('created_at', { ascending: true });
-
-  if (error) {
-    console.error('Error fetching rooms by session:', error);
-    return [];
-  }
-
-  return data || [];
-};
 
 export const getUniverse = async (universeId: string): Promise<Universe | null> => {
   const { data, error } = await supabase
@@ -777,7 +776,7 @@ export const getUniverseLeaderboard = async (universeId: string, limit: number =
       room_name: troupe.name,
       total_score: existing?.total_score ?? 0,
       completion_time: existing?.completion_time ?? '',
-      sessions_completed: existing?.sessions_completed ?? 0,
+      challenges_completed: existing?.challenges_completed ?? 0,
       last_updated: existing?.last_updated ?? null,
     };
   });
@@ -864,9 +863,9 @@ export const getUniverseTroupes = async (universeId: string): Promise<UniverseTr
   return data || [];
 };
 
-// Function to automatically generate rooms from universe troupes when creating a session
-export const generateRoomsFromTroupes = async (sessionId: string, universeId: string): Promise<Room[]> => {
-  console.log(`[TROUPE DEBUG] Generating rooms from troupes for session: ${sessionId}, universe: ${universeId}`);
+// Function to automatically generate rooms from universe troupes when creating a challenge
+export const generateRoomsFromTroupes = async (challengeId: string, universeId: string): Promise<Room[]> => {
+  console.log(`[TROUPE DEBUG] Generating rooms from troupes for challenge: ${challengeId}, universe: ${universeId}`);
   
   // Get all troupes for this universe
   const troupes = await getUniverseTroupes(universeId);
@@ -881,7 +880,7 @@ export const generateRoomsFromTroupes = async (sessionId: string, universeId: st
   // Create a room for each troupe
   for (const troupe of troupes) {
     const roomData = {
-      session_id: sessionId,
+      challenge_id: challengeId,
       universe_id: universeId,
       troupe_id: troupe.id,
       name: troupe.name,
@@ -920,28 +919,28 @@ export const generateRoomsFromTroupes = async (sessionId: string, universeId: st
 
 export const insertGameScore = async (
   roomId: string,
-  sessionId: string,
+  challengeId: string,
   roomName: string,
   totalScore: number,
   universeId?: string
 ): Promise<boolean> => {
   console.log(`[SCORE DEBUG] Starting insertGameScore with parameters:`, {
     roomId,
-    sessionId,
+    challengeId,
     roomName,
     totalScore,
     universeId
   });
   
   // Validate required parameters
-  if (!roomId || !sessionId || !roomName) {
-    console.error('[SCORE DEBUG] Missing required parameters:', { roomId, sessionId, roomName });
+  if (!roomId || !challengeId || !roomName) {
+    console.error('[SCORE DEBUG] Missing required parameters:', { roomId, challengeId, roomName });
     return false;
   }
   
   const scoreData = {
     room_id: roomId,
-    session_id: sessionId,
+    challenge_id: challengeId,
     universe_id: universeId,
     room_name: roomName,
     total_score: totalScore
@@ -967,22 +966,20 @@ export const insertGameScore = async (
   return true;
 };
 // =====================================================
-// UNIVERSE SESSION CHAINING HELPERS
+// UNIVERSE CHALLENGE CHAINING HELPERS
 // =====================================================
 
-export const getUniverseSessionsOrdered = async (universeId: string): Promise<Session[]> => {
-  // Order strictly by creation time to match "first added is first"
-  // Use session_order only as a secondary key when present (nulls last)
+export const getUniverseChallengesOrdered = async (universeId: string): Promise<Challenge[]> => {
   const res = await supabase
-    .from('sessions')
+    .from('challenges')
     .select('*')
     .eq('universe_id', universeId)
     .order('created_at', { ascending: true })
-    .order('session_order', { ascending: true });
+    .order('challenge_order', { ascending: true });
 
   const data = res.data || [];
 
-  return data.map(s => ({
+  return data.map((s: any) => ({
     id: s.id,
     name: s.name,
     startTime: s.start_time ? new Date(s.start_time) : new Date(),
@@ -992,34 +989,34 @@ export const getUniverseSessionsOrdered = async (universeId: string): Promise<Se
     status: s.status,
     context: s.context,
     hintEnabled: s.hint_enabled,
-    sessionType: s.session_type || 'standalone',
+    challengeType: (s as any).challenge_type || 'standalone',
     universeId: s.universe_id,
     universeName: undefined,
     universeStatus: undefined,
-    sessionOrder: (s as any).session_order
-  }));
+    challengeOrder: (s as any).challenge_order
+  })) as Challenge[];
 };
 
-export const getNextSessionIdInUniverse = async (
+export const getNextChallengeIdInUniverse = async (
   universeId: string,
-  currentSessionId: string
+  currentChallengeId: string
 ): Promise<string | null> => {
-  const sessions = await getUniverseSessionsOrdered(universeId);
-  const idx = sessions.findIndex(s => s.id === currentSessionId);
-  if (idx >= 0 && idx + 1 < sessions.length) {
-    return sessions[idx + 1].id;
+  const challenges = await getUniverseChallengesOrdered(universeId);
+  const idx = challenges.findIndex(s => s.id === currentChallengeId);
+  if (idx >= 0 && idx + 1 < challenges.length) {
+    return challenges[idx + 1].id;
   }
   return null;
 };
 
-export const getRoomBySessionAndTroupe = async (
-  sessionId: string,
+export const getRoomByChallengeAndTroupe = async (
+  challengeId: string,
   troupeId: string
 ): Promise<Room | null> => {
   const { data, error } = await supabase
     .from('rooms')
     .select('*')
-    .eq('session_id', sessionId)
+    .eq('challenge_id', challengeId)
     .eq('troupe_id', troupeId)
     .single();
 
@@ -1029,7 +1026,7 @@ export const getRoomBySessionAndTroupe = async (
 
   return {
     id: data.id,
-    sessionId: data.session_id,
+    challengeId: (data as any).challenge_id,
     name: data.name,
     tokensLeft: data.tokens_left,
     initialTokens: data.initial_tokens || data.tokens_left,
@@ -1042,13 +1039,57 @@ export const getRoomBySessionAndTroupe = async (
   };
 };
 
-export const getNextRoomForTroupe = async (
+export const getNextRoomForTroupeByChallenge = async (
   universeId: string,
-  currentSessionId: string,
+  currentChallengeId: string,
   troupeId: string
 ): Promise<string | null> => {
-  const nextSessionId = await getNextSessionIdInUniverse(universeId, currentSessionId);
-  if (!nextSessionId) return null;
-  const nextRoom = await getRoomBySessionAndTroupe(nextSessionId, troupeId);
+  const nextChallengeId = await getNextChallengeIdInUniverse(universeId, currentChallengeId);
+  if (!nextChallengeId) return null;
+  const nextRoom = await getRoomByChallengeAndTroupe(nextChallengeId, troupeId);
   return nextRoom?.id || null;
 };
+
+export const updateRoomTroupeStartTime = async (roomId: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('rooms')
+      .update({ troupe_start_time: new Date().toISOString() })
+      .eq('id', roomId);
+
+    if (error) {
+      console.error('Error updating troupe start time:', error);
+      return false;
+    }
+
+    console.log('Troupe start time updated successfully for room:', roomId);
+    return true;
+  } catch (err) {
+    console.error('Unexpected error updating troupe start time:', err);
+    return false;
+  }
+};
+
+export const updateRoomTroupeEndTime = async (roomId: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('rooms')
+      .update({ troupe_end_time: new Date().toISOString() })
+      .eq('id', roomId);
+
+    if (error) {
+      console.error('Error updating troupe end time:', error);
+      return false;
+    }
+
+    console.log('Troupe end time updated successfully for room:', roomId);
+    return true;
+  } catch (err) {
+    console.error('Unexpected error updating troupe end time:', err);
+    return false;
+  }
+};
+
+// =====================================================
+// CHALLENGE ALIASES FOR UNIVERSE CHAINING AND QUESTIONS
+// =====================================================

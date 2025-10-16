@@ -7,11 +7,11 @@ interface DoorProps {
   isActive: boolean;
   isOpen: boolean;
   onDoorClick?: () => void;
-  sessionStatus?: string;
+  challengeStatus?: string;
   isUnlocking?: boolean;
 }
 
-const Door: React.FC<DoorProps> = ({ doorNumber, isActive, isOpen, onDoorClick, sessionStatus, isUnlocking = false }) => {
+const Door: React.FC<DoorProps> = ({ doorNumber, isActive, isOpen, onDoorClick, challengeStatus, isUnlocking = false }) => {
   const [animating, setAnimating] = useState(false);
 const [showUnlockEffect, setShowUnlockEffect] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -117,7 +117,7 @@ const [showUnlockEffect, setShowUnlockEffect] = useState(false);
 
   return (
     <div className="relative w-full max-w-[160px] sm:max-w-[180px]">
-      <style jsx>{`
+      <style>{`
         @keyframes unlock-glow {
           0%, 100% { filter: drop-shadow(0 0 5px #FFD700); }
           50% { filter: drop-shadow(0 0 20px #FFD700); }
@@ -201,12 +201,12 @@ const [showUnlockEffect, setShowUnlockEffect] = useState(false);
             ${hovered && isActive && !isOpen ? 'shadow-2xl' : 'hover:shadow-xl'}
           `}
           onClick={() => {
-            if (sessionStatus === 'active' && isActive && !isOpen) {
+  if (challengeStatus === 'active' && isActive && !isOpen) {
               onDoorClick?.();
             }
           }}
           onMouseEnter={() => {
-            if (sessionStatus === 'active' && isActive && !isOpen) {
+  if (challengeStatus === 'active' && isActive && !isOpen) {
               setHovered(true);
             }
           }}

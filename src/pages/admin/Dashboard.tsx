@@ -2,14 +2,14 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Trash2, Play, Pause, RotateCcw, ExternalLink, Copy, X, Globe, Users, Tag } from "lucide-react";
-import SessionCreator from "@/components/SessionCreator";
+import { PlusCircle, Trash2, Play, Pause, RotateCcw, ExternalLink, Copy, X, Castle, Swords, Tag, ArrowLeft } from "lucide-react";
+import ChallengeCreator from "@/components/ChallengeCreator";
 import QuestionUploader from "@/components/QuestionUploader";
 import QuestionManager from "@/components/QuestionManager";
 import RoomCreator from "@/components/RoomCreator";
 import UniverseManager, { UniverseManagerHandle } from "@/components/UniverseManager";
-import { getSessions, deleteSession, updateSessionStatus, updateSessionName } from "@/utils/db";
-import { Session, Question, Room } from "@/types/game";
+import { getChallenges, deleteChallenge, updateChallengeStatus, updateChallengeName } from "@/utils/db";
+import { Challenge, Question, Room } from "@/types/game";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
@@ -29,18 +29,18 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const AdminDashboard = () => {
-  const [sessions, setSessions] = useState<Session[]>([]);
+  const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [creationStep, setCreationStep] = useState<"session" | "questions" | "images" | "rooms">("session");
-  const [roomCreationSessionId, setRoomCreationSessionId] = useState<string | null>(null);
-  const [deleteSessionId, setDeleteSessionId] = useState<string | null>(null);
+  const [creationStep, setCreationStep] = useState<"challenge" | "questions" | "images" | "rooms">("challenge");
+  const [roomCreationChallengeId, setRoomCreationChallengeId] = useState<string | null>(null);
+  const [deleteChallengeId, setDeleteChallengeId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showRoomsDialog, setShowRoomsDialog] = useState(false);
-  const [sessionRooms, setSessionRooms] = useState<Room[]>([]);
+  const [challengeRooms, setChallengeRooms] = useState<Room[]>([]);
   const [loadingRooms, setLoadingRooms] = useState(false);
-  const [currentSessionName, setCurrentSessionName] = useState("");
-  const [adminMode, setAdminMode] = useState<"sessions" | "universes">("sessions");
-  const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
+  const [currentChallengeName, setCurrentChallengeName] = useState("");
+  const [adminMode, setAdminMode] = useState<"challenges" | "universes">("challenges");
+  const [editingChallengeId, setEditingChallengeId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState<string>("");
   const [savingName, setSavingName] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<"date" | "name">("date");
@@ -49,28 +49,28 @@ const AdminDashboard = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchSessions();
+    fetchChallenges();
   }, []);
 
-  // Reload sessions when switching back to sessions mode
+  // Reload Challenges when switching back to challenges mode
   useEffect(() => {
-    if (adminMode === "sessions") {
-      fetchSessions();
-    }
+    if (adminMode === "challenges") {
+      fetchChallenges();
+  }
   }, [adminMode]);
 
-  const fetchSessions = async () => {
+  const fetchChallenges = async () => {
     setIsLoading(true);
-    const fetchedSessions = await getSessions();
-    setSessions(fetchedSessions);
+    const fetchedChallenges = await getChallenges();
+    setChallenges(fetchedChallenges);
     setIsLoading(false);
   };
 
-  const handleCreateSession = async (sessionId: string) => {
-    setRoomCreationSessionId(sessionId);
+  const handleCreateChallenge = async (challenge: Challenge) => {
+    setRoomCreationChallengeId(challenge.id);
     setCreationStep("questions");
-    // Refresh sessions to include the newly created session
-    await fetchSessions();
+    // Refresh challenges to include the newly created challenge
+    await fetchChallenges();
   };
 
   const handleUploadQuestions = (questions: Question[]) => {
@@ -90,140 +90,140 @@ const AdminDashboard = () => {
 
   const handleFinishCreation = () => {
     setShowCreateForm(false);
-    setCreationStep("session");
-    setRoomCreationSessionId(null);
-    fetchSessions();
+    setCreationStep("challenge");
+    setRoomCreationChallengeId(null);
+    fetchChallenges();
   };
 
-  const handleDeleteSession = async (sessionId: string) => {
-    setDeleteSessionId(sessionId);
+  const handleDeleteChallenge = async (challengeId: string) => {
+    setDeleteChallengeId(challengeId);
   };
 
-  const confirmDeleteSession = async () => {
-    if (!deleteSessionId) return;
+  const confirmDeleteChallenge = async () => {
+    if (!deleteChallengeId) return;
 
-    // Prevent deletion of active sessions
-    const target = sessions.find(s => s.id === deleteSessionId);
+    // Prevent deletion of active challenges
+    const target = challenges.find(s => s.id === deleteChallengeId);
     if (target?.status === 'active') {
       toast({
         title: "Action not allowed",
-        description: "You cannot delete an active session.",
+        description: "You cannot delete an active challenge.",
         variant: "destructive",
       });
-      setDeleteSessionId(null);
+      setDeleteChallengeId(null);
       return;
     }
 
-    const success = await deleteSession(deleteSessionId);
+    const success = await deleteChallenge(deleteChallengeId);
     
     if (success) {
-      setSessions((prevSessions) => prevSessions.filter((s) => s.id !== deleteSessionId));
+      setChallenges((prevChallenges) => prevChallenges.filter((s) => s.id !== deleteChallengeId));
       toast({
-        title: "Session deleted",
-        description: "The session has been successfully deleted",
+        title: "Challenge deleted",
+        description: "The challenge has been successfully deleted",
       });
     } else {
       toast({
         title: "Error",
-        description: "Failed to delete the session",
+        description: "Failed to delete the challenge",
         variant: "destructive",
       });
     }
     
-    setDeleteSessionId(null);
+    setDeleteChallengeId(null);
   };
 
-  const cancelDeleteSession = () => {
-    setDeleteSessionId(null);
+  const cancelDeleteChallenge = () => {
+    setDeleteChallengeId(null);
   };
 
   // Inline name editing handlers
-  const beginEditSessionName = (sessionId: string, currentName: string) => {
-    setEditingSessionId(sessionId);
+  const beginEditChallengeName = (challengeId: string, currentName: string) => {
+    setEditingChallengeId(challengeId);
     setEditingName(currentName);
   };
 
-  const cancelEditSessionName = () => {
-    setEditingSessionId(null);
+  const cancelEditChallengeName = () => {
+    setEditingChallengeId(null);
     setEditingName("");
   };
 
-  const saveEditSessionName = async () => {
-    if (!editingSessionId) return;
+  const saveEditChallengeName = async () => {
+    if (!editingChallengeId) return;
     const newName = editingName.trim();
     if (!newName) {
       toast({ title: "Nom requis", description: "Le nom ne peut pas être vide", variant: "destructive" });
       return;
     }
     setSavingName(true);
-    const success = await updateSessionName(editingSessionId, newName);
+    const success = await updateChallengeName(editingChallengeId, newName);
     setSavingName(false);
     if (success) {
-      setSessions(prev => prev.map(s => s.id === editingSessionId ? { ...s, name: newName } : s));
-      toast({ title: "Nom mis à jour", description: "Le nom de la session a été modifié" });
-      cancelEditSessionName();
+      setChallenges(prev => prev.map(s => s.id === editingChallengeId ? { ...s, name: newName } : s));
+      toast({ title: "Nom mis à jour", description: "Le nom du challenge a été modifié" });
+      cancelEditChallengeName();
     } else {
       toast({ title: "Erreur", description: "Impossible de mettre à jour le nom", variant: "destructive" });
     }
   };
 
-  const handleSessionStatusChange = async (sessionId: string, status: 'en attente' | 'active' | 'terminée') => {
-    // Prevent starting sessions for universes that are not active
-    const targetSession = sessions.find(s => s.id === sessionId);
-    if (status === 'active' && targetSession && targetSession.sessionType === 'universe') {
-      const parentStatus = targetSession.universeStatus;
+  const handleChallengeStatusChange = async (challengeId: string, status: 'en attente' | 'active' | 'terminée') => {
+    // Prevent starting challenges for universes that are not active
+    const targetChallenge = challenges.find(s => s.id === challengeId);
+    if (status === 'active' && targetChallenge && targetChallenge.challengeType === 'universe') {
+      const parentStatus = targetChallenge.universeStatus;
       if (parentStatus && parentStatus !== 'active') {
         toast({
           title: "Impossible de démarrer",
-          description: "Cet univers est en brouillon ou archivé. Activez l'univers avant de démarrer ses sessions.",
+          description: "Cet univers est en brouillon ou archivé. Activez l'univers avant de démarrer ses challenges.",
           variant: "destructive",
         });
         return;
       }
     }
 
-    const success = await updateSessionStatus(sessionId, status);
+    const success = await updateChallengeStatus(challengeId, status);
     
     if (success) {
-      setSessions(sessions.map(session => 
-        session.id === sessionId ? { ...session, status } : session
+      setChallenges(challenges.map(challenge => 
+        challenge.id === challengeId ? { ...challenge, status } : challenge
       ));
       
       const statusMessage = status === 'active' ? 'started' : status === 'terminée' ? 'ended' : 'reset';
       
       toast({
-        title: `Session ${statusMessage}`,
-        description: `The session has been ${statusMessage} successfully`,
+        title: `Challenge ${statusMessage}`,
+        description: `The challenge has been ${statusMessage} successfully`,
       });
     } else {
       toast({
         title: "Error",
-        description: `Failed to ${status === 'active' ? 'start' : status === 'terminée' ? 'end' : 'reset'} the session`,
+        description: `Failed to ${status === 'active' ? 'start' : status === 'terminée' ? 'end' : 'reset'} the challenge`,
         variant: "destructive",
       });
     }
   };
 
-  const handleViewRooms = async (sessionId: string) => {
+  const handleViewRooms = async (challengeId: string) => {
     setLoadingRooms(true);
     setShowRoomsDialog(true);
     
     try {
-      const session = sessions.find(s => s.id === sessionId);
-      if (session) {
-        setCurrentSessionName(session.name);
+      const challenge = challenges.find(s => s.id === challengeId);
+      if (challenge) {
+        setCurrentChallengeName(challenge.name);
       }
       
       const { data, error } = await supabase
         .from('rooms')
         .select('*')
-        .eq('session_id', sessionId);
+        .eq('challenge_id', challengeId);
       
       if (error) {
         console.error('Error fetching rooms:', error);
         toast({
           title: "Error",
-          description: "Failed to fetch rooms for this session",
+          description: "Failed to fetch rooms for this challenge",
           variant: "destructive",
         });
         return;
@@ -232,7 +232,7 @@ const AdminDashboard = () => {
       if (data && data.length > 0) {
         const formattedRooms = data.map(room => ({
           id: room.id,
-          sessionId: room.session_id,
+          challengeId: (room as any).challenge_id,
           name: room.name,
           tokensLeft: room.tokens_left,
           currentDoor: room.current_door,
@@ -242,9 +242,9 @@ const AdminDashboard = () => {
           link: `${window.location.origin}/game/room/${room.id}`
         }));
         
-        setSessionRooms(formattedRooms);
+        setChallengeRooms(formattedRooms);
       } else {
-        setSessionRooms([]);
+        setChallengeRooms([]);
       }
     } catch (error) {
       console.error('Error in handleViewRooms:', error);
@@ -267,7 +267,7 @@ const AdminDashboard = () => {
   };
 
   const copyAllRoomsAsTable = () => {
-    const tableContent = sessionRooms
+    const tableContent = challengeRooms
       .map(room => `${room.name}\t${room.sigil || '🏰'}\t${room.motto || 'House Motto'}\t${room.link}`)
       .join('\n');
     const header = "Room Name\tSigil\tMotto\tLink\n";
@@ -284,9 +284,10 @@ const AdminDashboard = () => {
         <div className="absolute inset-0 bg-[url('/textures/stone-pattern.svg')] opacity-5" />
         <div className="absolute inset-0 bg-[url('/terminal-bg.png')] opacity-10" />
         <div className="relative z-10">
-          <div className="absolute top-4 right-4">
+          <div className="absolute top-4 left-4">
             <Link to="/">
               <Button variant="ghost" size="sm" className="text-green-400 hover:text-green-300 hover:bg-green-500/10 font-mono">
+                <ArrowLeft className="h-4 w-4 mr-1" />
                 retour
               </Button>
             </Link>
@@ -302,16 +303,16 @@ const AdminDashboard = () => {
           <div className="mt-6 flex justify-center">
             <div className="bg-black/50 border-2 border-green-500 rounded-lg p-1 flex">
               <Button
-                variant={adminMode === "sessions" ? "default" : "ghost"}
+                variant={adminMode === "challenges" ? "default" : "ghost"}
                 className={`font-pixel ${
-                  adminMode === "sessions" 
+                  adminMode === "challenges" 
                     ? "bg-green-500 text-black hover:bg-green-600" 
                     : "text-green-400 hover:bg-green-500/20"
                 }`}
-                onClick={() => setAdminMode("sessions")}
+                onClick={() => setAdminMode("challenges")}
               >
-                <Users className="mr-2" size={18} />
-                MODE SESSIONS
+                <Swords className="mr-2" size={18} />
+                MODE CHALLENGES
               </Button>
               <Button
                 variant={adminMode === "universes" ? "default" : "ghost"}
@@ -322,7 +323,7 @@ const AdminDashboard = () => {
                 }`}
                 onClick={() => setAdminMode("universes")}
               >
-                <Globe className="mr-2" size={18} />
+                <Castle className="mr-2" size={18} />
                 MODE UNIVERS
               </Button>
             </div>
@@ -330,8 +331,8 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Sessions Mode */}
-      {adminMode === "sessions" && (
+      {/* Challenges Mode */}
+      {adminMode === "challenges" && (
         <>
           {showCreateForm ? (
             <div className="mb-8 bg-black/90 border-2 border-green-500 rounded-lg p-6 relative overflow-hidden">
@@ -339,14 +340,14 @@ const AdminDashboard = () => {
               <div className="absolute inset-0 bg-[url('/terminal-bg.png')] opacity-10" />
               <div className="relative z-10">
                 <div className="mb-4 flex justify-between items-center">
-                  <h2 className="text-xl font-bold font-medieval text-green-400">$ INITIALISER_NOUVELLE_SESSION</h2>
+                  <h2 className="text-xl font-bold font-medieval text-green-400">$ INITIALISER_NOUVEAU_CHALLENGE</h2>
                   <Button
                     variant="outline"
                     className="border-green-500 text-green-400 hover:bg-green-500/20"
                     onClick={() => {
                       setShowCreateForm(false);
-                      setCreationStep("session");
-                      setRoomCreationSessionId(null);
+                      setCreationStep("challenge");
+                      setRoomCreationChallengeId(null);
                     }}
                   >
                     <X className="mr-2" size={18} />
@@ -354,30 +355,30 @@ const AdminDashboard = () => {
                   </Button>
                 </div>
 
-                {creationStep === "session" && (
-                  <SessionCreator onCreateSession={handleCreateSession} />
+                {creationStep === "challenge" && (
+                <ChallengeCreator onCreateChallenge={handleCreateChallenge} />
                 )}
                 
-                {creationStep === "questions" && roomCreationSessionId && (
+                {creationStep === "questions" && roomCreationChallengeId && (
                   <QuestionUploader
-                    sessionId={roomCreationSessionId}
+                    challengeId={roomCreationChallengeId}
                     onUpload={handleUploadQuestions}
                   />
                 )}
                 
-                {creationStep === "images" && roomCreationSessionId && (
+                {creationStep === "images" && roomCreationChallengeId && (
                   <QuestionManager
-                    sessionId={roomCreationSessionId}
+                    challengeId={roomCreationChallengeId}
                     onComplete={handleQuestionsWithImagesComplete}
                   />
                 )}
                 
-                {creationStep === "rooms" && roomCreationSessionId && (
+                {creationStep === "rooms" && roomCreationChallengeId && (
                   <RoomCreator
-                    sessionId={roomCreationSessionId}
+                    challengeId={roomCreationChallengeId}
                     onCreateRooms={handleCreateRooms}
                     onContinue={handleFinishCreation}
-                    hintEnabled={sessions.find(s => s.id === roomCreationSessionId)?.hintEnabled ?? true}
+                    hintEnabled={challenges.find(s => s.id === roomCreationChallengeId)?.hintEnabled ?? true}
                   />
                 )}
               </div>
@@ -389,7 +390,7 @@ const AdminDashboard = () => {
                 onClick={() => setShowCreateForm(true)}
               >
                 <PlusCircle className="mr-2" size={18} />
-                $ NOUVELLE_SESSION
+                $ NOUVEAU_CHALLENGE
               </Button>
             </div>
           )}
@@ -426,16 +427,16 @@ const AdminDashboard = () => {
                   </div>
                   <TabsList className="w-full mb-6 font-pixel bg-black border-2 border-green-500">
                     <TabsTrigger value="all" className="flex-1 text-green-400 data-[state=active]:bg-green-500 data-[state=active]:text-black">
-                      TOUTES_SESSIONS
+                      TOUS_CHALLENGES
                     </TabsTrigger>
                     <TabsTrigger value="active" className="flex-1 text-green-400 data-[state=active]:bg-green-500 data-[state=active]:text-black">
-                      SESSIONS_ACTIVES
+                      CHALLENGES_ACTIFS
                     </TabsTrigger>
                     <TabsTrigger value="en attente" className="flex-1 text-green-400 data-[state=active]:bg-green-500 data-[state=active]:text-black">
-                      SESSIONS_EN_ATTENTE
+                      CHALLENGES_EN_ATTENTE
                     </TabsTrigger>
                     <TabsTrigger value="terminée" className="flex-1 text-green-400 data-[state=active]:bg-green-500 data-[state=active]:text-black">
-                      SESSIONS_TERMINEES
+                      CHALLENGES_TERMINÉS
                     </TabsTrigger>
                   </TabsList>
 
@@ -443,16 +444,16 @@ const AdminDashboard = () => {
                 <TabsContent key={tab} value={tab} className="mt-0">
                   {isLoading ? (
                     <div className="text-center py-8 text-green-400 font-pixel">
-                      <span className="animate-pulse">Chargement des sessions...</span>
+                      <span className="animate-pulse">Chargement des challenges...</span>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {sessions
-                        .filter((session) => 
+                      {challenges
+                        .filter((challenge) => 
                           tab === "all" || 
-                          (tab === "active" && session.status === "active") || 
-                          (tab === "en attente" && session.status === "en attente") || 
-                          (tab === "terminée" && session.status === "terminée")
+                          (tab === "active" && challenge.status === "active") || 
+                          (tab === "en attente" && challenge.status === "en attente") || 
+                          (tab === "terminée" && challenge.status === "terminée")
                         )
                         .sort((a, b) => {
                           if (sortBy === "name") {
@@ -467,9 +468,9 @@ const AdminDashboard = () => {
                           const cmp = at - bt; // asc by default
                           return sortDir === "asc" ? cmp : -cmp;
                         })
-                        .map((session) => (
+                        .map((challenge) => (
                           <div
-                            key={session.id}
+                            key={challenge.id}
                             className="bg-black/90 border-2 border-green-500 rounded-lg p-4 relative overflow-hidden"
                           >
                             <div className="absolute inset-0 bg-[url('/textures/stone-pattern.svg')] opacity-5" />
@@ -477,15 +478,15 @@ const AdminDashboard = () => {
                             <div className="relative z-10">
                               <div className="flex justify-between items-start mb-2">
                                 <div className="flex items-center gap-2">
-                                  {editingSessionId === session.id ? (
+                                  {editingChallengeId === challenge.id ? (
                                     <Input
                                       autoFocus
                                       value={editingName}
                                       onChange={(e) => setEditingName(e.target.value)}
-                                      onBlur={saveEditSessionName}
+                                      onBlur={saveEditChallengeName}
                                       onKeyDown={(e) => {
-                                        if (e.key === 'Enter') saveEditSessionName();
-                                        if (e.key === 'Escape') cancelEditSessionName();
+                                        if (e.key === 'Enter') saveEditChallengeName();
+                                        if (e.key === 'Escape') cancelEditChallengeName();
                                       }}
                                       disabled={savingName}
                                       className="h-8 bg-black/50 border-green-500 text-green-400 font-pixel"
@@ -493,27 +494,27 @@ const AdminDashboard = () => {
                                   ) : (
                                     <h3
                                       className="text-lg font-bold font-pixel text-green-400 cursor-text"
-                                      onClick={() => beginEditSessionName(session.id, session.name)}
+                                      onClick={() => beginEditChallengeName(challenge.id, challenge.name)}
                                       title="Cliquer pour renommer"
                                     >
-                                      $ {session.name}
+                                      $ {challenge.name}
                                     </h3>
                                   )}
-                                  {/* Session Type Indicator */}
+                                  {/* Challenge Type Indicator */}
                                   <div className={`px-2 py-1 rounded text-xs font-pixel ${
-                                    session.sessionType === 'universe' 
+                                    challenge.challengeType === 'universe' 
                                       ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' 
                                       : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
                                   }`}>
-                                    {session.sessionType === 'universe' ? 'UNIVERS' : 'STANDALONE'}
+                                    {challenge.challengeType === 'universe' ? 'UNIVERS' : 'STANDALONE'}
                                   </div>
                                 </div>
-                                {session.status !== 'active' && (
+                                {challenge.status !== 'active' && (
                                   <Button
                                     variant="ghost"
                                     size="icon"
                                     className="text-red-500 hover:bg-red-500/20"
-                                    onClick={() => handleDeleteSession(session.id)}
+                                    onClick={() => handleDeleteChallenge(challenge.id)}
                                   >
                                     <Trash2 size={18} />
                                   </Button>
@@ -523,20 +524,20 @@ const AdminDashboard = () => {
                               <div className="text-sm text-green-400/80 font-mono mb-4 space-y-1">
                                 <div>
                                   {(() => {
-                                    const created = session.createdAt || session.startTime;
+                                    const created = challenge.createdAt || challenge.startTime;
                                     return <>Créée le: {created ? new Date(created).toLocaleString() : '—'}</>;
                                   })()}
                                 </div>
                                 <div>
-                                  Questions: {session.questions?.length || 0}
+                                  Questions: {challenge.questions?.length || 0}
                                 </div>
                                 <div>
-                                  Statut: <span className="font-semibold uppercase">{session.status}</span>
+                                  Statut: <span className="font-semibold uppercase">{challenge.status}</span>
                                 </div>
-                                {session.sessionType === 'universe' && session.universeId && (
+                                {challenge.challengeType === 'universe' && challenge.universeId && (
                                   <div className="text-purple-400">
                                     <Tag size={12} className="inline mr-1" />
-                                    {session.universeName || 'Session d\'univers'}
+                                    {challenge.universeName || 'Challenge d\'univers'}
                                   </div>
                                 )}
                               </div>
@@ -546,14 +547,14 @@ const AdminDashboard = () => {
                                   size="sm"
                                   variant="outline"
                                   className="border-green-500 text-green-400 hover:bg-green-500/20"
-                                  onClick={() => handleViewRooms(session.id)}
+                                  onClick={() => handleViewRooms(challenge.id)}
                                 >
                                   <ExternalLink size={16} className="mr-1" /> VOIR_TROUPES
                                 </Button>
                                 
-                                {session.status === 'en attente' && (() => {
-                                  const isUniverseSession = session.sessionType === 'universe';
-                                  const isBlockedByUniverse = isUniverseSession && session.universeStatus !== 'active';
+                                {challenge.status === 'en attente' && (() => {
+                                  const isUniverseChallenge = challenge.challengeType === 'universe';
+                                  const isBlockedByUniverse = isUniverseChallenge && challenge.universeStatus !== 'active';
                                   if (isBlockedByUniverse) {
                                     return (
                                       <TooltipProvider>
@@ -578,28 +579,28 @@ const AdminDashboard = () => {
                                     <Button 
                                       size="sm" 
                                       className="bg-green-500 hover:bg-green-600 text-black font-pixel"
-                                      onClick={() => handleSessionStatusChange(session.id, 'active')}
+                                      onClick={() => handleChallengeStatusChange(challenge.id, 'active')}
                                     >
                                       <Play size={16} className="mr-1" /> DEMARRER
                                     </Button>
                                   );
                                 })()}
                                 
-                                {session.status === 'active' && (
+                                {challenge.status === 'active' && (
                                   <Button 
                                     size="sm" 
                                     className="bg-yellow-500 hover:bg-yellow-600 text-black font-pixel"
-                                    onClick={() => handleSessionStatusChange(session.id, 'terminée')}
+                                    onClick={() => handleChallengeStatusChange(challenge.id, 'terminée')}
                                   >
                                     <Pause size={16} className="mr-1" /> TERMINER
                                   </Button>
                                 )}
                                 
-                                {session.status === 'terminée' && (
+                                {challenge.status === 'terminée' && (
                                   <Button 
                                     size="sm" 
                                     className="bg-blue-500 hover:bg-blue-600 text-black font-pixel"
-                                    onClick={() => handleSessionStatusChange(session.id, 'en attente')}
+                                    onClick={() => handleChallengeStatusChange(challenge.id, 'en attente')}
                                   >
                                     <RotateCcw size={16} className="mr-1" /> REINITIALISER
                                   </Button>
@@ -609,16 +610,16 @@ const AdminDashboard = () => {
                           </div>
                         ))}
 
-                      {sessions.filter(
-                        (session) =>
+                      {challenges.filter(
+                        (challenge) =>
                           tab === "all" || 
-                          (tab === "active" && session.status === "active") || 
-                          (tab === "en attente" && session.status === "en attente") || 
-                          (tab === "terminée" && session.status === "terminée")
+                          (tab === "active" && challenge.status === "active") || 
+                          (tab === "en attente" && challenge.status === "en attente") || 
+                          (tab === "terminée" && challenge.status === "terminée")
                       ).length === 0 && (
                         <div className="col-span-full py-8 text-center">
                           <p className="text-green-400 font-pixel">
-                            Aucune session{tab === "all" ? "" : " " + tab} trouvée_
+                            Aucun challenge{tab === "all" ? "" : " " + tab} trouvé_
                           </p>
                         </div>
                       )}
@@ -656,12 +657,12 @@ const AdminDashboard = () => {
         </>
       )}
 
-      <AlertDialog open={!!deleteSessionId} onOpenChange={() => setDeleteSessionId(null)}>
+      <AlertDialog open={!!deleteChallengeId} onOpenChange={() => setDeleteChallengeId(null)}>
         <AlertDialogContent className="bg-black border-2 border-red-500">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-red-500 font-pixel">! ATTENTION !</AlertDialogTitle>
             <AlertDialogDescription className="text-red-400 font-mono">
-              Cette action supprimera définitivement la session, toutes les troupes associées,
+              Cette action supprimera définitivement le challenge, toutes les troupes associées,
               les questions et les scores. Cette action est irréversible.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -670,7 +671,7 @@ const AdminDashboard = () => {
               ANNULER
             </AlertDialogCancel>
             <AlertDialogAction
-              onClick={confirmDeleteSession}
+              onClick={confirmDeleteChallenge}
               className="bg-red-500 hover:bg-red-600 text-black font-pixel"
             >
               CONFIRMER_SUPPRESSION
@@ -680,16 +681,16 @@ const AdminDashboard = () => {
       </AlertDialog>
 
       <Dialog open={showRoomsDialog} onOpenChange={setShowRoomsDialog}>
-        <DialogContent className="bg-black border-2 border-green-500 sm:max-w-md">
+        <DialogContent className="bg-black border-2 border-green-500 sm:max-w-2xl max-h-[85vh]">
           <div className="absolute inset-0 bg-[url('/textures/stone-pattern.svg')] opacity-5" />
           <div className="absolute inset-0 bg-[url('/terminal-bg.png')] opacity-10" />
           <div className="relative z-10">
             <DialogHeader>
               <DialogTitle className="font-pixel text-green-400">
-                $ {currentSessionName} - Troupes
+                $ {currentChallengeName} - Troupes
               </DialogTitle>
               <DialogDescription className="text-green-400/80 font-mono">
-                Partagez ces liens avec les participants pour rejoindre la session de jeu.
+                Partagez ces liens avec les participants pour rejoindre le challenge.
               </DialogDescription>
             </DialogHeader>
             
@@ -710,12 +711,12 @@ const AdminDashboard = () => {
                   <div className="animate-spin h-6 w-6 border-2 border-green-500 border-t-transparent rounded-full mx-auto mb-2"></div>
                   <p className="text-green-400 font-pixel">Chargement des troupes...</p>
                 </div>
-              ) : sessionRooms.length === 0 ? (
+              ) : challengeRooms.length === 0 ? (
                 <p className="text-center text-green-400 font-pixel"> Aucune troupe trouvée_</p>
               ) : (
-                <ScrollArea className="max-h-[60vh]">
+                <ScrollArea className="h-[60vh]">
                   <div className="space-y-4">
-                    {sessionRooms.map((room) => (
+                    {challengeRooms.map((room) => (
                       <div key={room.id} className="border-2 border-green-500/50 rounded-md p-4 bg-black/50">
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-3">

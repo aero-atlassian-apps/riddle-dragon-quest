@@ -5,10 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { createUniverse, updateUniverse, deleteUniverse } from "@/utils/db";
-import { PlusCircle, Edit, Trash2, Globe, Users, Trophy, Settings } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Castle, Users, Trophy, Settings } from "lucide-react";
 import SimpleUniverseCreator from "./SimpleUniverseCreator";
-import SessionCreatorModal from "./SessionCreatorModal";
+import ChallengeCreatorModal from "./ChallengeCreatorModal";
 import UniverseCard from "./UniverseCard";
+import { Universe } from "@/types/game";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,17 +21,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-interface Universe {
-  id: string;
-  name: string;
-  description: string;
-  poster_image_url?: string;
-  status: 'draft' | 'active' | 'archived';
-  created_at: string;
-  updated_at: string;
-  troupe_count?: number;
-  session_count?: number;
-}
+// Use shared Universe type from types/game (includes challenge_count)
 
 export type UniverseManagerHandle = {
   openCreator: () => void;
@@ -40,7 +31,7 @@ const UniverseManager = forwardRef<UniverseManagerHandle>((props, ref) => {
   const [universes, setUniverses] = useState<Universe[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreatorOpen, setIsCreatorOpen] = useState(false);
-  const [isSessionModalOpen, setIsSessionModalOpen] = useState(false);
+  const [isChallengeModalOpen, setIsChallengeModalOpen] = useState(false);
   const [selectedUniverseId, setSelectedUniverseId] = useState<string | null>(null);
   const [editingUniverse, setEditingUniverse] = useState<Universe | null>(null);
   const [deleteUniverseId, setDeleteUniverseId] = useState<string | null>(null);
@@ -57,7 +48,7 @@ const UniverseManager = forwardRef<UniverseManagerHandle>((props, ref) => {
         .select(`
           *,
           troupe_count:universe_troupes(count),
-          session_count:sessions(count)
+          challenge_count:challenges(count)
         `)
         .order('created_at', { ascending: false });
 
@@ -75,7 +66,7 @@ const UniverseManager = forwardRef<UniverseManagerHandle>((props, ref) => {
       const transformedData = data?.map(universe => ({
         ...universe,
         troupe_count: universe.troupe_count?.[0]?.count || 0,
-        session_count: universe.session_count?.[0]?.count || 0
+        challenge_count: universe.challenge_count?.[0]?.count || 0
       })) || [];
 
       setUniverses(transformedData);
@@ -135,18 +126,18 @@ const UniverseManager = forwardRef<UniverseManagerHandle>((props, ref) => {
     setIsCreatorOpen(true);
   };
 
-  const handleAddSession = (universeId: string) => {
+  const handleAddChallenge = (universeId: string) => {
     setSelectedUniverseId(universeId);
-    setIsSessionModalOpen(true);
+    setIsChallengeModalOpen(true);
   };
 
-  const handleSessionComplete = () => {
-    setIsSessionModalOpen(false);
+  const handleChallengeComplete = () => {
+    setIsChallengeModalOpen(false);
     setSelectedUniverseId(null);
-    fetchUniverses(); // Refresh to update session counts
+    fetchUniverses(); // Refresh to update challenge counts
     toast({
       title: "Succès",
-      description: "Session créée avec succès",
+      description: "Challenge créé avec succès",
     });
   };
 
@@ -155,7 +146,7 @@ const UniverseManager = forwardRef<UniverseManagerHandle>((props, ref) => {
     if (universe) {
       toast({
         title: `Détails de l'univers: ${universe.name}`,
-        description: `Status: ${universe.status} | Troupes: ${universe.troupe_count} | Sessions: ${universe.session_count}`,
+        description: `Status: ${universe.status} | Troupes: ${universe.troupe_count} | Challenges: ${universe.challenge_count}`,
       });
     }
   };
@@ -261,14 +252,14 @@ const UniverseManager = forwardRef<UniverseManagerHandle>((props, ref) => {
         editingUniverse={editingUniverse}
       />
 
-      {/* Session Creator Modal */}
-      <SessionCreatorModal
-        isOpen={isSessionModalOpen}
+      {/* Challenge Creator Modal */}
+      <ChallengeCreatorModal
+        isOpen={isChallengeModalOpen}
         onClose={() => {
-          setIsSessionModalOpen(false);
+          setIsChallengeModalOpen(false);
           setSelectedUniverseId(null);
         }}
-        onSessionCreated={handleSessionComplete}
+        onChallengeCreated={handleChallengeComplete}
         universeId={selectedUniverseId || ''}
         universeName={selectedUniverseId ? universes.find(u => u.id === selectedUniverseId)?.name || 'Univers inconnu' : 'Univers inconnu'}
       />
@@ -276,7 +267,7 @@ const UniverseManager = forwardRef<UniverseManagerHandle>((props, ref) => {
       {universes.length === 0 ? (
         <Card className="bg-black/50 border-2 border-green-500">
           <CardContent className="text-center py-8">
-            <Globe className="mx-auto h-12 w-12 text-green-400 mb-4" />
+            <Castle className="mx-auto h-12 w-12 text-green-400 mb-4" />
             <p className="text-green-400 font-pixel">Aucun univers créé pour le moment</p>
             <p className="text-green-300 text-sm mt-2">Créez votre premier univers pour commencer</p>
           </CardContent>
@@ -287,7 +278,7 @@ const UniverseManager = forwardRef<UniverseManagerHandle>((props, ref) => {
             <UniverseCard
               key={universe.id}
               universe={universe}
-              onAddSession={handleAddSession}
+              onAddChallenge={handleAddChallenge}
               onView={handleViewDetails}
               onDelete={handleDelete}
               onActivate={handleActivate}
@@ -298,15 +289,15 @@ const UniverseManager = forwardRef<UniverseManagerHandle>((props, ref) => {
         </div>
       )}
 
-      {/* Styled delete confirmation matching session deletion */}
+      {/* Styled delete confirmation matching challenge deletion */}
       <AlertDialog open={!!deleteUniverseId} onOpenChange={() => setDeleteUniverseId(null)}>
         <AlertDialogContent className="bg-black border-2 border-red-500">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-red-500 font-pixel">! ATTENTION !</AlertDialogTitle>
-            <AlertDialogDescription className="text-red-400 font-mono">
-              Cette action supprimera définitivement l'univers, toutes les troupes, sessions,
-              salles, questions et scores associés. Cette action est irréversible.
-            </AlertDialogDescription>
+          <AlertDialogDescription className="text-red-400 font-mono">
+            Cette action supprimera définitivement l'univers, toutes les troupes, challenges,
+            arènes, questions et scores associés. Cette action est irréversible.
+          </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="border-green-500 text-green-400 hover:bg-green-500/20">

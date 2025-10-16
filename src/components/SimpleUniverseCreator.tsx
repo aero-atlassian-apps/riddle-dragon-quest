@@ -6,7 +6,7 @@ import { Textarea } from './ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { useToast } from './ui/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
-import { Save, Users } from 'lucide-react';
+import { Save, Crown } from 'lucide-react';
 
 // Import existing components
 import TroupeCreator from './TroupeCreator';
@@ -147,7 +147,7 @@ const SimpleUniverseCreator: React.FC<SimpleUniverseCreatorProps> = ({
               <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${
                 step === 'troupes' ? 'border-green-400 bg-green-400/20' : 'border-gray-500'
               }`}>
-                <Users className="w-4 h-4" />
+                <Crown className="w-4 h-4" />
               </div>
               <span className="font-mono">Troupes</span>
             </div>

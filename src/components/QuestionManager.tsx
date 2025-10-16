@@ -6,14 +6,14 @@ import { Label } from './ui/label';
 import { Question } from '@/types/game';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, Image as ImageIcon, Check, X } from 'lucide-react';
-import { getSessionQuestions, uploadQuestionImage, updateQuestionImage } from '@/utils/db';
+import { getChallengeQuestions, uploadQuestionImage, updateQuestionImage } from '@/utils/db';
 
 interface QuestionManagerProps {
-  sessionId: string;
+  challengeId: string;
   onComplete: () => void;
 }
 
-const QuestionManager: React.FC<QuestionManagerProps> = ({ sessionId, onComplete }) => {
+const QuestionManager: React.FC<QuestionManagerProps> = ({ challengeId, onComplete }) => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState<{ [key: number]: boolean }>({});
@@ -22,13 +22,13 @@ const QuestionManager: React.FC<QuestionManagerProps> = ({ sessionId, onComplete
   useEffect(() => {
     const fetchQuestions = async () => {
       setLoading(true);
-      const fetchedQuestions = await getSessionQuestions(sessionId);
+      const fetchedQuestions = await getChallengeQuestions(challengeId);
       setQuestions(fetchedQuestions);
       setLoading(false);
     };
     
     fetchQuestions();
-  }, [sessionId]);
+  }, [challengeId]);
 
   const handleImageUpload = async (questionId: number, file: File) => {
     setUploading(prev => ({ ...prev, [questionId]: true }));

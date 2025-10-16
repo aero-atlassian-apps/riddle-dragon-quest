@@ -3,37 +3,38 @@ import { Button } from './ui/button';
 import { useToast } from './ui/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { BookOpen, Upload, Image as ImageIcon } from 'lucide-react';
+import { Challenge } from '@/types/game';
 
 // Import existing components
-import SessionCreator from './SessionCreator';
+import ChallengeCreator from './ChallengeCreator';
 import QuestionUploader from './QuestionUploader';
 import QuestionManager from './QuestionManager';
 
-interface SessionCreatorModalProps {
+interface ChallengeCreatorModalProps {
   isOpen: boolean;
   onClose: () => void;
   universeId: string;
   universeName: string;
-  onSessionCreated: () => void;
+  onChallengeCreated: () => void;
 }
 
-const SessionCreatorModal: React.FC<SessionCreatorModalProps> = ({
+const ChallengeCreatorModal: React.FC<ChallengeCreatorModalProps> = ({
   isOpen,
   onClose,
   universeId,
   universeName,
-  onSessionCreated
+  onChallengeCreated
 }) => {
   const { toast } = useToast();
-  const [step, setStep] = useState<'session' | 'questions' | 'images'>('session');
-  const [createdSessionId, setCreatedSessionId] = useState<string | null>(null);
+  const [step, setStep] = useState<'challenge' | 'questions' | 'images'>('challenge');
+  const [createdChallengeId, setCreatedChallengeId] = useState<string | null>(null);
 
-  const handleSessionCreated = (sessionId: string) => {
-    setCreatedSessionId(sessionId);
+  const handleChallengeCreated = (challenge: Challenge) => {
+    setCreatedChallengeId(challenge.id);
     setStep('questions');
     toast({
-      title: "Session créée!",
-      description: "Maintenant, ajoutez des questions à votre session.",
+      title: "Challenge créé!",
+      description: "Maintenant, ajoutez des questions à votre challenge.",
     });
   };
 
@@ -46,17 +47,17 @@ const SessionCreatorModal: React.FC<SessionCreatorModalProps> = ({
   };
 
   const handleImagesCompleted = () => {
-    onSessionCreated();
+    onChallengeCreated();
     handleClose();
     toast({
-      title: "Session complète!",
+      title: "Challenge complet!",
       description: "Questions et images ont été configurées avec succès.",
     });
   };
 
   const handleClose = () => {
-    setStep('session');
-    setCreatedSessionId(null);
+    setStep('challenge');
+    setCreatedChallengeId(null);
     onClose();
   };
 
@@ -65,7 +66,7 @@ const SessionCreatorModal: React.FC<SessionCreatorModalProps> = ({
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-black/95 border-2 border-green-500" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-green-400 font-pixel">
-            {step === 'session' ? '$ CRÉER_SESSION' : step === 'questions' ? '$ AJOUTER_QUESTIONS' : '$ AJOUTER_IMAGES'}
+            {step === 'challenge' ? '$ CRÉER_CHALLENGE' : step === 'questions' ? '$ AJOUTER_QUESTIONS' : '$ AJOUTER_IMAGES'}
           </DialogTitle>
           <p className="text-green-300 font-mono">
             Univers: {universeName}
@@ -75,13 +76,13 @@ const SessionCreatorModal: React.FC<SessionCreatorModalProps> = ({
         <div className="space-y-6">
           {/* Progress indicator */}
           <div className="flex items-center space-x-4">
-            <div className={`flex items-center space-x-2 ${step === 'session' ? 'text-green-400' : 'text-green-600'}`}>
+            <div className={`flex items-center space-x-2 ${step === 'challenge' ? 'text-green-400' : 'text-green-600'}`}>
               <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${
-                step === 'session' ? 'border-green-400 bg-green-400/20' : 'border-green-600 bg-green-600'
+                step === 'challenge' ? 'border-green-400 bg-green-400/20' : 'border-green-600 bg-green-600'
               }`}>
                 {step === 'questions' ? <BookOpen className="w-4 h-4" /> : '1'}
               </div>
-              <span className="font-mono">Session</span>
+              <span className="font-mono">Challenge</span>
             </div>
             <div className="flex-1 h-0.5 bg-green-600"></div>
             <div className={`flex items-center space-x-2 ${step === 'questions' ? 'text-green-400' : 'text-gray-500'}`}>
@@ -103,24 +104,24 @@ const SessionCreatorModal: React.FC<SessionCreatorModalProps> = ({
             </div>
           </div>
 
-          {step === 'session' && (
-            <SessionCreator
+          {step === 'challenge' && (
+            <ChallengeCreator
               universeId={universeId}
-              onCreateSession={handleSessionCreated}
+              onCreateChallenge={handleChallengeCreated}
             />
           )}
 
-          {step === 'questions' && createdSessionId && (
+          {step === 'questions' && createdChallengeId && (
             <div className="space-y-4">
               <div className="bg-black/50 border border-green-500/50 rounded-lg p-4">
-                <h3 className="text-green-400 font-mono mb-2">Session créée avec succès!</h3>
+                <h3 className="text-green-400 font-mono mb-2">Challenge créé avec succès!</h3>
                 <p className="text-green-300 text-sm">
-                  Maintenant, ajoutez des questions à votre session pour la rendre interactive.
+                  Maintenant, ajoutez des questions à votre challenge pour le rendre interactif.
                 </p>
               </div>
               
               <QuestionUploader
-                sessionId={createdSessionId}
+                challengeId={createdChallengeId}
                 onUpload={handleQuestionsUploaded}
                 onClose={handleQuestionsUploaded}
                 universeContext={true}
@@ -128,17 +129,17 @@ const SessionCreatorModal: React.FC<SessionCreatorModalProps> = ({
             </div>
           )}
 
-          {step === 'images' && createdSessionId && (
+          {step === 'images' && createdChallengeId && (
             <div className="space-y-4">
               <div className="bg-black/50 border border-green-500/50 rounded-lg p-4">
                 <h3 className="text-green-400 font-mono mb-2">Questions ajoutées!</h3>
                 <p className="text-green-300 text-sm">
-                  Ajoutez une image pour chaque question afin d’enrichir votre session.
+                  Ajoutez une image pour chaque question afin d’enrichir votre challenge.
                 </p>
               </div>
 
               <QuestionManager
-                sessionId={createdSessionId}
+                challengeId={createdChallengeId}
                 onComplete={handleImagesCompleted}
               />
             </div>
@@ -149,4 +150,4 @@ const SessionCreatorModal: React.FC<SessionCreatorModalProps> = ({
   );
 };
 
-export default SessionCreatorModal;
+export default ChallengeCreatorModal;

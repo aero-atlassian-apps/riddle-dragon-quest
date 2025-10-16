@@ -34,17 +34,15 @@ const Index = () => {
               </Button>
             </Link>
             
-            {/* Sessions and Universes links removed */}
+            {/* Challenges and Universes links removed */}
             
-            <button 
+            <Button 
               onClick={() => setShowChallenge(true)}
-              className="transform transition-transform hover:scale-105"
+              className="transform transition-transform hover:scale-105 w-full sm:w-64 h-16 text-lg bg-[#2a2a2a] hover:bg-[#3a3a3a] text-[#ffd700] border-2 border-[#ffd700]/30 group shadow-[0_0_5px_#ffd700]"
             >
-              <Button className="w-full sm:w-64 h-16 text-lg bg-[#2a2a2a] hover:bg-[#3a3a3a] text-[#ffd700] border-2 border-[#ffd700]/30 group shadow-[0_0_5px_#ffd700]">
-                 <Gamepad2 className="mr-2 h-5 w-5 group-hover:animate-pulse" />
-                 Défi du jour
-              </Button>
-            </button>
+              <Gamepad2 className="mr-2 h-5 w-5 group-hover:animate-pulse" />
+              Défi du jour
+            </Button>
             
             <Link to="/leaderboard" className="transform transition-transform hover:scale-105">
               <Button className="w-full sm:w-64 h-16 text-lg bg-[#2a2a2a] hover:bg-[#1a1a1a] text-[#39ff14] border-2 border-[#00ff00]/30 group shadow-[0_0_5px_#39ff14]">

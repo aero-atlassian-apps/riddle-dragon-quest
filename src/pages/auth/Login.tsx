@@ -59,7 +59,7 @@ const Login = () => {
           .select('*')
           .eq('user_id', userId)
           .eq('role', 'admin')
-          .single();
+          .maybeSingle();
 
         // Only add admin role if it doesn't exist
         if (!existingRole) {

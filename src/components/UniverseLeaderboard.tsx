@@ -9,7 +9,7 @@ interface UniverseLeaderboardEntry {
   room_name: string;
   total_score: number;
   completion_time: string;
-  sessions_completed: number;
+  challenges_completed: number;
   last_updated: string;
 }
 
