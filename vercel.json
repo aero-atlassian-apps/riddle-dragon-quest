@@ -2,19 +2,19 @@
     "rewrites": [
         {
             "source": "/api/supabase/rest/v1/(.*)",
-            "destination": "https://jmpmucdoqkcpetdfnxrj.supabase.co/rest/v1/$1"
+            "destination": "/api/proxy/rest/$1"
         },
         {
             "source": "/api/supabase/auth/v1/(.*)",
-            "destination": "https://jmpmucdoqkcpetdfnxrj.supabase.co/auth/v1/$1"
+            "destination": "/api/proxy/auth/$1"
         },
         {
             "source": "/api/supabase/storage/v1/(.*)",
-            "destination": "https://jmpmucdoqkcpetdfnxrj.supabase.co/storage/v1/$1"
+            "destination": "/api/proxy/storage/$1"
         },
         {
             "source": "/api/supabase/realtime/v1/(.*)",
-            "destination": "https://jmpmucdoqkcpetdfnxrj.supabase.co/realtime/v1/$1"
+            "destination": "/api/proxy/realtime/$1"
         },
         {
             "source": "/(.*)",
