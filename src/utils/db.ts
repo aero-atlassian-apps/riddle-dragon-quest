@@ -946,12 +946,14 @@ export const insertGameScore = async (
     total_score: totalScore
   };
   
+  console.log('[SCORE DEBUG] Attempting to upsert score data:', scoreData);
+  
   // Use Supabase's upsert functionality with the unique constraint
   // This will insert if no record exists, or update if it does exist
   const { data, error } = await supabase
     .from('scores')
     .upsert(scoreData, {
-      onConflict: 'unique_room_challenge_score',
+      onConflict: 'room_id,challenge_id',
       ignoreDuplicates: false
     })
     .select();
@@ -964,10 +966,12 @@ export const insertGameScore = async (
       hint: error.hint,
       code: error.code
     });
+    console.error('[SCORE DEBUG] Score data that failed:', scoreData);
     return false;
   }
 
   console.log('[SCORE DEBUG] Score record upserted successfully:', data);
+  console.log('[SCORE DEBUG] Number of records affected:', data?.length || 0);
   
   // Update universe leaderboard if universeId is provided
   if (universeId) {
