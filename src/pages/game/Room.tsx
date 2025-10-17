@@ -730,7 +730,7 @@ const Room: React.FC = () => {
                     });
 
                     // Insert/update score record after each correct answer to keep universe leaderboard current
-                    if (room.challengeId && room.universeId) {
+                    if (room.challengeId) {
                       const { insertGameScore } = await import('@/utils/db');
                       const scoreInserted = await insertGameScore(
                         room.id,
@@ -790,7 +790,7 @@ const Room: React.FC = () => {
                         } : null);
                         
                         // Final score insertion for universe leaderboard (with time bonus)
-                        if (room.challengeId && room.universeId) {
+                        if (room.challengeId) {
                           const { insertGameScore } = await import('@/utils/db');
                           const scoreInserted = await insertGameScore(
                             room.id,
