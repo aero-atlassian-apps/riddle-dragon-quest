@@ -951,7 +951,7 @@ export const insertGameScore = async (
   const { data, error } = await supabase
     .from('scores')
     .upsert(scoreData, {
-      onConflict: 'room_id,challenge_id',
+      onConflict: 'unique_room_challenge_score',
       ignoreDuplicates: false
     })
     .select();
