@@ -946,42 +946,15 @@ export const insertGameScore = async (
     total_score: totalScore
   };
   
-  // First, try to find existing record for this room+challenge combination
-  const { data: existingScore, error: selectError } = await supabase
+  // Use Supabase's upsert functionality with the unique constraint
+  // This will insert if no record exists, or update if it does exist
+  const { data, error } = await supabase
     .from('scores')
-    .select('id')
-    .eq('room_id', roomId)
-    .eq('challenge_id', challengeId)
-    .single();
-
-  let data, error;
-  
-  if (existingScore) {
-    // Update existing record
-    console.log('[SCORE DEBUG] Updating existing score record with ID:', existingScore.id);
-    const result = await supabase
-      .from('scores')
-      .update(scoreData)
-      .eq('id', existingScore.id)
-      .select();
-    
-    data = result.data;
-    error = result.error;
-  } else if (selectError && selectError.code === 'PGRST116') {
-    // No existing record found, insert new one
-    console.log('[SCORE DEBUG] No existing record found, inserting new score record');
-    const result = await supabase
-      .from('scores')
-      .insert([scoreData])
-      .select();
-    
-    data = result.data;
-    error = result.error;
-  } else {
-    // Error occurred while checking for existing record
-    console.error('[SCORE DEBUG] Error checking for existing score record:', selectError);
-    return false;
-  }
+    .upsert(scoreData, {
+      onConflict: 'room_id,challenge_id',
+      ignoreDuplicates: false
+    })
+    .select();
 
   if (error) {
     console.error('[SCORE DEBUG] Error upserting score record:', error);
