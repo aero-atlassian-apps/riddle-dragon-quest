@@ -121,7 +121,7 @@ export const getChallenges = async (): Promise<Challenge[]> => {
     status: c.status,
     context: c.context,
     hintEnabled: c.hint_enabled,
-    challengeType: (c as any).challenge_type || 'standalone',
+    challengeType: c.challenge_type || 'standalone',
     universeId: c.universe_id,
     universeName: c.universes?.name,
     universeStatus: c.universes?.status,
@@ -946,32 +946,55 @@ export const insertGameScore = async (
     total_score: totalScore
   };
   
-  console.log('[SCORE DEBUG] Attempting to upsert score data:', scoreData);
-  
-  // Use Supabase's upsert functionality with the unique constraint
-  // This will insert if no record exists, or update if it does exist
-  const { data, error } = await supabase
-    .from('scores')
-    .upsert(scoreData, {
-      onConflict: 'room_id,challenge_id',
-      ignoreDuplicates: false
-    })
-    .select();
+  console.log('[SCORE DEBUG] Upsert (manual) – prepared score data:', scoreData);
 
-  if (error) {
-    console.error('[SCORE DEBUG] Error upserting score record:', error);
-    console.error('[SCORE DEBUG] Error details:', {
-      message: error.message,
-      details: error.details,
-      hint: error.hint,
-      code: error.code
-    });
-    console.error('[SCORE DEBUG] Score data that failed:', scoreData);
+  // Deterministic manual upsert to avoid PostgREST onConflict quirks
+  // 1) Check if a score record already exists for this room+challenge
+  const { data: existingRows, error: selectError } = await supabase
+    .from('scores')
+    .select('id, room_id, challenge_id, total_score, created_at')
+    .eq('room_id', roomId)
+    .eq('challenge_id', challengeId);
+
+  if (selectError) {
+    console.error('[SCORE DEBUG] Error selecting existing score record:', selectError);
     return false;
   }
 
-  console.log('[SCORE DEBUG] Score record upserted successfully:', data);
-  console.log('[SCORE DEBUG] Number of records affected:', data?.length || 0);
+  const existing = existingRows && existingRows.length > 0 ? existingRows[0] : null;
+
+  if (existing) {
+    console.log('[SCORE DEBUG] Existing score found. Updating record id:', existing.id);
+    const { data: updateData, error: updateError } = await supabase
+      .from('scores')
+      .update({
+        universe_id: universeId,
+        room_name: roomName,
+        total_score: totalScore
+      })
+      .eq('id', existing.id)
+      .select();
+
+    if (updateError) {
+      console.error('[SCORE DEBUG] Error updating score record:', updateError);
+      return false;
+    }
+
+    console.log('[SCORE DEBUG] Score record updated successfully:', updateData);
+  } else {
+    console.log('[SCORE DEBUG] No existing score found. Inserting new record.');
+    const { data: insertData, error: insertError } = await supabase
+      .from('scores')
+      .insert([scoreData])
+      .select();
+
+    if (insertError) {
+      console.error('[SCORE DEBUG] Error inserting score record:', insertError);
+      return false;
+    }
+
+    console.log('[SCORE DEBUG] Score record inserted successfully:', insertData);
+  }
   
   // Update universe leaderboard if universeId is provided
   if (universeId) {
