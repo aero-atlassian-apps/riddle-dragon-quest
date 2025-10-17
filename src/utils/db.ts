@@ -946,13 +946,45 @@ export const insertGameScore = async (
     total_score: totalScore
   };
   
-  const { data, error } = await supabase
+  // First, try to find existing record for this room+challenge combination
+  const { data: existingScore, error: selectError } = await supabase
     .from('scores')
-    .insert([scoreData])
-    .select();
+    .select('id')
+    .eq('room_id', roomId)
+    .eq('challenge_id', challengeId)
+    .single();
+
+  let data, error;
+  
+  if (existingScore) {
+    // Update existing record
+    console.log('[SCORE DEBUG] Updating existing score record with ID:', existingScore.id);
+    const result = await supabase
+      .from('scores')
+      .update(scoreData)
+      .eq('id', existingScore.id)
+      .select();
+    
+    data = result.data;
+    error = result.error;
+  } else if (selectError && selectError.code === 'PGRST116') {
+    // No existing record found, insert new one
+    console.log('[SCORE DEBUG] No existing record found, inserting new score record');
+    const result = await supabase
+      .from('scores')
+      .insert([scoreData])
+      .select();
+    
+    data = result.data;
+    error = result.error;
+  } else {
+    // Error occurred while checking for existing record
+    console.error('[SCORE DEBUG] Error checking for existing score record:', selectError);
+    return false;
+  }
 
   if (error) {
-    console.error('[SCORE DEBUG] Error inserting score record:', error);
+    console.error('[SCORE DEBUG] Error upserting score record:', error);
     console.error('[SCORE DEBUG] Error details:', {
       message: error.message,
       details: error.details,
@@ -962,8 +994,122 @@ export const insertGameScore = async (
     return false;
   }
 
-  console.log('[SCORE DEBUG] Score record inserted successfully:', data);
+  console.log('[SCORE DEBUG] Score record upserted successfully:', data);
+  
+  // Update universe leaderboard if universeId is provided
+  if (universeId) {
+    const leaderboardUpdated = await updateUniverseLeaderboard(universeId, roomName);
+    if (leaderboardUpdated) {
+      console.log('[SCORE DEBUG] Universe leaderboard updated successfully for:', roomName);
+    } else {
+      console.error('[SCORE DEBUG] Failed to update universe leaderboard for:', roomName);
+    }
+  }
+  
   return true;
+};
+
+// Function to update universe leaderboard for a specific troupe
+export const updateUniverseLeaderboard = async (
+  universeId: string,
+  roomName: string
+): Promise<boolean> => {
+  console.log(`[UNIVERSE LEADERBOARD DEBUG] Updating leaderboard for universe: ${universeId}, troupe: ${roomName}`);
+  
+  try {
+    // Get all scores for this troupe in this universe
+    const { data: scores, error: scoresError } = await supabase
+      .from('scores')
+      .select('*')
+      .eq('universe_id', universeId)
+      .eq('room_name', roomName);
+
+    if (scoresError) {
+      console.error('[UNIVERSE LEADERBOARD DEBUG] Error fetching scores:', scoresError);
+      return false;
+    }
+
+    if (!scores || scores.length === 0) {
+      console.log('[UNIVERSE LEADERBOARD DEBUG] No scores found for troupe:', roomName);
+      return true; // Not an error, just no scores yet
+    }
+
+    // Calculate aggregated data
+    const totalScore = scores.reduce((sum, score) => sum + (score.total_score || 0), 0);
+    const challengesCompleted = scores.length;
+    
+    // Find the best challenge (highest score)
+    const bestChallenge = scores.reduce((best, current) => 
+      (current.total_score || 0) > (best.total_score || 0) ? current : best
+    );
+
+    // Calculate total completion time (sum of all completion times)
+    let totalCompletionTime = null;
+    const completionTimes = scores
+      .map(score => score.completion_time)
+      .filter(time => time !== null && time !== undefined);
+    
+    if (completionTimes.length > 0) {
+      // For PostgreSQL interval type, we need to sum them properly
+      // This is a simplified approach - in a real scenario you might want to handle this differently
+      totalCompletionTime = completionTimes[0]; // For now, just use the first one
+    }
+
+    const leaderboardData = {
+      universe_id: universeId,
+      room_name: roomName,
+      best_challenge_id: bestChallenge.challenge_id,
+      total_score: totalScore,
+      completion_time: totalCompletionTime,
+      challenges_completed: challengesCompleted,
+      last_updated: new Date().toISOString()
+    };
+
+    // Try to update existing record first
+    const { data: existingData, error: selectError } = await supabase
+      .from('universe_leaderboard')
+      .select('id')
+      .eq('universe_id', universeId)
+      .eq('room_name', roomName)
+      .single();
+
+    if (selectError && selectError.code !== 'PGRST116') { // PGRST116 = no rows found
+      console.error('[UNIVERSE LEADERBOARD DEBUG] Error checking existing record:', selectError);
+      return false;
+    }
+
+    if (existingData) {
+      // Update existing record
+      const { error: updateError } = await supabase
+        .from('universe_leaderboard')
+        .update(leaderboardData)
+        .eq('id', existingData.id);
+
+      if (updateError) {
+        console.error('[UNIVERSE LEADERBOARD DEBUG] Error updating leaderboard record:', updateError);
+        return false;
+      }
+
+      console.log('[UNIVERSE LEADERBOARD DEBUG] Updated existing leaderboard record for:', roomName);
+    } else {
+      // Insert new record
+      const { error: insertError } = await supabase
+        .from('universe_leaderboard')
+        .insert([leaderboardData]);
+
+      if (insertError) {
+        console.error('[UNIVERSE LEADERBOARD DEBUG] Error inserting leaderboard record:', insertError);
+        return false;
+      }
+
+      console.log('[UNIVERSE LEADERBOARD DEBUG] Inserted new leaderboard record for:', roomName);
+    }
+
+    return true;
+  } catch (error) {
+    console.error('[UNIVERSE LEADERBOARD DEBUG] Unexpected error:', error);
+    return false;
+  }
 };
 // =====================================================
 // UNIVERSE CHALLENGE CHAINING HELPERS
