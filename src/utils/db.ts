@@ -946,25 +946,18 @@ export const insertGameScore = async (
     total_score: totalScore
   };
   
-  console.log('[SCORE DEBUG] Upsert (manual) – prepared score data:', scoreData);
+  console.log('[SCORE DEBUG] Upsert – prepared score data:', scoreData);
 
-  // Deterministic manual upsert to avoid PostgREST onConflict quirks
-  // 1) Check if a score record already exists for this room+challenge
-  const { data: existingRows, error: selectError } = await supabase
+  // Atomic upsert using Postgres ON CONFLICT; avoids race conditions
+  const { data: upsertData, error: upsertError } = await supabase
     .from('scores')
-    .select('id, room_id, challenge_id, total_score, created_at')
-    .eq('room_id', roomId)
-    .eq('challenge_id', challengeId);
+    .upsert(scoreData, { onConflict: 'room_id,challenge_id' })
+    .select();
 
-  if (selectError) {
-    console.error('[SCORE DEBUG] Error selecting existing score record:', selectError);
-    return false;
-  }
+  if (upsertError) {
+    console.error('[SCORE DEBUG] Upsert error:', upsertError);
 
-  const existing = existingRows && existingRows.length > 0 ? existingRows[0] : null;
-
-  if (existing) {
-    console.log('[SCORE DEBUG] Existing score found. Updating record id:', existing.id);
+    // Fallback path: try UPDATE by composite key, then INSERT if no rows updated
     const { data: updateData, error: updateError } = await supabase
       .from('scores')
       .update({
@@ -972,28 +965,27 @@ export const insertGameScore = async (
         room_name: roomName,
         total_score: totalScore
       })
-      .eq('id', existing.id)
+      .eq('room_id', roomId)
+      .eq('challenge_id', challengeId)
       .select();
 
     if (updateError) {
-      console.error('[SCORE DEBUG] Error updating score record:', updateError);
-      return false;
-    }
+      console.error('[SCORE DEBUG] Fallback update error:', updateError);
+      const { data: insertData, error: insertError } = await supabase
+        .from('scores')
+        .insert([scoreData])
+        .select();
 
-    console.log('[SCORE DEBUG] Score record updated successfully:', updateData);
+      if (insertError) {
+        console.error('[SCORE DEBUG] Fallback insert error:', insertError);
+        return false;
+      }
+      console.log('[SCORE DEBUG] Fallback insert succeeded:', insertData);
+    } else {
+      console.log('[SCORE DEBUG] Fallback update succeeded:', updateData);
+    }
   } else {
-    console.log('[SCORE DEBUG] No existing score found. Inserting new record.');
-    const { data: insertData, error: insertError } = await supabase
-      .from('scores')
-      .insert([scoreData])
-      .select();
-
-    if (insertError) {
-      console.error('[SCORE DEBUG] Error inserting score record:', insertError);
-      return false;
-    }
-
-    console.log('[SCORE DEBUG] Score record inserted successfully:', insertData);
+    console.log('[SCORE DEBUG] Upsert succeeded:', upsertData);
   }
   
   // Update universe leaderboard if universeId is provided

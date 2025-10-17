@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -45,6 +45,29 @@ const SimpleUniverseCreator: React.FC<SimpleUniverseCreatorProps> = ({
     description: editingUniverse?.description || '',
     status: 'draft'
   });
+
+  // Reset wizard state whenever the dialog opens for a new universe
+  useEffect(() => {
+    if (isOpen) {
+      if (editingUniverse) {
+        // Prefill form for editing, but always start at the universe step
+        setStep('universe');
+        setUniverseData({
+          name: editingUniverse.name || '',
+          description: editingUniverse.description || '',
+          status: 'draft'
+        });
+        setCreatedUniverse(null);
+        setCreatedTroupes([]);
+      } else {
+        // Fresh creation flow
+        setStep('universe');
+        setUniverseData({ name: '', description: '', status: 'draft' });
+        setCreatedUniverse(null);
+        setCreatedTroupes([]);
+      }
+    }
+  }, [isOpen, editingUniverse]);
 
   const handleUniverseSubmit = async () => {
     if (!universeData.name.trim()) {
@@ -119,6 +142,7 @@ const SimpleUniverseCreator: React.FC<SimpleUniverseCreatorProps> = ({
       status: 'draft'
     });
     setCreatedUniverse(null);
+    setCreatedTroupes([]);
     onClose();
   };
 

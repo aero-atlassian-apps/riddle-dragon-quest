@@ -150,7 +150,8 @@ CREATE TABLE scores (
     room_name TEXT NOT NULL,
     total_score INTEGER DEFAULT 0,
     completion_time INTERVAL,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT unique_room_challenge_score UNIQUE (room_id, challenge_id)
 );
 
 -- =====================================================
@@ -560,6 +561,23 @@ CREATE POLICY "question_images_delete" ON storage.objects
       SELECT 1 FROM user_roles WHERE user_id = auth.uid() AND role = 'admin'
     )
   );
+
+-- =====================================================
+-- 8. DATA CLEANUP AND MIGRATIONS
+-- =====================================================
+
+-- Remove any existing duplicate score records (keep the most recent one)
+-- This cleanup is necessary before the unique constraint can be applied
+WITH duplicates AS (
+    SELECT id, 
+           ROW_NUMBER() OVER (PARTITION BY room_id, challenge_id ORDER BY created_at DESC) as rn
+    FROM scores
+    WHERE room_id IS NOT NULL AND challenge_id IS NOT NULL
+)
+DELETE FROM scores 
+WHERE id IN (
+    SELECT id FROM duplicates WHERE rn > 1
+);
 
 -- =====================================================
 -- END OF SCRIPT
