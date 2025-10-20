@@ -26,6 +26,7 @@ export interface Challenge {
   universeName?: string;
   universeStatus?: 'draft' | 'active' | 'archived' | string;
   challengeOrder?: number;
+  maxTokens?: number;
 }
 
 export interface Room {

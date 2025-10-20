@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Trash2, Play, Pause, RotateCcw, ExternalLink, Copy, X, Castle, Swords, Tag, ArrowLeft } from "lucide-react";
+import { PlusCircle, Trash2, Play, Pause, RotateCcw, ExternalLink, Copy, X, Castle, Swords, Tag, ArrowLeft, LogOut, Coins } from "lucide-react";
 import ChallengeCreator from "@/components/ChallengeCreator";
 import QuestionUploader from "@/components/QuestionUploader";
 import QuestionManager from "@/components/QuestionManager";
 import RoomCreator from "@/components/RoomCreator";
 import UniverseManager, { UniverseManagerHandle } from "@/components/UniverseManager";
-import { getChallenges, deleteChallenge, updateChallengeStatus, updateChallengeName } from "@/utils/db";
+import { getChallenges, deleteChallenge, updateChallengeStatus, updateChallengeName, updateChallengeRoomsTokens } from "@/utils/db";
 import { Challenge, Question, Room } from "@/types/game";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,10 +43,13 @@ const AdminDashboard = () => {
   const [editingChallengeId, setEditingChallengeId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState<string>("");
   const [savingName, setSavingName] = useState<boolean>(false);
+  const [editingTokensId, setEditingTokensId] = useState<string | null>(null);
+  const [editingTokens, setEditingTokens] = useState<string>("");
+  const [savingTokens, setSavingTokens] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<"date" | "name">("date");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
-  const universeManagerRef = useRef<UniverseManagerHandle | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchChallenges();
@@ -137,6 +140,24 @@ const AdminDashboard = () => {
     setDeleteChallengeId(null);
   };
 
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Déconnexion",
+        description: "Vous êtes déconnecté.",
+      });
+      navigate("/auth/login");
+    } catch (error: any) {
+      console.error("Logout error:", error);
+      toast({
+        title: "Erreur",
+        description: error?.message || "Échec de la déconnexion",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Inline name editing handlers
   const beginEditChallengeName = (challengeId: string, currentName: string) => {
     setEditingChallengeId(challengeId);
@@ -167,40 +188,48 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleChallengeStatusChange = async (challengeId: string, status: 'en attente' | 'active' | 'terminée') => {
-    // Prevent starting challenges for universes that are not active
-    const targetChallenge = challenges.find(s => s.id === challengeId);
-    if (status === 'active' && targetChallenge && targetChallenge.challengeType === 'universe') {
-      const parentStatus = targetChallenge.universeStatus;
-      if (parentStatus && parentStatus !== 'active') {
-        toast({
-          title: "Impossible de démarrer",
-          description: "Cet univers est en brouillon ou archivé. Activez l'univers avant de démarrer ses challenges.",
-          variant: "destructive",
-        });
-        return;
-      }
+  // Inline token editing handlers
+  const beginEditChallengeTokens = (challengeId: string, currentTokens: number) => {
+    // Check if challenge is in a state that allows token editing
+    const challenge = challenges.find(c => c.id === challengeId);
+    if (!challenge || challenge.status !== 'en attente') {
+      toast({ 
+        title: "Modification impossible", 
+        description: "Les tokens ne peuvent être modifiés que pour les challenges en attente", 
+        variant: "destructive" 
+      });
+      return;
     }
-
-    const success = await updateChallengeStatus(challengeId, status);
     
+    setEditingTokensId(challengeId);
+    setEditingTokens(currentTokens.toString());
+  };
+
+  const cancelEditChallengeTokens = () => {
+    setEditingTokensId(null);
+    setEditingTokens("");
+  };
+
+  const saveEditChallengeTokens = async () => {
+    if (!editingTokensId) return;
+    const newTokens = parseInt(editingTokens.trim());
+    if (isNaN(newTokens) || newTokens < 1 || newTokens > 100) {
+      toast({ 
+        title: "Valeur invalide", 
+        description: "Le nombre de tokens doit être entre 1 et 100", 
+        variant: "destructive" 
+      });
+      return;
+    }
+    setSavingTokens(true);
+    const success = await updateChallengeRoomsTokens(editingTokensId, newTokens);
+    setSavingTokens(false);
     if (success) {
-      setChallenges(challenges.map(challenge => 
-        challenge.id === challengeId ? { ...challenge, status } : challenge
-      ));
-      
-      const statusMessage = status === 'active' ? 'started' : status === 'terminée' ? 'ended' : 'reset';
-      
-      toast({
-        title: `Challenge ${statusMessage}`,
-        description: `The challenge has been ${statusMessage} successfully`,
-      });
+      setChallenges(prev => prev.map(s => s.id === editingTokensId ? { ...s, maxTokens: newTokens } : s));
+      toast({ title: "Tokens mis à jour", description: "Le nombre de tokens du challenge a été modifié" });
+      cancelEditChallengeTokens();
     } else {
-      toast({
-        title: "Error",
-        description: `Failed to ${status === 'active' ? 'start' : status === 'terminée' ? 'end' : 'reset'} the challenge`,
-        variant: "destructive",
-      });
+      toast({ title: "Erreur", description: "Impossible de mettre à jour les tokens", variant: "destructive" });
     }
   };
 
@@ -217,7 +246,8 @@ const AdminDashboard = () => {
       const { data, error } = await supabase
         .from('rooms')
         .select('*')
-        .eq('challenge_id', challengeId);
+        .eq('challenge_id', challengeId)
+        .order('created_at', { ascending: true });
       
       if (error) {
         console.error('Error fetching rooms:', error);
@@ -291,6 +321,12 @@ const AdminDashboard = () => {
                 retour
               </Button>
             </Link>
+          </div>
+          <div className="absolute top-4 right-4">
+            <Button variant="ghost" size="sm" onClick={handleLogout} className="text-green-400 hover:text-green-300 hover:bg-green-500/10 font-mono">
+              <LogOut className="h-4 w-4 mr-1" />
+              logout
+            </Button>
           </div>
           <h1 className="text-3xl font-bold font-medieval mb-6 text-green-400">Espace du Maître des Jeux</h1>
           <div className="flex items-center justify-center mb-3">
@@ -530,6 +566,47 @@ const AdminDashboard = () => {
                                 </div>
                                 <div>
                                   Questions: {challenge.questions?.length || 0}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Coins size={14} className="text-yellow-400" />
+                                  <span>Tokens: </span>
+                                  {editingTokensId === challenge.id ? (
+                                    <Input
+                                      autoFocus
+                                      value={editingTokens}
+                                      onChange={(e) => setEditingTokens(e.target.value)}
+                                      onBlur={saveEditChallengeTokens}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') saveEditChallengeTokens();
+                                        if (e.key === 'Escape') cancelEditChallengeTokens();
+                                      }}
+                                      disabled={savingTokens}
+                                      className="h-6 w-16 bg-black/50 border-yellow-500 text-yellow-400 font-pixel text-sm"
+                                      type="number"
+                                      min="1"
+                                      max="100"
+                                    />
+                                  ) : (
+                                    <span
+                                      className={`font-semibold text-yellow-400 ${
+                                        challenge.status === 'en attente' 
+                                          ? 'cursor-pointer hover:underline' 
+                                          : 'cursor-not-allowed opacity-60'
+                                      }`}
+                                      onClick={() => {
+                                        if (challenge.status === 'en attente') {
+                                          beginEditChallengeTokens(challenge.id, challenge.maxTokens || 3);
+                                        }
+                                      }}
+                                      title={
+                                        challenge.status === 'en attente' 
+                                          ? "Cliquer pour modifier" 
+                                          : "Modification impossible - Challenge actif ou terminé"
+                                      }
+                                    >
+                                      {challenge.maxTokens || 3}
+                                    </span>
+                                  )}
                                 </div>
                                 <div>
                                   Statut: <span className="font-semibold uppercase">{challenge.status}</span>

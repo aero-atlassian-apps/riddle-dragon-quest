@@ -102,7 +102,8 @@ export const getChallenges = async (): Promise<Challenge[]> => {
     .select(`
       *,
       questions(*),
-      universes(name, status)
+      universes(name, status),
+      rooms(initial_tokens)
     `)
     .order('start_time', { ascending: false });
 
@@ -125,7 +126,8 @@ export const getChallenges = async (): Promise<Challenge[]> => {
     universeId: c.universe_id,
     universeName: c.universes?.name,
     universeStatus: c.universes?.status,
-    challengeOrder: (c as any).challenge_order
+    challengeOrder: (c as any).challenge_order,
+    maxTokens: c.rooms && c.rooms.length > 0 ? c.rooms[0].initial_tokens : 3
   })) as Challenge[];
 };
 
@@ -187,6 +189,24 @@ export const updateChallengeName = async (challengeId: string, name: string): Pr
     .eq('id', challengeId);
   if (error) {
     console.error('Error updating challenge name:', error);
+    return false;
+  }
+  return true;
+};
+
+export const updateChallengeRoomsTokens = async (challengeId: string, maxTokens: number): Promise<boolean> => {
+  if (maxTokens < 1 || maxTokens > 100) return false;
+  
+  const { error } = await supabase
+    .from('rooms')
+    .update({ 
+      initial_tokens: maxTokens,
+      tokens_left: maxTokens 
+    })
+    .eq('challenge_id', challengeId);
+    
+  if (error) {
+    console.error('Error updating challenge rooms tokens:', error);
     return false;
   }
   return true;
