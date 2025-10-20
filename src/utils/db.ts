@@ -1057,44 +1057,40 @@ export const updateUniverseLeaderboard = async (
       last_updated: new Date().toISOString()
     };
 
-    // Try to update existing record first
-    const { data: existingData, error: selectError } = await supabase
+    // Atomic upsert avoids race conditions and duplicates
+    const { data: upsertData, error: upsertError } = await supabase
       .from('universe_leaderboard')
-      .select('id')
-      .eq('universe_id', universeId)
-      .eq('room_name', roomName)
-      .single();
+      .upsert([leaderboardData], { onConflict: 'universe_id,room_name' })
+      .select();
 
-    if (selectError && selectError.code !== 'PGRST116') { // PGRST116 = no rows found
-      console.error('[UNIVERSE LEADERBOARD DEBUG] Error checking existing record:', selectError);
-      return false;
-    }
-
-    if (existingData) {
-      // Update existing record
-      const { error: updateError } = await supabase
+    if (upsertError) {
+      console.error('[UNIVERSE LEADERBOARD DEBUG] Error upserting leaderboard record:', upsertError);
+      // Fallback: try update by composite key, then insert
+      const { data: updateData, error: updateError } = await supabase
         .from('universe_leaderboard')
         .update(leaderboardData)
-        .eq('id', existingData.id);
+        .eq('universe_id', universeId)
+        .eq('room_name', roomName)
+        .select();
 
       if (updateError) {
-        console.error('[UNIVERSE LEADERBOARD DEBUG] Error updating leaderboard record:', updateError);
-        return false;
-      }
+        console.error('[UNIVERSE LEADERBOARD DEBUG] Fallback update error:', updateError);
+        const { data: insertData, error: insertError } = await supabase
+          .from('universe_leaderboard')
+          .insert([leaderboardData])
+          .select();
 
-      console.log('[UNIVERSE LEADERBOARD DEBUG] Updated existing leaderboard record for:', roomName);
+        if (insertError) {
+          console.error('[UNIVERSE LEADERBOARD DEBUG] Fallback insert error:', insertError);
+          return false;
+        } else {
+          console.log('[UNIVERSE LEADERBOARD DEBUG] Fallback insert succeeded:', insertData);
+        }
+      } else {
+        console.log('[UNIVERSE LEADERBOARD DEBUG] Fallback update succeeded:', updateData);
+      }
     } else {
-      // Insert new record
-      const { error: insertError } = await supabase
-        .from('universe_leaderboard')
-        .insert([leaderboardData]);
-
-      if (insertError) {
-        console.error('[UNIVERSE LEADERBOARD DEBUG] Error inserting leaderboard record:', insertError);
-        return false;
-      }
-
-      console.log('[UNIVERSE LEADERBOARD DEBUG] Inserted new leaderboard record for:', roomName);
+      console.log('[UNIVERSE LEADERBOARD DEBUG] Upsert succeeded for leaderboard:', upsertData);
     }
 
     return true;

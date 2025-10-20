@@ -469,12 +469,8 @@ CREATE POLICY "Universe questions are deletable by admins" ON universe_questions
 
 -- Universe leaderboard policies
 CREATE POLICY "Universe leaderboard is viewable by everyone" ON universe_leaderboard FOR SELECT USING (true);
-CREATE POLICY "Universe leaderboard is insertable by admins" ON universe_leaderboard FOR INSERT WITH CHECK (
-    EXISTS (SELECT 1 FROM user_roles WHERE user_id = auth.uid() AND role = 'admin')
-);
-CREATE POLICY "Universe leaderboard is updatable by admins" ON universe_leaderboard FOR UPDATE USING (
-    EXISTS (SELECT 1 FROM user_roles WHERE user_id = auth.uid() AND role = 'admin')
-);
+CREATE POLICY "Universe leaderboard is insertable by everyone" ON universe_leaderboard FOR INSERT WITH CHECK (true);
+CREATE POLICY "Universe leaderboard is updatable by everyone" ON universe_leaderboard FOR UPDATE USING (true);
 CREATE POLICY "Universe leaderboard is deletable by admins" ON universe_leaderboard FOR DELETE USING (
     EXISTS (SELECT 1 FROM user_roles WHERE user_id = auth.uid() AND role = 'admin')
 );
