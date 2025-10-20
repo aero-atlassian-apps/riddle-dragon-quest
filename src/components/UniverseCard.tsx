@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
-import { Crown, Trophy, Clock, Star, Plus, SquareArrowOutUpRight, Trash2, CheckCircle } from "lucide-react";
+import { Crown, Trophy, Clock, Star, Plus, SquareArrowOutUpRight, Trash2, CheckCircle, Swords } from "lucide-react";
 import { Universe } from "@/types/game";
 
 // Use shared Universe type from types/game (includes challenge_count)
@@ -104,7 +104,7 @@ const UniverseCard: React.FC<UniverseCardProps> = ({
                   <span>{participantInfo.troupeCount} troupes</span>
                 </div>
                 <div className="flex items-center gap-1">
-                <SquareArrowOutUpRight size={16} />
+                <Swords size={16} />
                 <span>{participantInfo.challengeCount} challenges</span>
               </div>
               </div>
@@ -250,7 +250,7 @@ const UniverseCard: React.FC<UniverseCardProps> = ({
                   <span>{participantInfo.troupeCount} troupes</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Dices size={16} />
+                  <Swords size={16} />
                   <span>{participantInfo.challengeCount} challenges</span>
                 </div>
               </div>
@@ -376,7 +376,7 @@ const UniverseCard: React.FC<UniverseCardProps> = ({
                 <span>{participantInfo.troupeCount} troupes</span>
               </div>
               <div className="flex items-center gap-1">
-                <SquareArrowOutUpRight size={16} />
+                <Swords size={16} />
                 <span>{participantInfo.challengeCount} challenges</span>
               </div>
             </div>
