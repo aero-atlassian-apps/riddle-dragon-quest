@@ -309,6 +309,38 @@ const AdminDashboard = () => {
     });
   };
 
+  const handleChallengeStatusChange = async (challengeId: string, newStatus: string) => {
+    try {
+      const success = await updateChallengeStatus(challengeId, newStatus);
+      
+      if (success) {
+        setChallenges(prev => prev.map(challenge => 
+          challenge.id === challengeId 
+            ? { ...challenge, status: newStatus }
+            : challenge
+        ));
+        
+        toast({
+          title: "Statut mis à jour",
+          description: `Le challenge a été mis à jour vers "${newStatus}"`,
+        });
+      } else {
+        toast({
+          title: "Erreur",
+          description: "Impossible de mettre à jour le statut du challenge",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error updating challenge status:', error);
+      toast({
+        title: "Erreur",
+        description: "Une erreur inattendue s'est produite",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="container mx-auto p-4 relative min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 bg-[url('/textures/stone-pattern.svg')] bg-repeat bg-opacity-50 before:absolute before:inset-0 before:bg-[url('/terminal-bg.png')] before:opacity-10 before:pointer-events-none after:absolute after:inset-0 after:bg-[radial-gradient(circle_at_center,rgba(0,255,0,0.1)_0%,transparent_70%)] after:pointer-events-none">
       <div className="mb-8 text-center p-6 bg-black/90 border-2 border-green-500 rounded-lg font-mono relative overflow-hidden">

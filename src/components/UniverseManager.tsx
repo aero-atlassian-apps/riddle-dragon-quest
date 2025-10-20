@@ -9,6 +9,7 @@ import { PlusCircle, Edit, Trash2, Castle, Users, Trophy, Settings } from "lucid
 import SimpleUniverseCreator from "./SimpleUniverseCreator";
 import ChallengeCreatorModal from "./ChallengeCreatorModal";
 import UniverseCard from "./UniverseCard";
+import ArenaMatrix from "./ArenaMatrix";
 import { Universe } from "@/types/game";
 import {
   AlertDialog,
@@ -35,6 +36,7 @@ const UniverseManager = forwardRef<UniverseManagerHandle>((props, ref) => {
   const [selectedUniverseId, setSelectedUniverseId] = useState<string | null>(null);
   const [editingUniverse, setEditingUniverse] = useState<Universe | null>(null);
   const [deleteUniverseId, setDeleteUniverseId] = useState<string | null>(null);
+  const [arenaMatrixUniverseId, setArenaMatrixUniverseId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -155,6 +157,10 @@ const UniverseManager = forwardRef<UniverseManagerHandle>((props, ref) => {
     setDeleteUniverseId(universeId);
   };
 
+  const handleViewArenaMatrix = (universeId: string) => {
+    setArenaMatrixUniverseId(universeId);
+  };
+
   const confirmDeleteUniverse = async () => {
     if (!deleteUniverseId) return;
     const universe = universes.find(u => u.id === deleteUniverseId);
@@ -264,6 +270,14 @@ const UniverseManager = forwardRef<UniverseManagerHandle>((props, ref) => {
         universeName={selectedUniverseId ? universes.find(u => u.id === selectedUniverseId)?.name || 'Univers inconnu' : 'Univers inconnu'}
       />
 
+      {/* Arena Matrix Modal */}
+      <ArenaMatrix
+        isOpen={!!arenaMatrixUniverseId}
+        onClose={() => setArenaMatrixUniverseId(null)}
+        universeId={arenaMatrixUniverseId || ''}
+        universeName={arenaMatrixUniverseId ? universes.find(u => u.id === arenaMatrixUniverseId)?.name || 'Univers inconnu' : 'Univers inconnu'}
+      />
+
       {universes.length === 0 ? (
         <Card className="bg-black/50 border-2 border-green-500">
           <CardContent className="text-center py-8">
@@ -282,6 +296,7 @@ const UniverseManager = forwardRef<UniverseManagerHandle>((props, ref) => {
               onView={handleViewDetails}
               onDelete={handleDelete}
               onActivate={handleActivate}
+              onViewArenaMatrix={handleViewArenaMatrix}
               showActions={true}
               variant={'default'}
             />

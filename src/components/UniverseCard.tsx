@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
-import { Crown, Trophy, Clock, Star, Plus, Swords, Trash2, CheckCircle } from "lucide-react";
+import { Crown, Trophy, Clock, Star, Plus, SquareArrowOutUpRight, Trash2, CheckCircle } from "lucide-react";
 import { Universe } from "@/types/game";
 
 // Use shared Universe type from types/game (includes challenge_count)
@@ -14,6 +14,7 @@ interface UniverseCardProps {
   onDelete?: (universeId: string) => void;
   onAddChallenge?: (universeId: string) => void;
   onActivate?: (universeId: string) => void;
+  onViewArenaMatrix?: (universeId: string) => void;
   showActions?: boolean;
   variant?: 'default' | 'compact' | 'featured';
 }
@@ -24,6 +25,7 @@ const UniverseCard: React.FC<UniverseCardProps> = ({
   onDelete,
   onAddChallenge,
   onActivate,
+  onViewArenaMatrix,
   showActions = true,
   variant = 'default'
 }) => {
@@ -102,13 +104,28 @@ const UniverseCard: React.FC<UniverseCardProps> = ({
                   <span>{participantInfo.troupeCount} troupes</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Swords size={16} />
-                  <span>{participantInfo.challengeCount} challenges</span>
-                </div>
+                <SquareArrowOutUpRight size={16} />
+                <span>{participantInfo.challengeCount} challenges</span>
+              </div>
               </div>
             </div>
             <TooltipProvider>
               <div className="absolute right-2 top-2 flex flex-col items-center gap-1">
+                {onViewArenaMatrix && universe.status === 'active' && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-purple-500 text-purple-400 hover:bg-purple-500/20 h-8 w-8 p-0"
+                        onClick={() => onViewArenaMatrix(universe.id)}
+                      >
+                        <SquareArrowOutUpRight className="h-3 w-3" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Matrice des Arènes</TooltipContent>
+                  </Tooltip>
+                )}
                 {showActions && universe.status === 'draft' && onActivate && (
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -186,6 +203,21 @@ const UniverseCard: React.FC<UniverseCardProps> = ({
               </div>
               <TooltipProvider>
                 <div className="absolute right-2 top-2 flex flex-col items-center gap-1">
+                  {onViewArenaMatrix && universe.status === 'active' && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-purple-500 text-purple-400 hover:bg-purple-500/20 h-8 w-8 p-0"
+                          onClick={() => onViewArenaMatrix(universe.id)}
+                        >
+                          <SquareArrowOutUpRight className="h-3 w-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Matrice des Arènes</TooltipContent>
+                    </Tooltip>
+                  )}
                   {/* Consult (view) icon removed per request */}
                   {onDelete && (
                     <Tooltip>
@@ -218,7 +250,7 @@ const UniverseCard: React.FC<UniverseCardProps> = ({
                   <span>{participantInfo.troupeCount} troupes</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Swords size={16} />
+                  <Dices size={16} />
                   <span>{participantInfo.challengeCount} challenges</span>
                 </div>
               </div>
@@ -266,6 +298,21 @@ const UniverseCard: React.FC<UniverseCardProps> = ({
             </div>
             <TooltipProvider>
               <div className="absolute right-2 top-2 flex flex-col items-center gap-1">
+                {onViewArenaMatrix && universe.status === 'active' && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-purple-500 text-purple-400 hover:bg-purple-500/20 h-8 w-8 p-0"
+                        onClick={() => onViewArenaMatrix(universe.id)}
+                      >
+                        <SquareArrowOutUpRight className="h-3 w-3" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Matrice des Arènes</TooltipContent>
+                  </Tooltip>
+                )}
                 {showActions && universe.status === 'draft' && onActivate && (
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -329,7 +376,7 @@ const UniverseCard: React.FC<UniverseCardProps> = ({
                 <span>{participantInfo.troupeCount} troupes</span>
               </div>
               <div className="flex items-center gap-1">
-                <Swords size={16} />
+                <SquareArrowOutUpRight size={16} />
                 <span>{participantInfo.challengeCount} challenges</span>
               </div>
             </div>
