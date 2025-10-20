@@ -48,6 +48,7 @@ const AdminDashboard = () => {
   const [savingTokens, setSavingTokens] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<"date" | "name">("date");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const universeManagerRef = useRef<UniverseManagerHandle>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
