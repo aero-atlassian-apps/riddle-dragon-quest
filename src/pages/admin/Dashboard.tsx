@@ -8,7 +8,7 @@ import QuestionUploader from "@/components/QuestionUploader";
 import QuestionManager from "@/components/QuestionManager";
 import RoomCreator from "@/components/RoomCreator";
 import UniverseManager, { UniverseManagerHandle } from "@/components/UniverseManager";
-import { getChallenges, deleteChallenge, updateChallengeStatus, updateChallengeName, updateChallengeRoomsTokens } from "@/utils/db";
+import { getChallenges, deleteChallenge, updateChallengeStatus, updateChallengeName, updateChallengeRoomsTokens, getUniverses } from "@/utils/db";
 import { Challenge, Question, Room } from "@/types/game";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,6 +30,7 @@ import {
 
 const AdminDashboard = () => {
   const [challenges, setChallenges] = useState<Challenge[]>([]);
+  const [universes, setUniverses] = useState<any[]>([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [creationStep, setCreationStep] = useState<"challenge" | "questions" | "images" | "rooms">("challenge");
   const [roomCreationChallengeId, setRoomCreationChallengeId] = useState<string | null>(null);
@@ -48,12 +49,14 @@ const AdminDashboard = () => {
   const [savingTokens, setSavingTokens] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<"date" | "name">("date");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [filterByUniverse, setFilterByUniverse] = useState<string>("all");
   const universeManagerRef = useRef<UniverseManagerHandle>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchChallenges();
+    fetchUniverses();
   }, []);
 
   // Reload Challenges when switching back to challenges mode
@@ -68,6 +71,15 @@ const AdminDashboard = () => {
     const fetchedChallenges = await getChallenges();
     setChallenges(fetchedChallenges);
     setIsLoading(false);
+  };
+
+  const fetchUniverses = async () => {
+    try {
+      const fetchedUniverses = await getUniverses();
+      setUniverses(fetchedUniverses);
+    } catch (error) {
+      console.error('Error fetching universes:', error);
+    }
   };
 
   const handleCreateChallenge = async (challenge: Challenge) => {
@@ -472,7 +484,22 @@ const AdminDashboard = () => {
                 <Tabs defaultValue="active" className="w-full">
                   <div className="flex items-center justify-end mb-3">
                     <div className="flex items-center gap-2">
-                      <span className="text-green-400 font-pixel text-sm">TRIER_PAR</span>
+                      <span className="text-green-400 font-pixel text-sm">FILTRER_PAR_UNIVERS</span>
+                      <Select value={filterByUniverse} onValueChange={setFilterByUniverse}>
+                        <SelectTrigger className="w-[200px] border-green-500 text-green-400 bg-black">
+                          <SelectValue placeholder="Tous les univers" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-black border-green-500">
+                          <SelectItem value="all" className="text-green-400">Tous les univers</SelectItem>
+                          <SelectItem value="standalone" className="text-blue-400">Challenges standalone</SelectItem>
+                          {universes.map((universe) => (
+                            <SelectItem key={universe.id} value={universe.id} className="text-purple-400">
+                              {universe.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <span className="text-green-400 font-pixel text-sm ml-3">TRIER_PAR</span>
                       <Select value={sortBy} onValueChange={(v: "date" | "name") => setSortBy(v)}>
                         <SelectTrigger className="w-[220px] border-green-500 text-green-400 bg-black">
                           <SelectValue placeholder="Choisir un tri" />
@@ -485,8 +512,7 @@ const AdminDashboard = () => {
                       <span className="text-green-400 font-pixel text-sm ml-3">ORDRE</span>
                       <Select value={sortDir} onValueChange={(v: "asc" | "desc") => setSortDir(v)}>
                         <SelectTrigger className="w-[160px] border-green-500 text-green-400 bg-black">
-                          <SelectValue placeholder="Choisir l'ordre" />
-                        </SelectTrigger>
+                          <SelectValue placeholder="Choisir l'ordre" /></SelectTrigger>
                         <SelectContent className="bg-black border-green-500">
                           <SelectItem value="asc" className="text-green-400">Ascendant</SelectItem>
                           <SelectItem value="desc" className="text-green-400">Descendant</SelectItem>
@@ -518,12 +544,20 @@ const AdminDashboard = () => {
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {challenges
-                        .filter((challenge) => 
-                          tab === "all" || 
-                          (tab === "active" && challenge.status === "active") || 
-                          (tab === "en attente" && challenge.status === "en attente") || 
-                          (tab === "terminée" && challenge.status === "terminée")
-                        )
+                        .filter((challenge) => {
+                          // Filter by status
+                          const statusFilter = tab === "all" || 
+                            (tab === "active" && challenge.status === "active") || 
+                            (tab === "en attente" && challenge.status === "en attente") || 
+                            (tab === "terminée" && challenge.status === "terminée");
+                          
+                          // Filter by universe
+                          const universeFilter = filterByUniverse === "all" ||
+                            (filterByUniverse === "standalone" && !challenge.universeId) ||
+                            (filterByUniverse !== "standalone" && filterByUniverse !== "all" && challenge.universeId === filterByUniverse);
+                          
+                          return statusFilter && universeFilter;
+                        })
                         .sort((a, b) => {
                           if (sortBy === "name") {
                             const cmp = a.name.localeCompare(b.name);
