@@ -116,18 +116,63 @@ const Leaderboard = () => {
     try {
       const { data, error } = await supabase
         .from('rooms')
-        .select('id, name, challenge_id, score')
+        .select('id, name, challenge_id, score, troupe_start_time, troupe_end_time')
         .eq('challenge_id', currentChallengeId)
         .order('score', { ascending: false });
 
       if (error) throw error;
 
-      const formattedScores: Score[] = data.map(room => ({
-        roomId: room.id,
-        challengeId: (room as any).challenge_id,
-        totalScore: room.score || 0,
-        roomName: room.name
-      }));
+      const formattedScores: Score[] = data.map(room => {
+        let totalTimeSpent = "Non commencé";
+        let isOngoing = false;
+        let isNotStarted = true;
+
+        if (room.troupe_start_time) {
+          isNotStarted = false;
+          const startTime = new Date(room.troupe_start_time);
+          
+          if (room.troupe_end_time) {
+            // Challenge completed - calculate total time
+            const endTime = new Date(room.troupe_end_time);
+            const diffMs = endTime.getTime() - startTime.getTime();
+            const totalMinutes = Math.floor(diffMs / (1000 * 60));
+            const totalSeconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+            
+            if (hours > 0) {
+              totalTimeSpent = `${hours}h ${minutes}m`;
+            } else {
+              totalTimeSpent = `${minutes}m ${totalSeconds}s`;
+            }
+          } else {
+            // Challenge ongoing - calculate current time
+            isOngoing = true;
+            const now = new Date();
+            const diffMs = now.getTime() - startTime.getTime();
+            const totalMinutes = Math.floor(diffMs / (1000 * 60));
+            const totalSeconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+            
+            if (hours > 0) {
+              totalTimeSpent = `${hours}h ${minutes}m (En cours)`;
+            } else {
+              totalTimeSpent = `${minutes}m ${totalSeconds}s (En cours)`;
+            }
+          }
+        }
+
+        return {
+          roomId: room.id,
+          challengeId: (room as any).challenge_id,
+          totalScore: room.score || 0,
+          roomName: room.name,
+          totalTimeSpent,
+          isOngoing,
+          isNotStarted
+        };
+      });
 
       setScores(formattedScores);
       

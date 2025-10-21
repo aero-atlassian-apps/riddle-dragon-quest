@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Trophy, Medal, Award } from 'lucide-react';
+import { Trophy, Medal, Award, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Score } from '@/types/game';
 
@@ -31,6 +31,12 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({ scores, currentChal
             <th className="px-4 py-3 text-left text-[#00FF00]/80">Rang</th>
             <th className="px-4 py-3 text-left text-[#00FF00]/80">Troupe</th>
             <th className="px-4 py-3 text-right text-[#00FF00]/80">Score</th>
+            <th className="px-4 py-3 text-right text-[#00FF00]/80">
+              <div className="flex items-center justify-end gap-2">
+                <Clock className="h-4 w-4" />
+                Temps Total
+              </div>
+            </th>
           </tr>
         </thead>
         <tbody className="text-[#00FF00]">
@@ -56,16 +62,25 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({ scores, currentChal
                 <td className="px-4 py-4 text-left font-medium">
                   {score.roomName}
                 </td>
-                <td className={cn('px-4 py-4 text-right font-bold font-glitch flex items-center justify-end gap-4')}
+                <td className={cn('px-4 py-4 text-right font-bold font-glitch')}
                 >
                   {score.totalScore}
+                </td>
+                <td className="px-4 py-4 text-right font-medium">
+                  <span className={cn(
+                    'text-sm',
+                    score.isOngoing && 'text-yellow-400 animate-pulse',
+                    score.isNotStarted && 'text-gray-400 opacity-60'
+                  )}>
+                    {score.totalTimeSpent || 'Non commencé'}
+                  </span>
                 </td>
               </tr>
             );
           })}
           {scores.length === 0 && (
             <tr>
-              <td colSpan={3} className="px-4 py-8 text-center text-[#00FF00]/50">
+              <td colSpan={4} className="px-4 py-8 text-center text-[#00FF00]/50">
                 {currentChallengeId
                   ? 'Aucun score disponible pour ce challenge_'
                   : 'Aucun challenge sélectionné_'}

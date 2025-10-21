@@ -55,6 +55,9 @@ export interface Score {
   challengeId: string;
   totalScore: number;
   roomName: string;
+  totalTimeSpent?: string; // Formatted time string (e.g., "15m 30s", "En cours", "Non commencé")
+  isOngoing?: boolean; // True if challenge is still in progress
+  isNotStarted?: boolean; // True if challenge hasn't been started yet
 }
 
 export interface GameState {

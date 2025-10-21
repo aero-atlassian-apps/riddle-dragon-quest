@@ -771,6 +771,17 @@ export const getUniverseLeaderboard = async (universeId: string, limit: number =
     return [];
   }
 
+  // Fetch all challenges for this universe
+  const { data: challenges, error: challengesError } = await supabase
+    .from('challenges')
+    .select('id, name, challenge_order')
+    .eq('universe_id', universeId)
+    .order('challenge_order', { ascending: true });
+
+  if (challengesError) {
+    console.error('Error fetching challenges for universe leaderboard:', challengesError);
+  }
+
   // Fetch existing aggregated leaderboard entries
   const { data: leaderboardRows, error: leaderboardError } = await supabase
     .from('universe_leaderboard')
@@ -787,9 +798,109 @@ export const getUniverseLeaderboard = async (universeId: string, limit: number =
     leaderboardMap.set(row.room_name, row);
   });
 
+  // Fetch all rooms for this universe to calculate total time spent and challenge progress
+  const { data: rooms, error: roomsError } = await supabase
+    .from('rooms')
+    .select('name, troupe_start_time, troupe_end_time, challenge_id')
+    .eq('universe_id', universeId);
+
+  if (roomsError) {
+    console.error('Error fetching rooms for universe leaderboard:', roomsError);
+  }
+
+  // Calculate total time spent and challenge progress for each troupe
+  const timeSpentMap = new Map<string, { 
+    totalTimeMs: number; 
+    hasOngoing: boolean; 
+    hasNotStarted: boolean; 
+    challengeCount: number;
+    challengeProgress: Map<string, 'not_started' | 'in_progress' | 'completed'>;
+  }>();
+  
+  (rooms || []).forEach((room: any) => {
+    const troupeName = room.name;
+    const existing = timeSpentMap.get(troupeName) || { 
+      totalTimeMs: 0, 
+      hasOngoing: false, 
+      hasNotStarted: false, 
+      challengeCount: 0,
+      challengeProgress: new Map()
+    };
+    
+    existing.challengeCount++;
+    
+    // Determine challenge status
+    let challengeStatus: 'not_started' | 'in_progress' | 'completed' = 'not_started';
+    
+    if (room.troupe_start_time) {
+      const startTime = new Date(room.troupe_start_time);
+      
+      if (room.troupe_end_time) {
+        // Challenge completed - add to total time
+        const endTime = new Date(room.troupe_end_time);
+        existing.totalTimeMs += endTime.getTime() - startTime.getTime();
+        challengeStatus = 'completed';
+      } else {
+        // Challenge ongoing
+        existing.hasOngoing = true;
+        const now = new Date();
+        existing.totalTimeMs += now.getTime() - startTime.getTime();
+        challengeStatus = 'in_progress';
+      }
+    } else {
+      // Challenge not started
+      existing.hasNotStarted = true;
+      challengeStatus = 'not_started';
+    }
+    
+    // Store challenge progress
+    existing.challengeProgress.set(room.challenge_id, challengeStatus);
+    
+    timeSpentMap.set(troupeName, existing);
+  });
+
   // Combine: ensure every troupe appears with score defaults when missing
   const combined = (troupes || []).map((troupe: any) => {
     const existing = leaderboardMap.get(troupe.name);
+    const timeData = timeSpentMap.get(troupe.name) || { 
+      totalTimeMs: 0, 
+      hasOngoing: false, 
+      hasNotStarted: true, 
+      challengeCount: 0,
+      challengeProgress: new Map()
+    };
+    
+    // Format total time spent
+    let totalTimeSpent = "Non commencé";
+    if (timeData.challengeCount > 0) {
+      if (timeData.hasNotStarted && !timeData.hasOngoing && timeData.totalTimeMs === 0) {
+        totalTimeSpent = "Non commencé";
+      } else {
+        const totalMinutes = Math.floor(timeData.totalTimeMs / (1000 * 60));
+        const totalSeconds = Math.floor((timeData.totalTimeMs % (1000 * 60)) / 1000);
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        
+        if (hours > 0) {
+          totalTimeSpent = `${hours}h ${minutes}m`;
+        } else {
+          totalTimeSpent = `${minutes}m ${totalSeconds}s`;
+        }
+        
+        if (timeData.hasOngoing) {
+          totalTimeSpent += " (En cours)";
+        }
+      }
+    }
+
+    // Build challenge progress array
+    const challengeProgress = (challenges || []).map((challenge: any) => ({
+      challengeId: challenge.id,
+      challengeName: challenge.name,
+      status: timeData.challengeProgress.get(challenge.id) || 'not_started',
+      challengeOrder: challenge.challenge_order
+    }));
+    
     return {
       id: existing?.id ?? troupe.id, // fallback to troupe id for stable key
       universe_id: universeId,
@@ -798,12 +909,26 @@ export const getUniverseLeaderboard = async (universeId: string, limit: number =
       completion_time: existing?.completion_time ?? '',
       challenges_completed: existing?.challenges_completed ?? 0,
       last_updated: existing?.last_updated ?? null,
+      total_time_spent: totalTimeSpent,
+      total_time_ms: timeData.totalTimeMs, // Add raw milliseconds for sorting
+      is_ongoing: timeData.hasOngoing,
+      is_not_started: timeData.hasNotStarted && timeData.totalTimeMs === 0,
+      challenge_progress: challengeProgress,
     };
   });
 
-  // Sort by total_score desc, then by troupe_order asc to stabilize order among zero scores
+  // Sort by total_score desc, then by shortest total_time_ms asc (for tiebreaking), then by troupe_order asc
   combined.sort((a: any, b: any) => {
+    // Primary sort: highest score wins
     if (b.total_score !== a.total_score) return b.total_score - a.total_score;
+    
+    // Secondary sort: shortest time wins (for same scores)
+    // Only apply time tiebreaker if both troupes have actually started challenges
+    if (!a.is_not_started && !b.is_not_started && a.total_time_ms !== b.total_time_ms) {
+      return a.total_time_ms - b.total_time_ms;
+    }
+    
+    // Tertiary sort: troupe order for stability (when scores and times are equal)
     const troupeA = (troupes || []).find((t: any) => t.name === a.room_name);
     const troupeB = (troupes || []).find((t: any) => t.name === b.room_name);
     const orderA = troupeA?.troupe_order ?? 0;
@@ -1055,24 +1180,16 @@ export const updateUniverseLeaderboard = async (
       (current.total_score || 0) > (best.total_score || 0) ? current : best
     );
 
-    // Calculate total completion time (sum of all completion times)
-    let totalCompletionTime = null;
-    const completionTimes = scores
-      .map(score => score.completion_time)
-      .filter(time => time !== null && time !== undefined);
-    
-    if (completionTimes.length > 0) {
-      // For PostgreSQL interval type, we need to sum them properly
-      // This is a simplified approach - in a real scenario you might want to handle this differently
-      totalCompletionTime = completionTimes[0]; // For now, just use the first one
-    }
+    // Note: We don't use completion_time from scores table as it's not being set
+    // Time tracking is handled via troupe_start_time and troupe_end_time in rooms table
+    // and calculated in the getUniverseLeaderboard function
 
     const leaderboardData = {
       universe_id: universeId,
       room_name: roomName,
       best_challenge_id: bestChallenge.challenge_id,
       total_score: totalScore,
-      completion_time: totalCompletionTime,
+      completion_time: null, // Not used - time is calculated from rooms.troupe_start_time/troupe_end_time
       challenges_completed: challengesCompleted,
       last_updated: new Date().toISOString()
     };

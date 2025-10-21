@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, Medal, Award } from 'lucide-react';
+import { Trophy, Medal, Award, Clock } from 'lucide-react';
 import { getUniverseLeaderboard } from '@/utils/db';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
+import ChallengeProgressIndicator, { ChallengeProgress } from '@/components/ChallengeProgressIndicator';
 
 interface UniverseLeaderboardEntry {
   id: string;
@@ -11,6 +13,11 @@ interface UniverseLeaderboardEntry {
   completion_time: string;
   challenges_completed: number;
   last_updated: string;
+  total_time_spent?: string;
+  total_time_ms?: number; // Add raw milliseconds for sorting
+  is_ongoing?: boolean;
+  is_not_started?: boolean;
+  challenge_progress?: ChallengeProgress[];
 }
 
 interface UniverseLeaderboardProps {
@@ -81,7 +88,14 @@ const UniverseLeaderboard: React.FC<UniverseLeaderboardProps> = ({
             <tr className="border-b-2 border-[#00FF00]/30">
               <th className="px-4 py-3 text-left text-[#00FF00]/80">Rang</th>
               <th className="px-4 py-3 text-left text-[#00FF00]/80">Troupe</th>
+              <th className="px-4 py-3 text-center text-[#00FF00]/80">Progression</th>
               <th className="px-4 py-3 text-right text-[#00FF00]/80">Score</th>
+              <th className="px-4 py-3 text-right text-[#00FF00]/80">
+                <div className="flex items-center justify-end gap-2">
+                  <Clock className="h-4 w-4" />
+                  Temps Total
+                </div>
+              </th>
             </tr>
           </thead>
           <tbody className="text-[#00FF00]">
@@ -124,8 +138,24 @@ const UniverseLeaderboard: React.FC<UniverseLeaderboardProps> = ({
                   <td className="px-4 py-4 text-left font-medium">
                     <span className="text-[#00FF00]">{entry.room_name}</span>
                   </td>
-                  <td className="px-4 py-4 text-right font-bold font-glitch flex items-center justify-end gap-4">
+                  <td className="px-4 py-4 text-center">
+                    <ChallengeProgressIndicator 
+                      challenges={entry.challenge_progress || []}
+                      size="sm"
+                      className="justify-center"
+                    />
+                  </td>
+                  <td className="px-4 py-4 text-right font-bold font-glitch">
                     {entry.total_score}
+                  </td>
+                  <td className="px-4 py-4 text-right font-medium">
+                    <span className={cn(
+                      'text-sm',
+                      entry.is_ongoing && 'text-yellow-400 animate-pulse',
+                      entry.is_not_started && 'text-gray-400 opacity-60'
+                    )}>
+                      {entry.total_time_spent || 'Non commencé'}
+                    </span>
                   </td>
                 </tr>
               );
@@ -133,7 +163,7 @@ const UniverseLeaderboard: React.FC<UniverseLeaderboardProps> = ({
             
             {leaderboard.length === 0 && (
               <tr>
-                <td colSpan={3} className="px-4 py-8 text-center text-[#00FF00]/50">
+                <td colSpan={5} className="px-4 py-8 text-center text-[#00FF00]/50">
                   Aucun score disponible pour cet univers_
                 </td>
               </tr>
