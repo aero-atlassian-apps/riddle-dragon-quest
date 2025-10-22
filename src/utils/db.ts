@@ -774,9 +774,9 @@ export const getUniverseLeaderboard = async (universeId: string, limit: number =
   // Fetch all challenges for this universe
   const { data: challenges, error: challengesError } = await supabase
     .from('challenges')
-    .select('id, name, challenge_order')
+    .select('id, name, challenge_order, created_at')
     .eq('universe_id', universeId)
-    .order('challenge_order', { ascending: true });
+    .order('created_at', { ascending: true });
 
   if (challengesError) {
     console.error('Error fetching challenges for universe leaderboard:', challengesError);
@@ -898,7 +898,8 @@ export const getUniverseLeaderboard = async (universeId: string, limit: number =
       challengeId: challenge.id,
       challengeName: challenge.name,
       status: timeData.challengeProgress.get(challenge.id) || 'not_started',
-      challengeOrder: challenge.challenge_order
+      challengeOrder: challenge.challenge_order,
+      createdAt: challenge.created_at
     }));
     
     return {

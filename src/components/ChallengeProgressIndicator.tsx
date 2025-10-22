@@ -6,6 +6,7 @@ export interface ChallengeProgress {
   challengeName: string;
   status: 'not_started' | 'in_progress' | 'completed';
   challengeOrder?: number;
+  createdAt?: string;
 }
 
 interface ChallengeProgressIndicatorProps {
@@ -53,10 +54,10 @@ const ChallengeProgressIndicator: React.FC<ChallengeProgressIndicatorProps> = ({
     }
   };
 
-  // Sort challenges by order if available, otherwise by challengeId
+  // Sort challenges by created_at if available, otherwise by challengeId
   const sortedChallenges = [...challenges].sort((a, b) => {
-    if (a.challengeOrder !== undefined && b.challengeOrder !== undefined) {
-      return a.challengeOrder - b.challengeOrder;
+    if (a.createdAt && b.createdAt) {
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
     }
     return a.challengeId.localeCompare(b.challengeId);
   });
