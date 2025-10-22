@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 export interface ChallengeProgress {
   challengeId: string;
   challengeName: string;
-  status: 'not_started' | 'in_progress' | 'completed';
+  status: 'not_started' | 'in_progress' | 'completed' | 'terminated_incomplete';
   challengeOrder?: number;
   createdAt?: string;
 }
@@ -36,6 +36,8 @@ const ChallengeProgressIndicator: React.FC<ChallengeProgressIndicatorProps> = ({
         return 'bg-blue-500 border-blue-400 animate-pulse';
       case 'completed':
         return 'bg-green-500 border-green-400';
+      case 'terminated_incomplete':
+        return 'bg-blue-500 border-blue-400';
       default:
         return 'bg-gray-500 border-gray-400';
     }
@@ -49,6 +51,8 @@ const ChallengeProgressIndicator: React.FC<ChallengeProgressIndicatorProps> = ({
         return 'En cours';
       case 'completed':
         return 'Terminé';
+      case 'terminated_incomplete':
+        return 'Interrompu par admin';
       default:
         return 'Inconnu';
     }

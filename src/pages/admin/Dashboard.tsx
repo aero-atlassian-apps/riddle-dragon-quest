@@ -489,7 +489,7 @@ const AdminDashboard = () => {
                         <SelectTrigger className="w-[200px] border-green-500 text-green-400 bg-black">
                           <SelectValue placeholder="Tous les univers" />
                         </SelectTrigger>
-                        <SelectContent className="bg-black border-green-500">
+                        <SelectContent className="bg-black border-green-500 max-h-[200px] overflow-y-auto">
                           <SelectItem value="all" className="text-green-400">Tous les univers</SelectItem>
                           <SelectItem value="standalone" className="text-blue-400">Challenges standalone</SelectItem>
                           {universes.map((universe) => (

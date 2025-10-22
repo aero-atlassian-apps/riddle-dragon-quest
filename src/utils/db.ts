@@ -169,14 +169,53 @@ export const updateChallengeStatus = async (
   challengeId: string,
   status: 'en attente' | 'active' | 'terminée'
 ): Promise<boolean> => {
+  // If terminating a challenge, set troupe_end_time for all ongoing rooms
+  if (status === 'terminée') {
+    try {
+      // Find all rooms for this challenge that are ongoing (have troupe_start_time but no troupe_end_time)
+      const { data: ongoingRooms, error: roomsError } = await supabase
+        .from('rooms')
+        .select('id, troupe_start_time, troupe_end_time')
+        .eq('challenge_id', challengeId)
+        .not('troupe_start_time', 'is', null)
+        .is('troupe_end_time', null);
+
+      if (roomsError) {
+        console.error('Error fetching ongoing rooms for challenge termination:', roomsError);
+        // Continue with status update even if room update fails
+      } else if (ongoingRooms && ongoingRooms.length > 0) {
+        // Set troupe_end_time for all ongoing rooms
+        const { error: updateError } = await supabase
+          .from('rooms')
+          .update({ troupe_end_time: new Date().toISOString() })
+          .eq('challenge_id', challengeId)
+          .not('troupe_start_time', 'is', null)
+          .is('troupe_end_time', null);
+
+        if (updateError) {
+          console.error('Error setting troupe_end_time for ongoing rooms:', updateError);
+          // Continue with status update even if room update fails
+        } else {
+          console.log(`Set troupe_end_time for ${ongoingRooms.length} ongoing rooms in challenge ${challengeId}`);
+        }
+      }
+    } catch (error) {
+      console.error('Unexpected error handling ongoing rooms during challenge termination:', error);
+      // Continue with status update even if room update fails
+    }
+  }
+
+  // Update challenge status
   const { error } = await supabase
     .from('challenges')
     .update({ status })
     .eq('id', challengeId);
+  
   if (error) {
     console.error('Error updating challenge status:', error);
     return false;
   }
+  
   return true;
 };
 
@@ -801,11 +840,20 @@ export const getUniverseLeaderboard = async (universeId: string, limit: number =
   // Fetch all rooms for this universe to calculate total time spent and challenge progress
   const { data: rooms, error: roomsError } = await supabase
     .from('rooms')
-    .select('name, troupe_start_time, troupe_end_time, challenge_id')
+    .select('name, troupe_start_time, troupe_end_time, challenge_id, current_door')
     .eq('universe_id', universeId);
 
   if (roomsError) {
     console.error('Error fetching rooms for universe leaderboard:', roomsError);
+  }
+
+  // Fetch challenge question counts for determining completion status
+  const challengeQuestionCounts = new Map<string, number>();
+  if (challenges) {
+    for (const challenge of challenges) {
+      const questionCount = await getMaxDoorNumberForChallenge(challenge.id);
+      challengeQuestionCounts.set(challenge.id, questionCount);
+    }
   }
 
   // Calculate total time spent and challenge progress for each troupe
@@ -814,7 +862,7 @@ export const getUniverseLeaderboard = async (universeId: string, limit: number =
     hasOngoing: boolean; 
     hasNotStarted: boolean; 
     challengeCount: number;
-    challengeProgress: Map<string, 'not_started' | 'in_progress' | 'completed'>;
+    challengeProgress: Map<string, 'not_started' | 'in_progress' | 'completed' | 'terminated_incomplete'>;
   }>();
   
   (rooms || []).forEach((room: any) => {
@@ -830,16 +878,26 @@ export const getUniverseLeaderboard = async (universeId: string, limit: number =
     existing.challengeCount++;
     
     // Determine challenge status
-    let challengeStatus: 'not_started' | 'in_progress' | 'completed' = 'not_started';
+    let challengeStatus: 'not_started' | 'in_progress' | 'completed' | 'terminated_incomplete' = 'not_started';
     
     if (room.troupe_start_time) {
       const startTime = new Date(room.troupe_start_time);
       
       if (room.troupe_end_time) {
-        // Challenge completed - add to total time
+        // Challenge has end time - check if it was completed or terminated by admin
         const endTime = new Date(room.troupe_end_time);
         existing.totalTimeMs += endTime.getTime() - startTime.getTime();
-        challengeStatus = 'completed';
+        
+        // Get the total number of questions/doors for this challenge
+        const totalDoors = challengeQuestionCounts.get(room.challenge_id) || 1;
+        
+        // If current_door > totalDoors, it was genuinely completed
+        // If current_door <= totalDoors, it was terminated by admin before completion
+        if (room.current_door > totalDoors) {
+          challengeStatus = 'completed';
+        } else {
+          challengeStatus = 'terminated_incomplete';
+        }
       } else {
         // Challenge ongoing
         existing.hasOngoing = true;
