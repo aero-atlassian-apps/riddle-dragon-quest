@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Trash2, Play, Pause, RotateCcw, ExternalLink, Copy, X, Castle, Swords, Tag, ArrowLeft, LogOut, Coins } from "lucide-react";
+import { PlusCircle, Trash2, Play, Pause, RotateCcw, ExternalLink, Copy, X, Castle, Swords, Tag, ArrowLeft, LogOut, Coins, User } from "lucide-react";
 import ChallengeCreator from "@/components/ChallengeCreator";
 import QuestionUploader from "@/components/QuestionUploader";
 import QuestionManager from "@/components/QuestionManager";
@@ -12,6 +12,7 @@ import { getChallenges, deleteChallenge, updateChallengeStatus, updateChallengeN
 import { Challenge, Question, Room } from "@/types/game";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useUser } from "@/hooks/useUser";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -53,6 +54,7 @@ const AdminDashboard = () => {
   const universeManagerRef = useRef<UniverseManagerHandle>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user, loading: userLoading } = useUser();
 
   useEffect(() => {
     fetchChallenges();
@@ -367,7 +369,13 @@ const AdminDashboard = () => {
               </Button>
             </Link>
           </div>
-          <div className="absolute top-4 right-4">
+          <div className="absolute top-4 right-4 flex items-center gap-3">
+            {user?.email && (
+              <div className="flex items-center gap-2 px-3 py-1 bg-green-500/20 border border-green-500/50 rounded-md">
+                <User className="h-4 w-4 text-green-400" />
+                <span className="text-green-400 font-mono text-sm">{user.email}</span>
+              </div>
+            )}
             <Button variant="ghost" size="sm" onClick={handleLogout} className="text-green-400 hover:text-green-300 hover:bg-green-500/10 font-mono">
               <LogOut className="h-4 w-4 mr-1" />
               logout

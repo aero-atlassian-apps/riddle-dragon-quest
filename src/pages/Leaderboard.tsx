@@ -33,7 +33,7 @@ const Leaderboard = () => {
   // Audio reference removed
   
   // Get authenticated user
-  const user = useUser();
+  const { user } = useUser();
 
   // Persist view mode and selections
   useEffect(() => {

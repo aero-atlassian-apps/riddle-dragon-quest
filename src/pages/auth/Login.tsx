@@ -6,10 +6,6 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
-// Using the specified email address
-const TEMP_EMAIL = "a.roucadi@attijariwafa.com";
-const TEMP_PASSWORD = "admin123";
-
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,74 +13,117 @@ const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast({
+        title: "Email requis",
+        description: "Veuillez entrer votre email pour réinitialiser votre mot de passe",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/reset-password`,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Email envoyé",
+        description: "Un lien de réinitialisation a été envoyé à votre adresse email",
+      });
+    } catch (error: any) {
+      console.error('Error:', error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Une erreur s'est produite lors de l'envoi de l'email",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      if (email === TEMP_EMAIL && password === TEMP_PASSWORD) {
-        // Use signIn instead of signUp since we're logging in with credentials
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: TEMP_EMAIL,
-          password: TEMP_PASSWORD,
-        });
-
-        if (error) {
-          // If the user doesn't exist yet, try to sign them up first
-          if (error.message.includes("Invalid login credentials")) {
-            // Create the user first
-            const { error: signUpError } = await supabase.auth.signUp({
-              email: TEMP_EMAIL,
-              password: TEMP_PASSWORD,
-            });
-            
-            if (signUpError) throw signUpError;
-            
-            // Now try to sign in again
-            const { error: signInError } = await supabase.auth.signInWithPassword({
-              email: TEMP_EMAIL,
-              password: TEMP_PASSWORD,
-            });
-            
-            if (signInError) throw signInError;
-          } else {
-            throw error;
-          }
-        }
-
-        // Check if user role already exists before trying to insert it
-        const userId = (await supabase.auth.getUser()).data.user?.id;
-        const { data: existingRole } = await supabase
-          .from('user_roles')
-          .select('*')
-          .eq('user_id', userId)
-          .eq('role', 'admin')
-          .maybeSingle();
-
-        // Only add admin role if it doesn't exist
-        if (!existingRole) {
-          const { error: roleError } = await supabase
-            .from('user_roles')
-            .insert([{ 
-              user_id: userId,
-              role: 'admin' 
-            }]);
-
-          if (roleError) throw roleError;
-        }
-
+      // Validate input
+      if (!email || !password) {
         toast({
-          title: "Login successful",
-          description: "You have been logged in as an admin",
-        });
-
-        navigate('/admin');
-      } else {
-        toast({
-          title: "Invalid credentials",
-          description: "Please check your email and password",
+          title: "Invalid input",
+          description: "Please enter both email and password",
           variant: "destructive",
         });
+        return;
+      }
+      // Attempt to sign in with the provided credentials
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password,
+      });
+
+      if (error) {
+        // If the user doesn't exist yet, try to sign them up first
+        if (error.message.includes("Invalid login credentials")) {
+          // Create the user first
+          const { error: signUpError } = await supabase.auth.signUp({
+            email: email,
+            password: password,
+          });
+          
+          if (signUpError) throw signUpError;
+          
+          // Now try to sign in again
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: password,
+          });
+          
+          if (signInError) throw signInError;
+        } else {
+          throw error;
+        }
+      }
+
+      // Get the authenticated user
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+      
+      // Check if user has any role in the user_roles table
+      const { data: userRole } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      // If no role exists, assign 'user' role by default
+      if (!userRole) {
+        const { error: roleError } = await supabase
+          .from('user_roles')
+          .insert([{ 
+            user_id: userId,
+            role: 'user' 
+          }]);
+
+        if (roleError) throw roleError;
+      }
+
+      toast({
+        title: "Login successful",
+        description: "You have been logged in successfully",
+      });
+
+      // Navigate based on user role
+      if (userRole?.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/');
       }
     } catch (error) {
       console.error('Error:', error);
@@ -118,7 +157,7 @@ const Login = () => {
           <div>
             <Input
               type="password"
-              placeholder="Password"
+              placeholder="Mot de passe"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -131,9 +170,20 @@ const Login = () => {
             className="w-full bg-[#00FF00]/20 hover:bg-[#00FF00]/30 text-[#00FF00] border border-[#00FF00]/50 transition-all hover:shadow-[0_0_10px_rgba(0,255,0,0.3)]"
             disabled={loading}
           >
-            {loading ? 'Logging in...' : 'Login'}
+            {loading ? 'Connexion...' : 'Se connecter'}
           </Button>
         </form>
+        
+        <div className="mt-6 text-center">
+          <Button 
+            variant="ghost"
+            onClick={handleForgotPassword}
+            className="text-[#00FF00]/70 hover:text-[#00FF00] hover:bg-[#00FF00]/10"
+            disabled={loading}
+          >
+            Mot de passe oublié ?
+          </Button>
+        </div>
       </div>
     </div>
   );

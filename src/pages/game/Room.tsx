@@ -58,7 +58,7 @@ const Room: React.FC = () => {
   const { gameState, setQuestion, submitAnswer, useToken, setTotalDoors: setGameTotalDoors, calculateFinalScore, goToNextDoor, setStartTime, syncTokensWithRoom } = useGame();
   const { setRoomId: setStoreRoomId } = useGameStore();
   const confettiRef = useRef<HTMLDivElement>(null);
-  const user = useUser();
+  const { user } = useUser();
   const { startConfetti, stopConfetti } = useConfettiStore();
 
   const normalizeString = (str) => {
